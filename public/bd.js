@@ -110,7 +110,7 @@ function drawer() {
     <a class="item" href="/auth/logout" style="text-decoration:none">Sign out</a>
     <div class="grp">Apps</div>
     ${app('obligations-atlas', 'OA', '#E3E9EF', 'var(--navy)', 'AI Obligations Atlas', 'Obligations by jurisdiction, tier and use case')}
-    <div class="item" aria-current="page"><span class="appic" style="background:var(--green-bg);color:var(--green)">BD</span><span>AI Board Direction<br><span class="small soft">Board steps B0 to B9: directions for the appetite, or the whole appetite for an unregulated company</span></span><span class="badge b-green" style="margin-left:auto">now</span></div>
+    <div class="item" aria-current="page"><span class="appic" style="background:var(--green-bg);color:var(--green)">BD</span><span>AI Board Direction<br><span class="small soft">The board’s direction on AI: where to use it and what to rule out</span></span><span class="badge b-green" style="margin-left:auto">now</span></div>
     ${app('risk-appetite', 'RA', 'var(--aubergine-bg)', 'var(--aubergine)', 'AI Risk Appetite', 'Board positions and calibration set')}
     ${app('use-assessment', 'UA', '#E3E9EF', 'var(--navy)', 'AI Use Assessment', 'Register, tests and findings')}
     ${app('confidentiality', 'CE', '#F1E6DD', '#8A5A3B', 'AI Confidentiality Exposure Assessment', 'For unregulated entities: where deal information can reach an external AI model, for one transaction')}
