@@ -43,8 +43,8 @@ window.BDExample = function buildExample() {
     inventory: [
       L('L1', 'Drafting emails, summaries and reports', 'Enterprise chat assistant (licensed)', 'A10', 'Staff', 'A1', 'G3', 'K2', false, 'p-ceo', 'IT licence list, 9 Nov'),
       L('L2', 'Meeting transcription and action notes', 'Video-call platform AI notes', 'A10', 'Staff, including board meetings', 'A1', 'G6', 'K3', false, 'p-ceo', 'Interview with the CEO, 10 Nov'),
-      L('L3', 'Shortlisting job applicants', 'Recruitment platform’s CV screening', 'A3', 'A provider for us', 'A2', 'G4', 'K2', true, 'p-ceo', 'Recruitment contract, schedule 2'),
-      L('L4', 'Answering customer order questions', 'Website chatbot', 'A1', 'Customers directly', 'A3', 'G4', 'K2', true, 'p-ceo', 'Website vendor statement of work'),
+      { ...L('L3', 'Shortlisting job applicants', 'Recruitment platform’s CV screening', 'A3', 'A provider for us', 'A2', 'G4', 'K2', true, 'p-ceo', 'Recruitment contract, schedule 2'), decisions: 'Which applicants go forward to interview', personalInfo: 'CVs, work history, qualifications' },
+      { ...L('L4', 'Answering customer order questions', 'Website chatbot', 'A1', 'Customers directly', 'A3', 'G4', 'K2', true, 'p-ceo', 'Website vendor statement of work'), decisions: 'Whether a refund or replacement is offered on a delivery complaint', personalInfo: 'Name, contact details, order history' },
       L('L5', 'Matching invoices to orders and queuing payment', 'Accounts payable automation', 'A4', 'Staff', 'A4', 'G3', 'K2', false, 'p-ceo', 'Finance system release notes'),
       L('L6', 'Spotting defects on the packing line', 'Inspection camera AI, line 2', 'A5', 'Staff', 'A3', 'G2', 'K2', false, 'p-ops', 'Plant engineering register'),
       L('L7', 'Demand forecasting for raw ingredients', 'Supplier’s forecasting service', 'A7', 'A provider for us', 'A2', 'G3', 'K7', false, 'p-ops', 'Supply agreement, clause 14'),
@@ -121,7 +121,7 @@ window.BDExample = function buildExample() {
       },
     },
     questions: [
-      { ref: 'QC-01', step: 'B1', question: 'Lines L3 and L4 shape decisions about individuals. Does the privacy policy need to describe them before 10 December 2026?', status: 'answered', response: 'Yes for L3 and L4. Northgate Legal will provide the policy wording by 25 November.', sentOn: '2026-11-12', respondedOn: '2026-11-14', raisedBy: 'p-rec' },
+      { ref: 'QC-01', step: 'B1', lines: ['L3', 'L4'], question: 'Lines L3 and L4 shape decisions about individuals. Does the privacy policy need to describe them before 10 December 2026?', status: 'answered', response: 'Yes for L3 and L4. Northgate Legal will provide the policy wording by 25 November.', sentOn: '2026-11-12', respondedOn: '2026-11-14', raisedBy: 'p-rec' },
       { ref: 'QC-02', step: 'B3', question: 'Can the company require the recruitment provider to observe red line RL1, and through which contract?', status: 'answered', response: 'Through a variation to schedule 2 at the renewal on 1 February 2027.', sentOn: '2026-11-18', respondedOn: '2026-11-20', raisedBy: 'p-adv' },
       { ref: 'QC-03', step: 'B5', question: 'Do the adviser engagement letters allow us to require the G6 rule of advisers?', status: 'open', response: '', sentOn: '2026-11-18', raisedBy: 'p-gc' },
     ],
