@@ -360,5 +360,40 @@ window.BD_CONTENT = {
         "Who may approve an exception, and within what limit"
       ]
     ]
+  },
+  "tips": {
+    "mark": {
+      "P": "Permitted: this information may go into this kind of tool.",
+      "C": "Permitted with conditions: only as the conditions under the table allow.",
+      "N": "Not permitted: this information must not go into this kind of tool."
+    },
+    "infoClass": {
+      "G1": "Public: material already published, such as the website or annual report.",
+      "G2": "Internal: ordinary working documents that are not sensitive.",
+      "G3": "Commercial in confidence: pricing, contracts, tenders and supplier terms.",
+      "G4": "Personal information: records about customers, staff and job applicants.",
+      "G5": "Restricted: health information, legal advice, export-controlled or security-classified material, and trade secrets.",
+      "G6": "Board and transaction: board papers, strategy, and deal or price-sensitive information."
+    },
+    "toolKind": {
+      "K1": "An enterprise assistant that can answer from the company’s own stored files and email, within each person’s access.",
+      "K2": "A licensed AI tool the company has approved, which works on what a person types or uploads.",
+      "K3": "AI inside meeting and collaboration tools: transcription, recaps and AI notetakers.",
+      "K4": "A consumer AI tool, not approved by the company, opened in the browser on a company device.",
+      "K5": "AI on a personal phone or computer, outside the company’s controls.",
+      "K7": "An adviser’s own AI tools: the bank, law firm or consultant working for the company."
+    },
+    "ref": {
+      "L": "A line in the AI inventory (step B1): one AI use the company has now.",
+      "RL": "A red line (step B3): a use of AI the board does not accept at all.",
+      "RV": "A decision reserved to the board (step B4): it comes back to the board before or after it happens.",
+      "BM": "A board measure (step B7): reported to the board at each meeting.",
+      "EV": "An event (step B7) that must reach the board between meetings, within the time shown.",
+      "QC": "A question to counsel: a legal point logged for the GC to answer, not settled in the room."
+    },
+    "adm": "Whether this AI makes, or substantially contributes to, a decision about a person using their personal information. Australia’s Privacy Act requires these to be described in the privacy policy from 10 December 2026; counsel decides what that means for each line.",
+    "reality": "Inventory lines that already go past a position the board has set. They are not failures: each one becomes an action on the 90-day list, so the board takes its positions knowing what they mean today.",
+    "recorded": "Something has been recorded for this step.",
+    "notYet": "Nothing has been recorded for this step yet."
   }
 };
