@@ -77,3 +77,21 @@ test('the worked example opens, every step shows its record, and nothing is save
   expect((await api('GET', '/api/engagement', undefined, U.director)).body.revision).toBe(before);
   expect(p._errors).toEqual([]);
 });
+
+test('codes in the steps explain themselves on hover and on keyboard focus', async ({ browser }) => {
+  const p = await pageAs(browser, U.director);
+  await p.click('header [data-act="drawer"]');
+  await p.click('.drawer [data-act="example"]');
+  await p.click('#step-B5 summary');
+  await p.locator('#step-B5 table').first().locator('tbody tr').last().locator('[data-tip]').last().hover();
+  await expect(p.locator('#tipbox')).toBeVisible();
+  await expect(p.locator('#tipbox')).toContainText('Board and transaction in adviser’s tools: Not permitted');
+  await p.locator('#step-B5 table').first().locator('thead [data-tip]').first().hover();
+  await expect(p.locator('#tipbox')).toContainText('enterprise assistant');
+  await p.click('#step-B7 summary');
+  await p.locator('#step-B7 [data-tip]', { hasText: 'BM1' }).focus();
+  await expect(p.locator('#tipbox')).toContainText('BM1 · A board measure (step B7): reported to the board at each meeting.');
+  await p.keyboard.press('Escape');
+  await expect(p.locator('#tipbox')).toBeHidden();
+  expect(p._errors).toEqual([]);
+});

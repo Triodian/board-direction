@@ -145,7 +145,13 @@ const SC = C.scales;
 const lbl = (list, code) => { const x = list.find(r => r[0] === code); return x ? x[1] : (code || ''); };
 const pname = id => ((S.people || []).find(p => p.id === id) || {}).name || id || '';
 const areaName = id => (S.areas.find(a => a.id === id) || {}).name || id;
-const table = (head, rows) => rows.length ? `<div class="tw" style="margin:8px 0"><table class="lg"><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : '';
+const table = (head, rows) => rows.length ? `<div class="tw" style="margin:8px 0"><table class="lg"><thead><tr>${head.map(h => `<th>${typeof h === 'object' ? h.html : esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : '';
+/* Hover tips: any element with data-tip shows a plain-language explanation on hover, keyboard focus or tap. */
+const tip = (html, text, cls) => text ? `<span class="${cls ? cls + ' ' : ''}tip" tabindex="0" data-tip="${esc(text)}">${html}</span>` : html;
+const refTip = id => { const k = (/^[A-Z]+/.exec(id || '') || [''])[0]; return tip(`<span class="mono">${esc(id)}</span>`, (C.tips.ref || {})[k] ? id + ' · ' + C.tips.ref[k] : ''); };
+const classTip = g => tip(`${esc(g)} ${esc(lbl(SC.infoClass, g))}`, (C.tips.infoClass || {})[g]);
+const kindTip = k => tip(esc(lbl(SC.toolKind, k)), (C.tips.toolKind || {})[k]);
+const authTip = a => tip(`${esc(a)} ${esc(lbl(SC.authority, a))}`, ((SC.authority.find(r => r[0] === a) || [])[2] || '') && `${a} ${lbl(SC.authority, a)}: ${(SC.authority.find(r => r[0] === a) || [])[2]}.`);
 const by = id => id ? `<span class="small soft">${esc(pname(id))}</span>` : '';
 const pos = k => (S.positions || {})[k] || {};
 const dl = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? new Date(v + 'T12:00:00Z').toLocaleDateString('en-AU', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' }) : (v || '');
@@ -163,39 +169,39 @@ function reality() {
 }
 function stepBody(id) {
   const e = S.engagement, qs = (S.questions || []).filter(q => q.step === id);
-  const questions = qs.length ? `<p class="mini" style="margin:12px 0 4px">Questions to counsel</p>` + table(['Ref', 'Question', 'Status', 'Counsel’s answer'], qs.map(q => [`<span class="mono">${esc(q.ref)}</span>`, esc(q.question) + '<br>' + by(q.raisedBy), q.status === 'answered' ? '<span class="badge b-green">Answered</span>' : '<span class="badge b-ochre">Open</span>', esc(q.response || '')])) : '';
+  const questions = qs.length ? `<p class="mini" style="margin:12px 0 4px">Questions to counsel</p>` + table(['Ref', 'Question', 'Status', 'Counsel’s answer'], qs.map(q => [refTip(q.ref), esc(q.question) + '<br>' + by(q.raisedBy), q.status === 'answered' ? '<span class="badge b-green">Answered</span>' : '<span class="badge b-ochre">Open</span>', esc(q.response || '')])) : '';
   let h = '';
   if (id === 'B0') {
     const sa = S.scopeAgreed || {}, mb = e.matterBrief;
     h = `<dl class="kv"><dt>Company</dt><dd>${esc(e.company || '—')} · ${esc(lbl(C.entityTypes, e.entityType) || '—')} · ${esc(lbl(C.jurisdictions, e.jurisdiction))}</dd><dt>Mode</dt><dd>${esc(lbl(C.modes.map(m => [m.id, m.name]), e.mode))}</dd><dt>Scope agreed</dt><dd>${sa.gcBy ? 'GC: ' + esc(pname(sa.gcBy)) + ', ' + esc(dl(sa.gcOn)) : 'GC: not yet'} · ${sa.chairBy ? 'Chair: ' + esc(pname(sa.chairBy)) + ', ' + esc(dl(sa.chairOn)) : 'Chair: not yet'}</dd></dl>`
       + (mb ? `<p class="mini" style="margin:12px 0 4px">Obligations in scope, from the Atlas matter brief (${esc(mb.scope)})</p>` + table(['Tier', 'References'], mb.tiers.map(t => [esc(t.tier), t.refs.length ? t.refs.map(r => `<span class="mono">${esc(r[0])}</span> ${esc(r[1])}`).join('<br>') : '<span class="soft">None</span>'])) + '<p class="small soft">The brief lists what sources say by tier. Counsel decides what applies.</p>' : '<p class="small soft">No Atlas matter brief imported yet.</p>');
   } else if (id === 'B1') {
-    h = table(['Line', 'Use', 'Area', 'Authority', 'Sees', 'Tool kind', 'About individuals', 'Owner'], (S.inventory || []).map(l => [`<span class="mono">${esc(l.id)}</span>`, esc(l.use) + `<br><span class="small soft">${esc(l.tool)} · ${esc(l.who)} · ${esc(l.source)}</span>`, esc(areaName(l.area)), `${esc(l.authority)} ${esc(lbl(SC.authority, l.authority))}`, `${esc(l.info)} ${esc(lbl(SC.infoClass, l.info))}`, esc(lbl(SC.toolKind, l.kind)), l.adm ? '<span class="badge b-ochre">Yes · to counsel</span>' : 'No', esc(pname(l.owner))]));
+    h = table(['Line', 'Use', 'Area', 'Authority', 'Sees', 'Tool kind', { html: tip('About individuals', C.tips.adm) }, 'Owner'], (S.inventory || []).map(l => [refTip(l.id), esc(l.use) + `<br><span class="small soft">${esc(l.tool)} · ${esc(l.who)} · ${esc(l.source)}</span>`, esc(areaName(l.area)), authTip(l.authority), classTip(l.info), kindTip(l.kind), l.adm ? '<span class="badge b-ochre">Yes · to counsel</span>' : 'No', esc(pname(l.owner))]));
   } else if (id === 'B2') {
     const b2 = pos('B2');
     h = table(['Area', 'Posture', 'Condition', 'Proposed by'], S.areas.filter(a => b2[a.id]).map(a => { const x = b2[a.id]; return [esc(a.name), `<strong>${esc(lbl(SC.posture, x.posture))}</strong><br><span class="small soft">${esc((SC.posture.find(r => r[0] === x.posture) || [])[2] || '')}</span>`, esc(x.condition || ''), by(x.proposedBy)]; }));
   } else if (id === 'B3') {
-    h = table(['Ref', 'Red line', 'Scope', 'Applies to', 'Proposed by'], (pos('B3').lines || []).map(x => [`<span class="mono">${esc(x.id)}</span>`, esc(x.use), esc(x.scope), esc(x.appliesTo), by(x.proposedBy)]));
+    h = table(['Ref', 'Red line', 'Scope', 'Applies to', 'Proposed by'], (pos('B3').lines || []).map(x => [refTip(x.id), esc(x.use), esc(x.scope), esc(x.appliesTo), by(x.proposedBy)]));
   } else if (id === 'B4') {
-    h = table(['Ref', 'Event', 'Board approves or is told', 'Brought by', 'Proposed by'], (pos('B4').events || []).map(x => [`<span class="mono">${esc(x.id)}</span>`, esc(x.event), esc(x.timing), esc(x.by), by(x.proposedBy)]));
+    h = table(['Ref', 'Event', 'Board approves or is told', 'Brought by', 'Proposed by'], (pos('B4').events || []).map(x => [refTip(x.id), esc(x.event), esc(x.timing), esc(x.by), by(x.proposedBy)]));
   } else if (id === 'B5') {
-    const b5 = pos('B5'), cells = b5.cells || {}, badge = m => m === 'P' ? '<span class="badge b-green">P</span>' : m === 'C' ? '<span class="badge b-ochre">C</span>' : m === 'N' ? '<span class="badge b-red">N</span>' : '<span class="soft">—</span>';
-    h = Object.keys(cells).length ? table(['Class', ...SC.toolKind.map(k => k[1])], SC.infoClass.map(g => [`${esc(g[0])} ${esc(g[1])}`, ...SC.toolKind.map(k => badge(cells[g[0] + ':' + k[0]]))])) + '<p class="small soft">P permitted · C permitted with conditions · N not permitted.</p>' + (b5.conditions || []).map(c => `<p class="small">${esc(c)}</p>`).join('') + (b5.proposedBy ? `<p class="small soft">Proposed by ${esc(pname(b5.proposedBy))}</p>` : '') : '';
+    const b5 = pos('B5'), cells = b5.cells || {}, badge = (m, g, k) => { const t = m && C.tips.mark[m] ? `${lbl(SC.infoClass, g)} in ${lbl(SC.toolKind, k).toLowerCase()}: ${C.tips.mark[m]}` : ''; return m === 'P' ? tip('P', t, 'badge b-green') : m === 'C' ? tip('C', t, 'badge b-ochre') : m === 'N' ? tip('N', t, 'badge b-red') : tip('<span class="soft">—</span>', `${lbl(SC.infoClass, g)} in ${lbl(SC.toolKind, k).toLowerCase()}: not marked yet.`); };
+    h = Object.keys(cells).length ? table(['Class', ...SC.toolKind.map(k => ({ html: kindTip(k[0]) }))], SC.infoClass.map(g => [classTip(g[0]), ...SC.toolKind.map(k => badge(cells[g[0] + ':' + k[0]], g[0], k[0]))])) + '<p class="small soft">P permitted · C permitted with conditions · N not permitted.</p>' + (b5.conditions || []).map(c => `<p class="small">${esc(c)}</p>`).join('') + (b5.proposedBy ? `<p class="small soft">Proposed by ${esc(pname(b5.proposedBy))}</p>` : '') : '';
   } else if (id === 'B6') {
     const hs = pos('B6').harms || {};
     h = table(['Harm to', 'We will not tolerate', 'Threshold', 'Source', 'Proposed by'], SC.harm.filter(x => hs[x[0]]).map(x => { const v = hs[x[0]]; return [esc(x[1]), esc(v.statement), esc(v.threshold), esc(v.source), by(v.proposedBy)]; }))
       + (Object.keys(hs).length ? '<p class="small soft">A material AI incident is an AI failure that reaches any threshold above.</p>' : '');
   } else if (id === 'B7') {
     const b7 = pos('B7');
-    h = ((b7.measures || []).length ? '<p class="mini" style="margin:8px 0 4px">At each meeting</p>' + table(['Ref', 'Measure', 'Limit', 'Owner'], b7.measures.map(x => [`<span class="mono">${esc(x.id)}</span>`, esc(x.measure), esc(x.limit), esc(x.owner)])) : '')
-      + ((b7.events || []).length ? '<p class="mini" style="margin:12px 0 4px">Between meetings</p>' + table(['Ref', 'Event', 'Reported to', 'Within'], b7.events.map(x => [`<span class="mono">${esc(x.id)}</span>`, esc(x.event), esc(x.to), esc(x.within)])) : '');
+    h = ((b7.measures || []).length ? '<p class="mini" style="margin:8px 0 4px">At each meeting</p>' + table(['Ref', 'Measure', 'Limit', 'Owner'], b7.measures.map(x => [refTip(x.id), esc(x.measure), esc(x.limit), esc(x.owner)])) : '')
+      + ((b7.events || []).length ? '<p class="mini" style="margin:12px 0 4px">Between meetings</p>' + table(['Ref', 'Event', 'Reported to', 'Within'], b7.events.map(x => [refTip(x.id), esc(x.event), esc(x.to), esc(x.within)])) : '');
   } else if (id === 'B8') {
     const o = pos('B8').owners || {};
     h = table(['Accountability', 'Named'], SC.accountability.filter(a => o[a[0]]).map(a => [esc(a[1]), esc(o[a[0]])]));
   } else if (id === 'B9') {
     const r = S.resolution || {}, rl = reality();
     h = (r.by ? `<dl class="kv"><dt>Resolution</dt><dd>${esc(r.text || '')}</dd><dt>Recorded by</dt><dd>${esc(pname(r.by))}, ${esc(dl(r.on))} · ${esc(r.minuteRef || '')}</dd><dt>Review</dt><dd>${esc(r.interval || '')}</dd></dl>` : '')
-      + (rl.length ? '<p class="mini" style="margin:12px 0 4px">Reality note: inventory lines that already cross a position (each goes on the 90-day action list)</p>' + table(['Line', 'Use', 'Why'], rl.map(([l, why]) => [`<span class="mono">${esc(l.id)}</span>`, esc(l.use), esc(why)])) : '');
+      + (rl.length ? `<p class="mini" style="margin:12px 0 4px">${tip('Reality note', C.tips.reality)}: inventory lines that already cross a position (each goes on the 90-day action list)</p>` + table(['Line', 'Use', 'Why'], rl.map(([l, why]) => [refTip(l.id), esc(l.use), esc(why)])) : '');
   }
   return (h || '<p class="small soft">Nothing recorded yet. The screen for this step is added in development plan task ' + esc((C.steps.find(s => s.id === id) || {}).task || '') + '.</p>') + questions;
 }
@@ -249,6 +255,25 @@ document.addEventListener('change', ev => {
   else if (t.dataset.area != null) { if (deny('setup')) return; const a = S.areas[+t.dataset.area], v = t.value.trim(); if (!a || a.name === v) return; const from = a.name; a.name = v; log('edit', 'areas.' + a.id, from, v); }
 });
 document.addEventListener('toggle', ev => { const d = ev.target; if (d && d.id && d.id.startsWith('step-')) { UI.open = UI.open || {}; UI.open[d.id.slice(5)] = d.open; } }, true);
+/* The tip box: one element, placed under the item (or above it near the bottom of the window). */
+let tipFor = null;
+function showTip(el) {
+  tipFor = el;
+  let box = document.getElementById('tipbox');
+  if (!box) { box = document.createElement('div'); box.id = 'tipbox'; box.setAttribute('role', 'tooltip'); document.body.appendChild(box); }
+  box.textContent = el.dataset.tip; box.hidden = false; el.setAttribute('aria-describedby', 'tipbox');
+  const r = el.getBoundingClientRect(), w = box.offsetWidth, hgt = box.offsetHeight;
+  const left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 8));
+  const top = r.bottom + 8 + hgt > innerHeight ? r.top - hgt - 8 : r.bottom + 8;
+  box.style.left = left + 'px'; box.style.top = Math.max(8, top) + 'px';
+}
+function hideTip() { tipFor = null; const box = document.getElementById('tipbox'); if (box) box.hidden = true; document.querySelectorAll('[aria-describedby="tipbox"]').forEach(x => x.removeAttribute('aria-describedby')); }
+document.addEventListener('mouseover', ev => { const t = ev.target.closest && ev.target.closest('[data-tip]'); if (t) showTip(t); });
+document.addEventListener('mouseout', ev => { if (ev.target.closest && ev.target.closest('[data-tip]') && !(ev.relatedTarget && ev.relatedTarget.closest && ev.relatedTarget.closest('[data-tip]') === ev.target.closest('[data-tip]'))) hideTip(); });
+document.addEventListener('focusin', ev => { const t = ev.target.closest && ev.target.closest('[data-tip]'); if (t) showTip(t); else hideTip(); });
+document.addEventListener('focusout', ev => { if (ev.target.closest && ev.target.closest('[data-tip]')) hideTip(); });
+addEventListener('scroll', () => { if (tipFor && document.body.contains(tipFor)) showTip(tipFor); else hideTip(); }, { passive: true, capture: true });
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape') hideTip(); });
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && UI.drawer) { UI.drawer = false; render(); } });
 document.addEventListener('click', async ev => {
   const b = ev.target.closest('[data-act]');
