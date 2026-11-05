@@ -14,14 +14,14 @@ test('the method owner starts the engagement and set-up saves', async ({ browser
   const e = await api('GET', '/api/engagement', undefined, U.mo);
   expect(e.body.data.engagement.company).toBe('Acme Pty Ltd');
   expect(e.body.data.areas.length).toBe(10);
-  await expect(mo.locator('.steplist details')).toHaveCount(10);
+  await expect(mo.locator('.steplist > details')).toHaveCount(10);
   expect(mo._errors).toEqual([]);
 });
 
 test('everyone can open the engagement; only Triodian or an admin can edit set-up', async ({ browser }) => {
   for (const [k, who] of Object.entries(U)) {
     const p = await pageAs(browser, who);
-    await expect(p.locator('.steplist details')).toHaveCount(10);
+    await expect(p.locator('.steplist > details')).toHaveCount(10);
     const disabled = await p.locator('#f_engagement_company').isDisabled();
     expect(disabled, who).toBe(!['mo', 'recorder'].includes(k));
     expect(p._errors, who).toEqual([]);
@@ -67,7 +67,7 @@ test('the worked example opens, every step shows its record, and nothing is save
   await expect(p.locator('.examplebar')).toContainText('Worked example');
   await expect(p.locator('h1')).toHaveText('Harrow Valley Foods Pty Ltd');
   for (const id of ['B0', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9']) {
-    await p.click(`#step-${id} summary`);
+    await p.click(`#step-${id} > summary`);
     await expect(p.locator(`#step-${id} .badge`).first()).toHaveText('Recorded');
   }
   await expect(p.locator('#step-B1 table').first().locator('tbody tr')).toHaveCount(8);
@@ -82,13 +82,13 @@ test('codes in the steps explain themselves on hover and on keyboard focus', asy
   const p = await pageAs(browser, U.director);
   await p.click('header [data-act="drawer"]');
   await p.click('.drawer [data-act="example"]');
-  await p.click('#step-B5 summary');
+  await p.click('#step-B5 > summary');
   await p.locator('#step-B5 table').first().locator('tbody tr').last().locator('[data-tip]').last().hover();
   await expect(p.locator('#tipbox')).toBeVisible();
   await expect(p.locator('#tipbox')).toContainText('Board and transaction in adviser’s tools: Not permitted');
   await p.locator('#step-B5 table').first().locator('thead [data-tip]').first().hover();
   await expect(p.locator('#tipbox')).toContainText('enterprise assistant');
-  await p.click('#step-B7 summary');
+  await p.click('#step-B7 > summary');
   await p.locator('#step-B7 [data-tip]', { hasText: 'BM1' }).focus();
   await expect(p.locator('#tipbox')).toContainText('BM1 · A board measure (step B7): reported to the board at each meeting.');
   await p.keyboard.press('Escape');
