@@ -13,7 +13,7 @@ const initials = s => String(s || '?').split(/[\s@.]+/).filter(Boolean).slice(0,
 const LOGO = h => `<img class="logo" src="/triodian-logo.svg" alt="Triodian" style="height:${h}px;width:auto;display:block">`;
 
 const SRV = { checked: false, user: null, roles: [], site: '', code: '', reason: '', exists: false, rev: 0, state: 'saved', err: '' };
-const UI = { acct: false };
+const UI = { acct: false, drawer: false };
 let S = null, timer = null, saving = false, pending = false;
 
 function toast(msg) { const t = document.getElementById('toast'); if (!t || !msg) return; t.textContent = msg; t.className = 'toast'; clearTimeout(toast._t); toast._t = setTimeout(() => { t.className = 'hidden'; }, 3800); }
@@ -93,9 +93,27 @@ function header() {
     <span class="vrule" aria-hidden="true"></span><span class="apptitle">Board Direction</span>
     <div class="hdr-r">${saveChip()}${u ? `<span class="acct"><button class="avatar-link" data-act="acct" aria-haspopup="menu" aria-expanded="${UI.acct}" aria-label="Account: ${esc(u.name || u.email)}"><span class="avatar" aria-hidden="true">${esc(initials(u.name || u.email))}</span></button>${UI.acct ? `<div class="acct-menu" role="menu">
       <div class="acct-who"><span class="avatar" aria-hidden="true">${esc(initials(u.name || u.email))}</span><div><strong>${esc(u.name || u.email)}</strong><div class="small soft">${esc(roles || 'No role in this engagement')}${u.isAdmin ? ' · administrator' : ''}</div></div></div>
-      <a role="menuitem" class="item" href="/profile/">Your profile</a>${u.isAdmin ? '<a role="menuitem" class="item" href="/admin/">Admin · users and activity</a>' : ''}<a role="menuitem" class="item" href="/user-guide/">User guide</a></div>` : ''}</span>` : ''}</div>
+      <a role="menuitem" class="item" href="/profile/">Your profile</a>${u.isAdmin ? '<a role="menuitem" class="item" href="/admin/">Admin · users and activity</a>' : ''}<a role="menuitem" class="item" href="/user-guide/">User guide</a></div>` : ''}</span>` : ''}<button class="iconbtn" data-act="drawer" aria-label="Menu" aria-expanded="${UI.drawer}">☰</button></div>
   </div>${e ? `<div class="docband"><div class="docband-in">${priv}<span class="stat"><strong>${esc(e.company || '[company not set]')}</strong> · ${esc((C.modes.find(m => m.id === e.mode) || {}).name || '')} mode</span></div></div>` : ''}</header>
   ${SRV.site ? `<div class="examplebar" style="background:#FDF0E1;color:#8A4B08;border-color:#F0D2AE">${esc(SRV.site)}: a test site for trying things out, not the live engagement</div>` : ''}`;
+}
+/* The menu: account links and the five Triodian apps, in the order of the suite. */
+const appUrl = h => 'https://' + h + (SRV.site ? '-test' : '') + '.triodian.com/?suite=1';
+function drawer() {
+  if (!UI.drawer) return '';
+  const u = SRV.user, app = (h, ic, bg, fg, name, desc) => `<a class="item" href="${appUrl(h)}" style="text-decoration:none"><span class="appic" style="background:${bg};color:${fg}">${ic}</span><span>${name}<br><span class="small soft">${desc}</span></span></a>`;
+  return `<div class="drawer-bg" data-act="drawer"></div><aside class="drawer" role="dialog" aria-label="Menu">
+    <div class="row between"><strong>Menu</strong><button class="iconbtn" data-act="drawer" aria-label="Close menu">✕</button></div>
+    <div class="grp">Account</div>
+    ${u ? `<p class="small soft" style="padding:0 10px">Signed in as ${esc(u.email)}</p><a class="item" href="/profile/" style="text-decoration:none">Your profile</a>${u.isAdmin ? '<a class="item" href="/admin/" style="text-decoration:none">Admin · users and activity</a>' : ''}` : ''}
+    <a class="item" href="/user-guide/" style="text-decoration:none">User guide</a>
+    <div class="grp">Apps</div>
+    ${app('obligations-atlas', 'OA', '#E3E9EF', 'var(--navy)', 'AI Obligations Atlas', 'Obligations by jurisdiction, tier and use case')}
+    <div class="item" aria-current="page"><span class="appic" style="background:var(--green-bg);color:var(--green)">BD</span><span>AI Board Direction<br><span class="small soft">Board steps B0 to B9: directions for the appetite, or the whole appetite for an unregulated company</span></span><span class="badge b-green" style="margin-left:auto">now</span></div>
+    ${app('risk-appetite', 'RA', 'var(--aubergine-bg)', 'var(--aubergine)', 'AI Risk Appetite', 'Board positions and calibration set')}
+    ${app('use-assessment', 'UA', '#E3E9EF', 'var(--navy)', 'AI Use Assessment', 'Register, tests and findings')}
+    ${app('confidentiality', 'CE', '#F1E6DD', '#8A5A3B', 'AI Confidentiality Exposure Assessment', 'For unregulated entities: where deal information can reach an external AI model, for one transaction')}
+  </aside>`;
 }
 const footer = () => `<footer class="ft"><div class="wrap"><div class="scope" role="note"><span aria-hidden="true">⚠</span><span><strong>Scope.</strong> ${esc(C.banner)}</span></div>
   <div class="ftrow"><span class="row" style="gap:12px">${LOGO(20)}<span class="mono soft">Framework ${esc(C.frameworkDate)}</span></span><span class="row"><a class="lnk" href="/user-guide/">User guide</a></span></div></div></footer>`;
@@ -144,7 +162,7 @@ function mainScreen() {
 }
 function render() {
   const app = document.getElementById('app');
-  app.innerHTML = header() + `<main id="main" tabindex="-1"><div class="wrap">${S ? mainScreen() : entryScreen()}</div></main>` + footer();
+  app.innerHTML = header() + `<main id="main" tabindex="-1"><div class="wrap">${S ? mainScreen() : entryScreen()}</div></main>` + footer() + drawer();
 }
 
 /* ---------- events ---------- */
@@ -153,11 +171,13 @@ document.addEventListener('change', ev => {
   if (t.dataset.path) setPath(t.dataset.path, t.value);
   else if (t.dataset.area != null) { if (deny('setup')) return; const a = S.areas[+t.dataset.area], v = t.value.trim(); if (!a || a.name === v) return; const from = a.name; a.name = v; log('edit', 'areas.' + a.id, from, v); }
 });
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && UI.drawer) { UI.drawer = false; render(); } });
 document.addEventListener('click', async ev => {
   const b = ev.target.closest('[data-act]');
   if (!b) { if (UI.acct && !ev.target.closest('.acct')) { UI.acct = false; render(); } return; }
   const act = b.dataset.act;
-  if (act === 'acct') { UI.acct = !UI.acct; render(); }
+  if (act === 'acct') { UI.acct = !UI.acct; UI.drawer = false; render(); }
+  if (act === 'drawer') { UI.drawer = !UI.drawer; UI.acct = false; render(); }
   if (act === 'new') { S = blank(); SRV.rev = 0; render(); await save(); if (SRV.exists) await load(); }
   if (act === 'addArea') { const n = S.areas.reduce((m, a) => Math.max(m, +String(a.id).replace(/\D/g, '') || 0), 0) + 1; S.areas.push({ id: 'A' + n, name: 'New area' }); log('add', 'areas.A' + n, null, 'New area'); render(); }
   if (act === 'delArea') { const a = S.areas.splice(+b.dataset.i, 1)[0]; if (a) log('remove', 'areas.' + a.id, a.name, null); render(); }

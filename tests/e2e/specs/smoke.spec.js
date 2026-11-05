@@ -45,3 +45,16 @@ test('admin, profile and user guide pages load', async ({ browser }) => {
     await p.context().close();
   }
 });
+
+test('the app switcher lists the five apps, and the menu links to the other four', async ({ browser }) => {
+  const p = await pageAs(browser, U.mo);
+  await p.click('.tsu-switch');
+  await expect(p.locator('.tsu-card')).toHaveCount(4);
+  await expect(p.locator('.tsu-card.is-here h3')).toHaveText('AI Board Direction');
+  await expect(p.locator('.tsu-ce h3')).toHaveText('AI Confidentiality Exposure Assessment');
+  await p.click('[data-tsu-close]');
+  await p.click('header [data-act="drawer"]');
+  await expect(p.locator('.drawer a.item[href*="triodian.com"]')).toHaveCount(4);
+  await expect(p.locator('.drawer [aria-current="page"]')).toContainText('AI Board Direction');
+  expect(p._errors).toEqual([]);
+});
