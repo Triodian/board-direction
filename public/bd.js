@@ -21,8 +21,9 @@ async function api(method, path, body) {
   let r;
   try { r = await fetch(path, { method, headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined, credentials: 'same-origin', redirect: 'manual', cache: 'no-store' }); }
   catch (e) { return { ok: false, status: 0, error: 'The server could not be reached. Check your connection.' }; }
-  if (r.type === 'opaqueredirect' || r.status === 401) return { ok: false, status: 401, error: 'Your sign-in has expired. Reload the page to sign in again.' };
+  if (r.type === 'opaqueredirect') return { ok: false, status: 401, error: 'Your sign-in has expired. Reload the page to sign in again.' };
   let j = null; try { j = await r.json(); } catch (e) {}
+  if (r.status === 401) return { ok: false, status: 401, error: (j && j.error) || 'Your sign-in has expired. Reload the page to sign in again.' };
   if (!r.ok) return { ok: false, status: r.status, error: (j && j.error) || ('The server returned an error (' + r.status + ').'), code: j && j.code, body: j };
   return { ok: true, status: r.status, body: j };
 }
