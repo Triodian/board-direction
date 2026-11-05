@@ -3,31 +3,361 @@
   "frameworkDate": "5 November 2026",
   "banner": "It records the positions the board proposes and resolves, with who proposed each one. It does not recommend what the board's position should be. Questions about the company's legal obligations are recorded for counsel to answer.",
   "modes": [
-    { "id": "standalone", "name": "Standalone", "for": "Companies outside prudential regulation. The steps produce the whole appetite." },
-    { "id": "connected", "name": "Connected", "for": "APRA, ASIC or MAS regulated entities. The steps produce board directions that the AI Risk Appetite engagement must stay within." }
+    {
+      "id": "standalone",
+      "name": "Standalone",
+      "for": "Companies outside prudential regulation. The steps produce the whole appetite."
+    },
+    {
+      "id": "connected",
+      "name": "Connected",
+      "for": "APRA, ASIC or MAS regulated entities. The steps produce board directions that the AI Risk Appetite engagement must stay within."
+    }
   ],
   "entityTypes": [
-    ["privateCompany", "Private company"], ["listedEntity", "Listed entity"], ["notForProfit", "Not-for-profit"],
-    ["criticalInfrastructureAsset", "Critical infrastructure asset owner"], ["defenceIndustry", "Defence industry supplier"], ["healthServiceProvider", "Health service provider"],
-    ["authorisedDepositTakingInstitution", "Authorised deposit-taking institution"], ["generalInsurer", "General insurer"], ["lifeInsurer", "Life insurer"],
-    ["privateHealthInsurer", "Private health insurer"], ["superannuationTrustee", "Superannuation trustee"], ["financialServicesLicensee", "Financial services licensee"],
-    ["creditLicensee", "Credit licensee"], ["financialInstitution", "Financial institution (Singapore, MAS)"], ["other", "Other"]
+    [
+      "privateCompany",
+      "Private company"
+    ],
+    [
+      "listedEntity",
+      "Listed entity"
+    ],
+    [
+      "notForProfit",
+      "Not-for-profit"
+    ],
+    [
+      "criticalInfrastructureAsset",
+      "Critical infrastructure asset owner"
+    ],
+    [
+      "defenceIndustry",
+      "Defence industry supplier"
+    ],
+    [
+      "healthServiceProvider",
+      "Health service provider"
+    ],
+    [
+      "authorisedDepositTakingInstitution",
+      "Authorised deposit-taking institution"
+    ],
+    [
+      "generalInsurer",
+      "General insurer"
+    ],
+    [
+      "lifeInsurer",
+      "Life insurer"
+    ],
+    [
+      "privateHealthInsurer",
+      "Private health insurer"
+    ],
+    [
+      "superannuationTrustee",
+      "Superannuation trustee"
+    ],
+    [
+      "financialServicesLicensee",
+      "Financial services licensee"
+    ],
+    [
+      "creditLicensee",
+      "Credit licensee"
+    ],
+    [
+      "financialInstitution",
+      "Financial institution (Singapore, MAS)"
+    ],
+    [
+      "other",
+      "Other"
+    ]
   ],
-  "jurisdictions": [["AU", "Australia"], ["SG", "Singapore"]],
+  "jurisdictions": [
+    [
+      "AU",
+      "Australia"
+    ],
+    [
+      "SG",
+      "Singapore"
+    ]
+  ],
   "startingAreas": [
-    "Customer service and communications", "Sales and marketing", "People and hiring", "Finance and payments", "Operations and production",
-    "Product, research and engineering", "Procurement and suppliers", "Legal, contracts and compliance", "IT and security", "Board and executive work"
+    "Customer service and communications",
+    "Sales and marketing",
+    "People and hiring",
+    "Finance and payments",
+    "Operations and production",
+    "Product, research and engineering",
+    "Procurement and suppliers",
+    "Legal, contracts and compliance",
+    "IT and security",
+    "Board and executive work"
   ],
   "steps": [
-    { "id": "B0", "name": "Set-up and pre-read", "question": "What applies to us, and what do directors need to know first?", "answeredAs": "Scope, mode, privilege position, matter brief", "position": "BP0", "direction": "", "task": "1.4" },
-    { "id": "B1", "name": "Where AI is used", "question": "What AI do we use now, directly and through providers?", "answeredAs": "An inventory of 10 to 20 lines, each with authority level and the automated-decision flag", "position": "BP1", "direction": "Register summary", "task": "1.6, 1.11" },
-    { "id": "B2", "name": "Posture", "question": "Where do we want AI to create value, and how cautious are we in each area?", "answeredAs": "A posture, Avoid to Pursue, for each area of the business", "position": "BP2", "direction": "BD1", "task": "1.5, 1.13" },
-    { "id": "B3", "name": "Red lines", "question": "Which uses of AI do we not accept at all?", "answeredAs": "A list of uses, each testable against the inventory", "position": "BP3", "direction": "BD2", "task": "1.5" },
-    { "id": "B4", "name": "Reserved to the board", "question": "Which AI decisions must come back to us?", "answeredAs": "A list of events, each with who brings it and when", "position": "BP4", "direction": "BD3", "task": "1.5" },
-    { "id": "B5", "name": "Confidential information", "question": "What information may go into which AI tools?", "answeredAs": "Permitted, with conditions, or not permitted, for each class and tool kind", "position": "BP5", "direction": "BD4", "task": "1.5" },
-    { "id": "B6", "name": "Harm we will not tolerate", "question": "What failure would be unacceptable to customers, staff or the company?", "answeredAs": "A statement and a threshold for each kind of harm", "position": "BP6", "direction": "BD5", "task": "1.5" },
-    { "id": "B7", "name": "What we expect to hear", "question": "What should management report to us about AI, and how fast?", "answeredAs": "Three to five measures, and the events reported between meetings", "position": "BP7", "direction": "BD6", "task": "1.5" },
-    { "id": "B8", "name": "Who is accountable", "question": "Which committee, director and executive own AI?", "answeredAs": "A named owner for the whole and for each area", "position": "BP8", "direction": "BD7", "task": "1.5" },
-    { "id": "B9", "name": "Resolve and review", "question": "Do we resolve this, and when do we look again?", "answeredAs": "A resolution, a review interval and change events", "position": "BP9", "direction": "Approval session", "task": "1.5" }
-  ]
+    {
+      "id": "B0",
+      "name": "Set-up and pre-read",
+      "question": "What applies to us, and what do directors need to know first?",
+      "answeredAs": "Scope, mode, privilege position, matter brief",
+      "position": "BP0",
+      "direction": "",
+      "task": "1.4"
+    },
+    {
+      "id": "B1",
+      "name": "Where AI is used",
+      "question": "What AI do we use now, directly and through providers?",
+      "answeredAs": "An inventory of 10 to 20 lines, each with authority level and the automated-decision flag",
+      "position": "BP1",
+      "direction": "Register summary",
+      "task": "1.6, 1.11"
+    },
+    {
+      "id": "B2",
+      "name": "Posture",
+      "question": "Where do we want AI to create value, and how cautious are we in each area?",
+      "answeredAs": "A posture, Avoid to Pursue, for each area of the business",
+      "position": "BP2",
+      "direction": "BD1",
+      "task": "1.5, 1.13"
+    },
+    {
+      "id": "B3",
+      "name": "Red lines",
+      "question": "Which uses of AI do we not accept at all?",
+      "answeredAs": "A list of uses, each testable against the inventory",
+      "position": "BP3",
+      "direction": "BD2",
+      "task": "1.5"
+    },
+    {
+      "id": "B4",
+      "name": "Reserved to the board",
+      "question": "Which AI decisions must come back to us?",
+      "answeredAs": "A list of events, each with who brings it and when",
+      "position": "BP4",
+      "direction": "BD3",
+      "task": "1.5"
+    },
+    {
+      "id": "B5",
+      "name": "Confidential information",
+      "question": "What information may go into which AI tools?",
+      "answeredAs": "Permitted, with conditions, or not permitted, for each class and tool kind",
+      "position": "BP5",
+      "direction": "BD4",
+      "task": "1.5"
+    },
+    {
+      "id": "B6",
+      "name": "Harm we will not tolerate",
+      "question": "What failure would be unacceptable to customers, staff or the company?",
+      "answeredAs": "A statement and a threshold for each kind of harm",
+      "position": "BP6",
+      "direction": "BD5",
+      "task": "1.5"
+    },
+    {
+      "id": "B7",
+      "name": "What we expect to hear",
+      "question": "What should management report to us about AI, and how fast?",
+      "answeredAs": "Three to five measures, and the events reported between meetings",
+      "position": "BP7",
+      "direction": "BD6",
+      "task": "1.5"
+    },
+    {
+      "id": "B8",
+      "name": "Who is accountable",
+      "question": "Which committee, director and executive own AI?",
+      "answeredAs": "A named owner for the whole and for each area",
+      "position": "BP8",
+      "direction": "BD7",
+      "task": "1.5"
+    },
+    {
+      "id": "B9",
+      "name": "Resolve and review",
+      "question": "Do we resolve this, and when do we look again?",
+      "answeredAs": "A resolution, a review interval and change events",
+      "position": "BP9",
+      "direction": "Approval session",
+      "task": "1.5"
+    }
+  ],
+  "scales": {
+    "posture": [
+      [
+        "S1",
+        "Avoid",
+        "We do not want AI used in this area beyond what assists a person, for now"
+      ],
+      [
+        "S2",
+        "Cautious",
+        "We accept AI that assists or recommends. A person decides"
+      ],
+      [
+        "S3",
+        "Open",
+        "We accept AI that decides within stated limits, where we can see what it did"
+      ],
+      [
+        "S4",
+        "Pursue",
+        "We want AI used here and accept that it may act with less oversight, within our red lines and reserved decisions"
+      ]
+    ],
+    "authority": [
+      [
+        "A1",
+        "Assists",
+        "Drafts, summarises, searches. A person still acts"
+      ],
+      [
+        "A2",
+        "Recommends",
+        "Scores, ranks, recommends. A person decides"
+      ],
+      [
+        "A3",
+        "Decides",
+        "Approves, declines, triages. No person reviews before it takes effect"
+      ],
+      [
+        "A4",
+        "Moves money",
+        "Prices, allocates, pays"
+      ],
+      [
+        "A5",
+        "Acts unattended",
+        "Plans and acts across steps and tools, unattended"
+      ],
+      [
+        "A6",
+        "Changes systems",
+        "Holds credentials that change systems, assets or infrastructure"
+      ]
+    ],
+    "harm": [
+      [
+        "H1",
+        "Customers or members"
+      ],
+      [
+        "H2",
+        "Staff and applicants"
+      ],
+      [
+        "H3",
+        "The company’s money"
+      ],
+      [
+        "H4",
+        "Operations"
+      ],
+      [
+        "H5",
+        "Legal and regulatory standing"
+      ],
+      [
+        "H6",
+        "Reputation and trust"
+      ]
+    ],
+    "infoClass": [
+      [
+        "G1",
+        "Public"
+      ],
+      [
+        "G2",
+        "Internal"
+      ],
+      [
+        "G3",
+        "Commercial in confidence"
+      ],
+      [
+        "G4",
+        "Personal information"
+      ],
+      [
+        "G5",
+        "Restricted"
+      ],
+      [
+        "G6",
+        "Board and transaction"
+      ]
+    ],
+    "toolKind": [
+      [
+        "K1",
+        "Enterprise assistant"
+      ],
+      [
+        "K2",
+        "Sanctioned tool"
+      ],
+      [
+        "K3",
+        "Meeting AI"
+      ],
+      [
+        "K4",
+        "Unsanctioned, managed device"
+      ],
+      [
+        "K5",
+        "Personal device"
+      ],
+      [
+        "K7",
+        "Adviser’s tools"
+      ]
+    ],
+    "mark": [
+      [
+        "P",
+        "Permitted"
+      ],
+      [
+        "C",
+        "With conditions"
+      ],
+      [
+        "N",
+        "Not permitted"
+      ]
+    ],
+    "accountability": [
+      [
+        "AC1",
+        "Board committee that oversees AI"
+      ],
+      [
+        "AC2",
+        "Director who leads on AI"
+      ],
+      [
+        "AC3",
+        "Executive accountable for AI overall"
+      ],
+      [
+        "AC4",
+        "Owner of each area’s positions"
+      ],
+      [
+        "AC5",
+        "Who may approve an exception, and within what limit"
+      ]
+    ]
+  }
 }

@@ -14,14 +14,14 @@ test('the method owner starts the engagement and set-up saves', async ({ browser
   const e = await api('GET', '/api/engagement', undefined, U.mo);
   expect(e.body.data.engagement.company).toBe('Acme Pty Ltd');
   expect(e.body.data.areas.length).toBe(10);
-  await expect(mo.locator('.steplist .panel2')).toHaveCount(10);
+  await expect(mo.locator('.steplist details')).toHaveCount(10);
   expect(mo._errors).toEqual([]);
 });
 
 test('everyone can open the engagement; only Triodian or an admin can edit set-up', async ({ browser }) => {
   for (const [k, who] of Object.entries(U)) {
     const p = await pageAs(browser, who);
-    await expect(p.locator('.steplist .panel2')).toHaveCount(10);
+    await expect(p.locator('.steplist details')).toHaveCount(10);
     const disabled = await p.locator('#f_engagement_company').isDisabled();
     expect(disabled, who).toBe(!['mo', 'recorder'].includes(k));
     expect(p._errors, who).toEqual([]);
@@ -56,5 +56,24 @@ test('the app switcher lists the five apps, and the menu links to the other four
   await p.click('header [data-act="drawer"]');
   await expect(p.locator('.drawer a.item[href*="triodian.com"]')).toHaveCount(4);
   await expect(p.locator('.drawer [aria-current="page"]')).toContainText('AI Board Direction');
+  expect(p._errors).toEqual([]);
+});
+
+test('the worked example opens, every step shows its record, and nothing is saved', async ({ browser }) => {
+  const p = await pageAs(browser, U.director);
+  const before = (await api('GET', '/api/engagement', undefined, U.director)).body.revision;
+  await p.click('header [data-act="drawer"]');
+  await p.click('.drawer [data-act="example"]');
+  await expect(p.locator('.examplebar')).toContainText('Worked example');
+  await expect(p.locator('h1')).toHaveText('Harrow Valley Foods Pty Ltd');
+  for (const id of ['B0', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9']) {
+    await p.click(`#step-${id} summary`);
+    await expect(p.locator(`#step-${id} .badge`).first()).toHaveText('Recorded');
+  }
+  await expect(p.locator('#step-B1 table').first().locator('tbody tr')).toHaveCount(8);
+  expect(await p.locator('#step-B9 tbody tr').count()).toBeGreaterThan(0); // the reality note
+  await p.click('.examplebar [data-act="leaveExample"]');
+  await expect(p.locator('.examplebar')).toHaveCount(0);
+  expect((await api('GET', '/api/engagement', undefined, U.director)).body.revision).toBe(before);
   expect(p._errors).toEqual([]);
 });

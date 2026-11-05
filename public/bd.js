@@ -13,7 +13,8 @@ const initials = s => String(s || '?').split(/[\s@.]+/).filter(Boolean).slice(0,
 const LOGO = h => `<img class="logo" src="/triodian-logo.svg" alt="Triodian" style="height:${h}px;width:auto;display:block">`;
 
 const SRV = { checked: false, user: null, roles: [], site: '', code: '', reason: '', exists: false, rev: 0, state: 'saved', err: '' };
-const UI = { acct: false, drawer: false };
+const UI = { acct: false, drawer: false, practice: false };
+let REAL = null; // the saved engagement, put aside while the worked example is open
 let S = null, timer = null, saving = false, pending = false;
 
 function toast(msg) { const t = document.getElementById('toast'); if (!t || !msg) return; t.textContent = msg; t.className = 'toast'; clearTimeout(toast._t); toast._t = setTimeout(() => { t.className = 'hidden'; }, 3800); }
@@ -54,7 +55,7 @@ function setPath(path, v) {
 }
 
 /* ---------- saving ---------- */
-function queueSave() { SRV.state = 'unsaved'; paintSave(); clearTimeout(timer); timer = setTimeout(save, 700); }
+function queueSave() { if (UI.practice) return; SRV.state = 'unsaved'; paintSave(); clearTimeout(timer); timer = setTimeout(save, 700); }
 async function save() {
   if (saving) { pending = true; return; }
   saving = true; SRV.state = 'saving'; paintSave();
@@ -80,7 +81,7 @@ async function load() {
   render();
 }
 const SAVE = { saved: ['b-green', 'Saved'], unsaved: ['b-grey', 'Unsaved'], saving: ['b-grey', 'Saving…'], error: ['b-red', 'Not saved'] };
-const saveChip = () => S ? `<span class="badge ${SAVE[SRV.state][0]}" id="savechip" title="${esc(SRV.err || '')}">${SAVE[SRV.state][1]}</span>` : '';
+const saveChip = () => S && !UI.practice ? `<span class="badge ${SAVE[SRV.state][0]}" id="savechip" title="${esc(SRV.err || '')}">${SAVE[SRV.state][1]}</span>` : '';
 function paintSave() { const el = document.getElementById('savechip'); if (el) el.outerHTML = saveChip(); }
 
 /* ---------- shell ---------- */
@@ -95,7 +96,8 @@ function header() {
       <div class="acct-who"><span class="avatar" aria-hidden="true">${esc(initials(u.name || u.email))}</span><div><strong>${esc(u.name || u.email)}</strong><div class="small soft">${esc(roles || 'No role in this engagement')}${u.isAdmin ? ' · administrator' : ''}</div></div></div>
       <a role="menuitem" class="item" href="/profile/">Your profile</a>${u.isAdmin ? '<a role="menuitem" class="item" href="/admin/">Admin · users and activity</a>' : ''}<a role="menuitem" class="item" href="/user-guide/">User guide</a><a role="menuitem" class="item signout" href="/auth/logout">Sign out</a></div>` : ''}</span>` : ''}<button class="iconbtn" data-act="drawer" aria-label="Menu" aria-expanded="${UI.drawer}">☰</button></div>
   </div>${e ? `<div class="docband"><div class="docband-in">${priv}<span class="stat"><strong>${esc(e.company || '[company not set]')}</strong> · ${esc((C.modes.find(m => m.id === e.mode) || {}).name || '')} mode</span></div></div>` : ''}</header>
-  ${SRV.site ? `<div class="examplebar" style="background:#FDF0E1;color:#8A4B08;border-color:#F0D2AE">${esc(SRV.site)}: a test site for trying things out, not the live engagement</div>` : ''}`;
+  ${SRV.site ? `<div class="examplebar" style="background:#FDF0E1;color:#8A4B08;border-color:#F0D2AE">${esc(SRV.site)}: a test site for trying things out, not the live engagement</div>` : ''}
+  ${UI.practice ? '<div class="examplebar">Worked example: a fictional company, board and advisers, for practice only. Nothing is saved. <button class="lnk" data-act="leaveExample">Leave the worked example</button></div>' : ''}`;
 }
 /* The menu: account links and the five Triodian apps, in the order of the suite. */
 const appUrl = h => 'https://' + h + (SRV.site ? '-test' : '') + '.triodian.com/?suite=1';
@@ -108,6 +110,9 @@ function drawer() {
     ${u ? `<p class="small soft" style="padding:0 10px">Signed in as ${esc(u.email)}</p><a class="item" href="/profile/" style="text-decoration:none">Your profile</a>${u.isAdmin ? '<a class="item" href="/admin/" style="text-decoration:none">Admin · users and activity</a>' : ''}` : ''}
     <a class="item" href="/user-guide/" style="text-decoration:none">User guide</a>
     <a class="item" href="/auth/logout" style="text-decoration:none">Sign out</a>
+    <div class="grp">Practice</div>
+    ${UI.practice ? '<button class="item" data-act="leaveExample">Leave the worked example</button>' : '<button class="item" data-act="example">Open the worked example</button>'}
+    <p class="small soft" style="padding:0 10px">The worked example is fictional and runs in this browser only. Nothing in it is saved.</p>
     <div class="grp">Apps</div>
     ${app('obligations-atlas', 'OA', '#E3E9EF', 'var(--navy)', 'AI Obligations Atlas', 'Obligations by jurisdiction, tier and use case')}
     <div class="item" aria-current="page"><span class="appic" style="background:var(--green-bg);color:var(--green)">BD</span><span>AI Board Direction<br><span class="small soft">The board’s direction on AI: where to use it and what to rule out</span></span><span class="badge b-green" style="margin-left:auto">now</span></div>
@@ -126,20 +131,83 @@ function fld(label, path, value, o) {
   return `<label class="f" for="${id}"><span>${esc(label)}</span>${ctl}</label>`;
 }
 
+
+/* ---------- the ten steps: what each one holds ---------- */
+const SC = C.scales;
+const lbl = (list, code) => { const x = list.find(r => r[0] === code); return x ? x[1] : (code || ''); };
+const pname = id => ((S.people || []).find(p => p.id === id) || {}).name || id || '';
+const areaName = id => (S.areas.find(a => a.id === id) || {}).name || id;
+const table = (head, rows) => rows.length ? `<div class="tw" style="margin:8px 0"><table class="lg"><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : '';
+const by = id => id ? `<span class="small soft">${esc(pname(id))}</span>` : '';
+const pos = k => (S.positions || {})[k] || {};
+const dl = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? new Date(v + 'T12:00:00Z').toLocaleDateString('en-AU', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' }) : (v || '');
+/* Highest authority a posture accepts (framework sections 2.3 and 4.2): Avoid A1, Cautious A2, Open A4, Pursue A6. */
+const POSTURE_MAX = { S1: 1, S2: 2, S3: 4, S4: 6 };
+/* The reality note (framework 10.1): inventory lines that already cross a position. Each becomes a 90-day action. */
+function reality() {
+  const out = [], b2 = pos('B2'), cells = pos('B5').cells || {};
+  (S.inventory || []).forEach(l => {
+    const p = (b2[l.area] || {}).posture, n = +String(l.authority || '').slice(1);
+    if (p && n > POSTURE_MAX[p]) out.push([l, `${l.authority} ${lbl(SC.authority, l.authority)} is above what ${lbl(SC.posture, p)} accepts in ${areaName(l.area)}`]);
+    if (cells[l.info + ':' + l.kind] === 'N') out.push([l, `${l.info} ${lbl(SC.infoClass, l.info)} through ${lbl(SC.toolKind, l.kind)} is marked not permitted`]);
+  });
+  return out;
+}
+function stepBody(id) {
+  const e = S.engagement, qs = (S.questions || []).filter(q => q.step === id);
+  const questions = qs.length ? `<p class="mini" style="margin:12px 0 4px">Questions to counsel</p>` + table(['Ref', 'Question', 'Status', 'Counsel’s answer'], qs.map(q => [`<span class="mono">${esc(q.ref)}</span>`, esc(q.question) + '<br>' + by(q.raisedBy), q.status === 'answered' ? '<span class="badge b-green">Answered</span>' : '<span class="badge b-ochre">Open</span>', esc(q.response || '')])) : '';
+  let h = '';
+  if (id === 'B0') {
+    const sa = S.scopeAgreed || {}, mb = e.matterBrief;
+    h = `<dl class="kv"><dt>Company</dt><dd>${esc(e.company || '—')} · ${esc(lbl(C.entityTypes, e.entityType) || '—')} · ${esc(lbl(C.jurisdictions, e.jurisdiction))}</dd><dt>Mode</dt><dd>${esc(lbl(C.modes.map(m => [m.id, m.name]), e.mode))}</dd><dt>Scope agreed</dt><dd>${sa.gcBy ? 'GC: ' + esc(pname(sa.gcBy)) + ', ' + esc(dl(sa.gcOn)) : 'GC: not yet'} · ${sa.chairBy ? 'Chair: ' + esc(pname(sa.chairBy)) + ', ' + esc(dl(sa.chairOn)) : 'Chair: not yet'}</dd></dl>`
+      + (mb ? `<p class="mini" style="margin:12px 0 4px">Obligations in scope, from the Atlas matter brief (${esc(mb.scope)})</p>` + table(['Tier', 'References'], mb.tiers.map(t => [esc(t.tier), t.refs.length ? t.refs.map(r => `<span class="mono">${esc(r[0])}</span> ${esc(r[1])}`).join('<br>') : '<span class="soft">None</span>'])) + '<p class="small soft">The brief lists what sources say by tier. Counsel decides what applies.</p>' : '<p class="small soft">No Atlas matter brief imported yet.</p>');
+  } else if (id === 'B1') {
+    h = table(['Line', 'Use', 'Area', 'Authority', 'Sees', 'Tool kind', 'About individuals', 'Owner'], (S.inventory || []).map(l => [`<span class="mono">${esc(l.id)}</span>`, esc(l.use) + `<br><span class="small soft">${esc(l.tool)} · ${esc(l.who)} · ${esc(l.source)}</span>`, esc(areaName(l.area)), `${esc(l.authority)} ${esc(lbl(SC.authority, l.authority))}`, `${esc(l.info)} ${esc(lbl(SC.infoClass, l.info))}`, esc(lbl(SC.toolKind, l.kind)), l.adm ? '<span class="badge b-ochre">Yes · to counsel</span>' : 'No', esc(pname(l.owner))]));
+  } else if (id === 'B2') {
+    const b2 = pos('B2');
+    h = table(['Area', 'Posture', 'Condition', 'Proposed by'], S.areas.filter(a => b2[a.id]).map(a => { const x = b2[a.id]; return [esc(a.name), `<strong>${esc(lbl(SC.posture, x.posture))}</strong><br><span class="small soft">${esc((SC.posture.find(r => r[0] === x.posture) || [])[2] || '')}</span>`, esc(x.condition || ''), by(x.proposedBy)]; }));
+  } else if (id === 'B3') {
+    h = table(['Ref', 'Red line', 'Scope', 'Applies to', 'Proposed by'], (pos('B3').lines || []).map(x => [`<span class="mono">${esc(x.id)}</span>`, esc(x.use), esc(x.scope), esc(x.appliesTo), by(x.proposedBy)]));
+  } else if (id === 'B4') {
+    h = table(['Ref', 'Event', 'Board approves or is told', 'Brought by', 'Proposed by'], (pos('B4').events || []).map(x => [`<span class="mono">${esc(x.id)}</span>`, esc(x.event), esc(x.timing), esc(x.by), by(x.proposedBy)]));
+  } else if (id === 'B5') {
+    const b5 = pos('B5'), cells = b5.cells || {}, badge = m => m === 'P' ? '<span class="badge b-green">P</span>' : m === 'C' ? '<span class="badge b-ochre">C</span>' : m === 'N' ? '<span class="badge b-red">N</span>' : '<span class="soft">—</span>';
+    h = Object.keys(cells).length ? table(['Class', ...SC.toolKind.map(k => k[1])], SC.infoClass.map(g => [`${esc(g[0])} ${esc(g[1])}`, ...SC.toolKind.map(k => badge(cells[g[0] + ':' + k[0]]))])) + '<p class="small soft">P permitted · C permitted with conditions · N not permitted.</p>' + (b5.conditions || []).map(c => `<p class="small">${esc(c)}</p>`).join('') + (b5.proposedBy ? `<p class="small soft">Proposed by ${esc(pname(b5.proposedBy))}</p>` : '') : '';
+  } else if (id === 'B6') {
+    const hs = pos('B6').harms || {};
+    h = table(['Harm to', 'We will not tolerate', 'Threshold', 'Source', 'Proposed by'], SC.harm.filter(x => hs[x[0]]).map(x => { const v = hs[x[0]]; return [esc(x[1]), esc(v.statement), esc(v.threshold), esc(v.source), by(v.proposedBy)]; }))
+      + (Object.keys(hs).length ? '<p class="small soft">A material AI incident is an AI failure that reaches any threshold above.</p>' : '');
+  } else if (id === 'B7') {
+    const b7 = pos('B7');
+    h = ((b7.measures || []).length ? '<p class="mini" style="margin:8px 0 4px">At each meeting</p>' + table(['Ref', 'Measure', 'Limit', 'Owner'], b7.measures.map(x => [`<span class="mono">${esc(x.id)}</span>`, esc(x.measure), esc(x.limit), esc(x.owner)])) : '')
+      + ((b7.events || []).length ? '<p class="mini" style="margin:12px 0 4px">Between meetings</p>' + table(['Ref', 'Event', 'Reported to', 'Within'], b7.events.map(x => [`<span class="mono">${esc(x.id)}</span>`, esc(x.event), esc(x.to), esc(x.within)])) : '');
+  } else if (id === 'B8') {
+    const o = pos('B8').owners || {};
+    h = table(['Accountability', 'Named'], SC.accountability.filter(a => o[a[0]]).map(a => [esc(a[1]), esc(o[a[0]])]));
+  } else if (id === 'B9') {
+    const r = S.resolution || {}, rl = reality();
+    h = (r.by ? `<dl class="kv"><dt>Resolution</dt><dd>${esc(r.text || '')}</dd><dt>Recorded by</dt><dd>${esc(pname(r.by))}, ${esc(dl(r.on))} · ${esc(r.minuteRef || '')}</dd><dt>Review</dt><dd>${esc(r.interval || '')}</dd></dl>` : '')
+      + (rl.length ? '<p class="mini" style="margin:12px 0 4px">Reality note: inventory lines that already cross a position (each goes on the 90-day action list)</p>' + table(['Line', 'Use', 'Why'], rl.map(([l, why]) => [`<span class="mono">${esc(l.id)}</span>`, esc(l.use), esc(why)])) : '');
+  }
+  return (h || '<p class="small soft">Nothing recorded yet. The screen for this step is added in development plan task ' + esc((C.steps.find(s => s.id === id) || {}).task || '') + '.</p>') + questions;
+}
+const hasContent = id => id === 'B0' ? !!(S.engagement.company) : id === 'B1' ? (S.inventory || []).length > 0 : id === 'B9' ? !!(S.resolution || {}).by : Object.keys(pos(id)).length > 0;
+
 /* ---------- screens ---------- */
+const exampleOffer = () => `<div class="panel2" style="padding:14px 16px;margin-top:14px"><p style="margin:0 0 8px"><strong>See it worked through.</strong> A fictional manufacturer’s board takes all ten steps, from its AI inventory to a resolved statement.</p><button class="btn" data-act="example">Open the worked example</button></div>`;
 function entryScreen() {
   if (!SRV.checked) return '<p class="soft">Connecting…</p>';
-  if (!SRV.user) return `${opening('AI Board Direction', 'No access yet', '')}<div class="panel2" role="status" style="padding:12px 14px">${esc(SRV.reason || 'You have not been given access to this app.')} <a href="/auth/logout">Sign out</a></div>`;
+  if (!SRV.user) return `${opening('AI Board Direction', 'No access yet', '')}<div class="panel2" role="status" style="padding:12px 14px">${esc(SRV.reason || 'You have not been given access to this app.')} <a href="/auth/logout">Sign out</a></div>${exampleOffer()}`;
   const can = !RULES.deny('setup', me(), null);
   return `${opening('AI Board Direction', 'No engagement yet', 'This site holds one board engagement. It has not been started.')}
-    <div class="panel2" style="padding:14px 16px">${can ? '<p>Start the engagement, then complete set-up: the company, the mode, the areas of the business and the board dates.</p><button class="btn primary" data-act="new">Start the engagement</button>' : '<p class="soft">Triodian or an administrator starts the engagement.</p>'}</div>`;
+    <div class="panel2" style="padding:14px 16px">${can ? '<p>Start the engagement, then complete set-up: the company, the mode, the areas of the business and the board dates.</p><button class="btn primary" data-act="new">Start the engagement</button>' : '<p class="soft">Triodian or an administrator starts the engagement.</p>'}</div>${exampleOffer()}`;
 }
 function mainScreen() {
   const e = S.engagement, locked = !!RULES.deny('mode', me(), S) && RULES.modeLocked(S);
   const why = deny('setup'), whyNote = why ? `<p class="small soft" style="margin:6px 0">${esc(why)}</p>` : '';
   const people = (S.people || []).length ? S.people.map(p => `<div class="panel2" style="padding:10px 14px"><strong>${esc(p.name)}</strong>${p.organisation ? ` <span class="soft">· ${esc(p.organisation)}</span>` : ''}<div class="small soft">${esc(p.roles.map(roleName).join(', '))}</div></div>`).join('') : '<p class="small soft">No one has a role yet.</p>';
   const areas = S.areas.map((a, i) => `<div class="row" style="gap:8px"><input class="in" data-area="${i}" value="${esc(a.name)}" aria-label="Area ${i + 1}" ${why ? 'disabled' : ''}>${why ? '' : `<button class="btn sm ghost" data-act="delArea" data-i="${i}" aria-label="Remove ${esc(a.name)}">Remove</button>`}</div>`).join('');
-  const steps = C.steps.map(s => `<div class="panel2"><div class="row between"><strong><span class="stepid">${s.id}</span>${esc(s.name)}</strong><span class="badge b-grey">Screen to come · task ${esc(s.task)}</span></div><p style="margin:6px 0 2px">${esc(s.question)}</p><p class="small soft" style="margin:0">Answered as: ${esc(s.answeredAs)}${e.mode === 'connected' && s.direction ? ` · Connected: ${esc(s.direction)}` : ''}</p></div>`).join('');
+  const steps = C.steps.map(s => `<details class="pr" id="step-${s.id}" ${UI.open && UI.open[s.id] ? 'open' : ''}><summary style="display:block"><span class="row between" style="width:100%"><strong style="color:var(--ink);font-size:15px"><span class="stepid">${s.id}</span>${esc(s.name)}</strong>${hasContent(s.id) ? '<span class="badge b-green">Recorded</span>' : '<span class="badge b-grey">Not yet</span>'}</span><span style="display:block;margin:6px 0 2px;font-weight:400;color:var(--ink);font-size:14px">${esc(s.question)}</span><span class="small soft" style="font-weight:400">Answered as: ${esc(s.answeredAs)}${e.mode === 'connected' && s.direction ? ` · Connected: ${esc(s.direction)}` : ''}</span></summary><div style="padding:0 20px 16px">${stepBody(s.id)}</div></details>`).join('');
   return `${opening('AI Board Direction', esc(e.company || 'New engagement'), 'Set-up comes first. The ten steps follow, worked through in the workshop and resolved at the next board meeting.')}
   <section class="card"><h2 class="sh">1 · Engagement</h2>${whyNote}<div class="fgrid">
     ${fld('Company', 'engagement.company', e.company)}
@@ -159,7 +227,7 @@ function mainScreen() {
   </div></section>
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">4 · Areas of the business</h2>${why ? '' : '<button class="btn sm" data-act="addArea">Add an area</button>'}</div><p class="small soft">The board sets a posture for each area at B2. Change these to the company's own list.</p><div class="stack" style="gap:8px">${areas}</div></section>
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">5 · People</h2>${SRV.user && SRV.user.isAdmin ? '<a class="btn sm" href="/admin/">Manage in Admin</a>' : ''}</div><p class="small soft">Everyone with a role in this engagement. Roles are given in Admin.</p><div class="stack" style="gap:8px">${people}</div></section>
-  <section class="card"><h2 class="sh">6 · The ten steps</h2><p class="small soft">From the Board AI Appetite Framework, section 4.1. Each step's screen is added in phase 1 of the development plan.</p><div class="steplist">${steps}</div></section>`;
+  <section class="card"><h2 class="sh">6 · The ten steps</h2><p class="small soft">From the Board AI Appetite Framework, section 4.1. Open a step to see what is recorded.${UI.practice ? '' : ' The screens for entering each step are added in phase 1 of the development plan.'}</p><div class="steplist">${steps}</div></section>`;
 }
 function render() {
   const app = document.getElementById('app');
@@ -172,6 +240,7 @@ document.addEventListener('change', ev => {
   if (t.dataset.path) setPath(t.dataset.path, t.value);
   else if (t.dataset.area != null) { if (deny('setup')) return; const a = S.areas[+t.dataset.area], v = t.value.trim(); if (!a || a.name === v) return; const from = a.name; a.name = v; log('edit', 'areas.' + a.id, from, v); }
 });
+document.addEventListener('toggle', ev => { const d = ev.target; if (d && d.id && d.id.startsWith('step-')) { UI.open = UI.open || {}; UI.open[d.id.slice(5)] = d.open; } }, true);
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && UI.drawer) { UI.drawer = false; render(); } });
 document.addEventListener('click', async ev => {
   const b = ev.target.closest('[data-act]');
@@ -179,6 +248,8 @@ document.addEventListener('click', async ev => {
   const act = b.dataset.act;
   if (act === 'acct') { UI.acct = !UI.acct; UI.drawer = false; render(); }
   if (act === 'drawer') { UI.drawer = !UI.drawer; UI.acct = false; render(); }
+  if (act === 'example') { if (!UI.practice) REAL = { S, rev: SRV.rev, exists: SRV.exists }; S = window.BDExample(); UI.practice = true; UI.drawer = false; UI.open = {}; render(); scrollTo(0, 0); }
+  if (act === 'leaveExample') { UI.practice = false; UI.drawer = false; UI.open = {}; if (REAL) { S = REAL.S; SRV.rev = REAL.rev; SRV.exists = REAL.exists; } REAL = null; render(); scrollTo(0, 0); }
   if (act === 'new') { S = blank(); SRV.rev = 0; render(); await save(); if (SRV.exists) await load(); }
   if (act === 'addArea') { const n = S.areas.reduce((m, a) => Math.max(m, +String(a.id).replace(/\D/g, '') || 0), 0) + 1; S.areas.push({ id: 'A' + n, name: 'New area' }); log('add', 'areas.A' + n, null, 'New area'); render(); }
   if (act === 'delArea') { const a = S.areas.splice(+b.dataset.i, 1)[0]; if (a) log('remove', 'areas.' + a.id, a.name, null); render(); }
@@ -193,5 +264,5 @@ document.addEventListener('click', async ev => {
   SRV.user = r.body.user; SRV.site = r.body.site || '';
   await load();
 })();
-window.BDApp = { state: () => S, render };
+window.BDApp = { state: () => S, render, practice: () => UI.practice };
 })();
