@@ -1,13 +1,15 @@
 // Cloudflare Worker configuration for AI Board Direction. Cloudflare reads this file on every deploy from GitHub.
 // Same shape as the AI Confidentiality Exposure Assessment Worker; only the names, addresses and databases differ.
-// No demo sign-in and no demo administrators: this is a client-profile deployment (development plan, task 0.2).
+// Demo sign-in: the shared trio_demo account (DEMO_LOGIN below). Its cookie is checked with DEMO_SESSION_KEY, which is
+// a Worker secret here, not a value in this file (development plan, task 0.1). There are no demo administrators.
 {
   "name": "board-direction",
   "main": "src/worker.js",
   "compatibility_date": "2026-10-01",
-  "assets": { "directory": "./public", "binding": "ASSETS" },
+  // run_worker_first: every request reaches src/worker.js first, so pages can require sign-in (lib/identity/session.js).
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": true },
 
-  // Only reachable at the custom domain (behind Cloudflare Access sign-in).
+  // Only reachable at the custom domain. People sign in at /login; Cloudflare Access guards /auth/email only.
   // The default workers.dev address and preview addresses are switched off.
   "workers_dev": false,
   "preview_urls": false,
@@ -26,7 +28,7 @@
   // To hold messages instead of sending, set NOTIFY_SENDING to "off".
   "send_email": [{ "name": "EMAIL" }],
 
-  "vars": { "NOTIFY_SENDING": "on", "NOTIFY_FROM": "notifications@triodian.com" },
+  "vars": { "DEMO_LOGIN": "[{\"username\": \"trio_demo\", \"email\": \"demo@triodian.com\", \"hash\": \"pbkdf2-sha256$100000$ae_ndll6YbjpSddRDhFBLg$HAVf7tKSohiJck-ohKQ1KYft_e1YpCuWF8xcJgmjNqM\", \"anyCharAt\": [3]}]", "NOTIFY_SENDING": "on", "NOTIFY_FROM": "notifications@triodian.com" },
 
   // Test copy with its own database. Deployed with `npx wrangler deploy --env test` from the `test` branch.
   "env": {
@@ -38,7 +40,7 @@
       "d1_databases": [
         { "binding": "DB", "database_name": "board-direction-test-db", "database_id": "fca13599-7382-47ec-8b61-e1c2af45aa22" }
       ],
-      "vars": { "SITE_LABEL": "Test site", "SITE_URL": "https://board-direction-test.triodian.com", "NOTIFY_SENDING": "on", "NOTIFY_FROM": "notifications@triodian.com" },
+      "vars": { "DEMO_LOGIN": "[{\"username\": \"trio_demo\", \"email\": \"demo@triodian.com\", \"hash\": \"pbkdf2-sha256$100000$ae_ndll6YbjpSddRDhFBLg$HAVf7tKSohiJck-ohKQ1KYft_e1YpCuWF8xcJgmjNqM\", \"anyCharAt\": [3]}]", "SITE_LABEL": "Test site", "SITE_URL": "https://board-direction-test.triodian.com", "NOTIFY_SENDING": "on", "NOTIFY_FROM": "notifications@triodian.com" },
       "send_email": [{ "name": "EMAIL" }],
       "triggers": { "crons": ["0 21 * * *"] },
       "observability": { "enabled": true }

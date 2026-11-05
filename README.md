@@ -18,7 +18,8 @@ server-side save check are in place. The step screens, checks and outputs come i
 - `src/worker.js` – Cloudflare entry point
 - `lib/core/` – cloud-neutral API (`api.js`), the server-side save check (`rbac.js`), versions, the next review
   (`review.js`), notifications, three-way merge
-- `lib/identity/cloudflare-access.js` – verifies the Cloudflare Access sign-in
+- `lib/identity/session.js` – the `/login` page's sign-in, sessions and the page gate; `lib/identity/cloudflare-access.js` verifies the Access token on `/auth/email`
+- `public/login/` – the sign-in page
 - `lib/store/d1.js` – database access (Cloudflare D1)
 - `lib/config.js` – Access team domain and AUD tag, first administrator
 - `wrangler.jsonc` – Worker configuration: `board-direction.triodian.com` (database `board-direction-db`) and the test
@@ -43,7 +44,7 @@ Done for `board-direction`: databases created, Access application created and it
 Connect the repository to Cloudflare Workers Builds (`main` → live, `test` → test site with `--env test`). The first
 person in `BOOTSTRAP_ADMINS` to sign in becomes the administrator and adds everyone else in Admin.
 
-There is no demo sign-in and no demo administrator on this app (development plan, task 0.2).
+People sign in at `/login`: with email (Cloudflare Access guards `/auth/email` only, then the app keeps its own 12-hour session) or with the shared demo account trio_demo. The demo cookie is checked with `DEMO_SESSION_KEY`, a Worker secret on this app (the same value as the other Triodian apps), not a value in `wrangler.jsonc`. There are no demo administrators: add demo@triodian.com in Admin to give the demo account a role.
 
 ## Tests
 ```

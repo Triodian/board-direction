@@ -93,7 +93,7 @@ function header() {
     <span class="vrule" aria-hidden="true"></span><span class="apptitle">Board Direction</span>
     <div class="hdr-r">${saveChip()}${u ? `<span class="acct"><button class="avatar-link" data-act="acct" aria-haspopup="menu" aria-expanded="${UI.acct}" aria-label="Account: ${esc(u.name || u.email)}"><span class="avatar" aria-hidden="true">${esc(initials(u.name || u.email))}</span></button>${UI.acct ? `<div class="acct-menu" role="menu">
       <div class="acct-who"><span class="avatar" aria-hidden="true">${esc(initials(u.name || u.email))}</span><div><strong>${esc(u.name || u.email)}</strong><div class="small soft">${esc(roles || 'No role in this engagement')}${u.isAdmin ? ' · administrator' : ''}</div></div></div>
-      <a role="menuitem" class="item" href="/profile/">Your profile</a>${u.isAdmin ? '<a role="menuitem" class="item" href="/admin/">Admin · users and activity</a>' : ''}<a role="menuitem" class="item" href="/user-guide/">User guide</a></div>` : ''}</span>` : ''}<button class="iconbtn" data-act="drawer" aria-label="Menu" aria-expanded="${UI.drawer}">☰</button></div>
+      <a role="menuitem" class="item" href="/profile/">Your profile</a>${u.isAdmin ? '<a role="menuitem" class="item" href="/admin/">Admin · users and activity</a>' : ''}<a role="menuitem" class="item" href="/user-guide/">User guide</a><a role="menuitem" class="item signout" href="/auth/logout">Sign out</a></div>` : ''}</span>` : ''}<button class="iconbtn" data-act="drawer" aria-label="Menu" aria-expanded="${UI.drawer}">☰</button></div>
   </div>${e ? `<div class="docband"><div class="docband-in">${priv}<span class="stat"><strong>${esc(e.company || '[company not set]')}</strong> · ${esc((C.modes.find(m => m.id === e.mode) || {}).name || '')} mode</span></div></div>` : ''}</header>
   ${SRV.site ? `<div class="examplebar" style="background:#FDF0E1;color:#8A4B08;border-color:#F0D2AE">${esc(SRV.site)}: a test site for trying things out, not the live engagement</div>` : ''}`;
 }
@@ -107,6 +107,7 @@ function drawer() {
     <div class="grp">Account</div>
     ${u ? `<p class="small soft" style="padding:0 10px">Signed in as ${esc(u.email)}</p><a class="item" href="/profile/" style="text-decoration:none">Your profile</a>${u.isAdmin ? '<a class="item" href="/admin/" style="text-decoration:none">Admin · users and activity</a>' : ''}` : ''}
     <a class="item" href="/user-guide/" style="text-decoration:none">User guide</a>
+    <a class="item" href="/auth/logout" style="text-decoration:none">Sign out</a>
     <div class="grp">Apps</div>
     ${app('obligations-atlas', 'OA', '#E3E9EF', 'var(--navy)', 'AI Obligations Atlas', 'Obligations by jurisdiction, tier and use case')}
     <div class="item" aria-current="page"><span class="appic" style="background:var(--green-bg);color:var(--green)">BD</span><span>AI Board Direction<br><span class="small soft">Board steps B0 to B9: directions for the appetite, or the whole appetite for an unregulated company</span></span><span class="badge b-green" style="margin-left:auto">now</span></div>
@@ -128,7 +129,7 @@ function fld(label, path, value, o) {
 /* ---------- screens ---------- */
 function entryScreen() {
   if (!SRV.checked) return '<p class="soft">Connecting…</p>';
-  if (!SRV.user) return `${opening('AI Board Direction', 'No access yet', '')}<div class="panel2" role="status" style="padding:12px 14px">${esc(SRV.reason || 'You have not been given access to this app.')}</div>`;
+  if (!SRV.user) return `${opening('AI Board Direction', 'No access yet', '')}<div class="panel2" role="status" style="padding:12px 14px">${esc(SRV.reason || 'You have not been given access to this app.')} <a href="/auth/logout">Sign out</a></div>`;
   const can = !RULES.deny('setup', me(), null);
   return `${opening('AI Board Direction', 'No engagement yet', 'This site holds one board engagement. It has not been started.')}
     <div class="panel2" style="padding:14px 16px">${can ? '<p>Start the engagement, then complete set-up: the company, the mode, the areas of the business and the board dates.</p><button class="btn primary" data-act="new">Start the engagement</button>' : '<p class="soft">Triodian or an administrator starts the engagement.</p>'}</div>`;
