@@ -61,7 +61,7 @@ const exampleLeft = () => { try { return sessionStorage.getItem(EX_LEFT) === '1'
 const markExampleLeft = left => { try { if (left) sessionStorage.setItem(EX_LEFT, '1'); else sessionStorage.removeItem(EX_LEFT); } catch (e) {} };
 const openExampleByDefault = () => !exampleLeft() && location.hash !== '#actions';
 /* Opens the worked example: a fictional company, board and advisers, never saved. */
-function openExample() { if (!UI.practice) REAL = { S, rev: SRV.rev, exists: SRV.exists }; S = window.BDExample(); UI.practice = true; UI.drawer = false; UI.open = {}; render(); }
+function openExample() { if (!UI.practice) REAL = { S, rev: SRV.rev, exists: SRV.exists }; S = window.BDExample(); UI.practice = true; UI.drawer = false; UI.open = {}; UI.editLine = ""; UI.confirmDel = ""; render(); }
 /* ---------- saving ---------- */
 function queueSave() { if (UI.practice) return; SRV.state = 'unsaved'; paintSave(); clearTimeout(timer); timer = setTimeout(save, 700); }
 async function save() {
@@ -167,6 +167,137 @@ function reality() {
   });
   return out;
 }
+/* ---------- B1: the AI inventory (framework section 5.2) and the automated-decision worklist (BO5, section 8.5) ----------
+   The CEO and Triodian add and edit lines. In the worked example anyone can try it; nothing is saved.
+   Marking a line as making decisions about individuals (field 8) raises a question to counsel and puts the line
+   on the worklist. Field 8 records the fact only: whether the Privacy Act requirement is engaged is counsel's call. */
+const INV_REQUIRED = [['use', 'use'], ['tool', 'tool'], ['area', 'area'], ['who', 'who uses it'], ['authority', 'authority'], ['info', 'information'], ['kind', 'tool kind'], ['owner', 'owner'], ['source', 'source']];
+const invWhy = () => UI.practice ? '' : deny('inventory');
+const todayISO = () => new Date().toLocaleDateString('en-CA');
+const myId = () => UI.practice ? 'p-rec' : (SRV.user || {}).id || '';
+const myName = () => UI.practice ? 'Lee Chan' : ((SRV.user || {}).name || (SRV.user || {}).email || '');
+const missing = l => INV_REQUIRED.filter(([k]) => !String(l[k] || '').trim()).map(x => x[1]);
+const lineQuestion = l => (S.questions || []).find(q => (q.lines || []).includes(l.id));
+const admLines = () => (S.inventory || []).filter(l => l.adm);
+const qBadge = q => q ? `${refTip(q.ref)} ${q.status === 'answered' ? '<span class="badge b-green">Answered</span>' : '<span class="badge b-ochre">Open</span>'}` : '<span class="soft">None yet</span>';
+function invForm(l) {
+  const fid = k => `inv_${l.id}_${k}`;
+  const f = (k, label, ctl, help) => `<label class="f" for="${fid(k)}"><span>${label}</span>${ctl}${help ? `<span class="small soft" style="font-weight:400">${help}</span>` : ''}</label>`;
+  const inp = (k, label, ph, help) => f(k, label, `<input class="in" id="${fid(k)}" data-inv="${l.id}" data-k="${k}" value="${esc(l[k] || '')}" placeholder="${esc(ph || '')}"${k === 'who' ? ' list="inv_who"' : ''}>`, help);
+  const sel = (k, label, opts, help) => f(k, label, `<select class="in" id="${fid(k)}" data-inv="${l.id}" data-k="${k}">${[['', 'Choose…'], ...opts].map(o => `<option value="${esc(o[0])}" ${String(l[k] || '') === String(o[0]) ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select>`, help);
+  const people = (S.people || []).filter(p => p.active !== false).map(p => [p.id, p.name]);
+  const q = lineQuestion(l), del = UI.confirmDel === l.id;
+  return `<div class="panel2" id="invedit" style="padding:14px 16px;margin:10px 0"><div class="row between"><strong>Line ${esc(l.id)}</strong><span class="small soft">Fields 1 to 10 of framework section 5.2</span></div>
+    <div class="fgrid" style="margin-top:8px">
+      ${inp('use', '1 · Use', 'What it does, in one line')}
+      ${inp('tool', '2 · Tool and provider', 'Name, or “a provider’s own AI”')}
+      ${sel('area', '3 · Area', S.areas.map(a => [a.id, a.name]))}
+      ${inp('who', '4 · Who uses it', 'Staff, a provider for us, customers directly')}
+      ${sel('authority', '5 · Authority', SC.authority.map(r => [r[0], `${r[0]} ${r[1]}: ${r[2]}`]))}
+      ${sel('info', '6 · Information it sees (highest class)', SC.infoClass.map(r => [r[0], `${r[0]} ${r[1]}`]))}
+      ${sel('kind', '7 · Tool kind', SC.toolKind.map(r => [r[0], `${r[0]} ${r[1]}`]))}
+      ${sel('owner', '9 · Owner', people, people.length ? '' : 'No one has a role yet. Roles are given in Admin.')}
+      ${inp('source', '10 · Source', 'Who said so, and when')}
+    </div>
+    <datalist id="inv_who"><option value="Staff"><option value="A provider for us"><option value="Customers directly"></datalist>
+    <div style="margin-top:12px"><label style="display:flex;flex-wrap:nowrap;gap:10px;align-items:flex-start;cursor:pointer" for="${fid('adm')}"><input type="checkbox" id="${fid('adm')}" data-inv="${l.id}" data-k="adm" ${l.adm ? 'checked' : ''} style="margin-top:4px;flex:0 0 auto;width:16px;height:16px"><span style="flex:1 1 auto"><strong>8 · Decisions about individuals.</strong> This use makes, or substantially contributes to, a decision about a person using their personal information.<br><span class="small soft">Records the fact only. A yes raises a question to counsel and puts the line on the automated-decision worklist. Counsel decides what it means for the privacy policy.</span></span></label></div>
+    ${l.adm ? `<div class="fgrid" style="margin-top:8px">${inp('decisions', 'Kinds of decision', 'For example: which applicants go forward to interview')}${inp('personalInfo', 'Personal information it uses', 'By kind, for example: CVs, work history')}</div><p class="small" style="margin:6px 0 0">Question to counsel: ${qBadge(q)}</p>` : ''}
+    <div class="row" style="gap:8px;margin-top:14px"><button class="btn primary sm" data-act="doneLine">Done</button><button class="btn sm ghost" data-act="delLine" data-id="${l.id}">${del ? 'Confirm: remove this line' : 'Remove this line'}</button>${del ? '<button class="btn sm ghost" data-act="keepLine">Keep it</button>' : ''}</div>
+  </div>`;
+}
+function worklist() {
+  const ls = admLines();
+  if (!ls.length) return '';
+  return `<div style="margin-top:16px"><div class="row between"><p class="mini" style="margin:0">${tip('Automated-decision worklist', 'BO5 · Every line marked yes in field 8, for the GC. A list of facts for counsel’s review of the privacy policy against APPs 1.7 to 1.9. It states no conclusion on what the policy must say.')} · for counsel</p><button class="btn sm" data-act="worklistDocx">Download as Word</button></div>`
+    + table(['Line', 'Use', 'Area', 'Kinds of decision', 'Personal information used', 'Owner', 'Question to counsel'], ls.map(l => [refTip(l.id), esc(l.use), esc(areaName(l.area)), l.decisions ? esc(l.decisions) : '<span class="soft">Not recorded</span>', l.personalInfo ? esc(l.personalInfo) : '<span class="soft">Not recorded</span>', esc(pname(l.owner)), qBadge(lineQuestion(l))]))
+    + '<p class="small soft">Field 8 records the fact only. Whether the requirement is engaged is counsel’s determination.</p></div>';
+}
+function inventoryBody() {
+  const inv = S.inventory || [], why = invWhy(), can = !why;
+  const head = ['Line', 'Use', 'Area', 'Authority', 'Sees', 'Tool kind', { html: tip('About individuals', C.tips.adm) }, 'Owner'];
+  const rows = inv.map(l => { const m = missing(l); return [refTip(l.id) + (m.length ? `<br>${tip('Incomplete', 'Still to record: ' + m.join(', ') + '.', 'badge b-grey')}` : ''), esc(l.use || '') + `<br><span class="small soft">${[l.tool, l.who, l.source].filter(Boolean).map(esc).join(' · ')}</span>`, esc(l.area ? areaName(l.area) : ''), l.authority ? authTip(l.authority) : '', l.info ? classTip(l.info) : '', l.kind ? kindTip(l.kind) : '', l.adm ? '<span class="badge b-ochre">Yes · to counsel</span>' : 'No', esc(pname(l.owner))].concat(can ? [`<button class="btn sm ghost" data-act="editLine" data-id="${l.id}" aria-label="Edit line ${l.id}">${UI.editLine === l.id ? 'Editing' : 'Edit'}</button>`] : []); });
+  const editing = can && inv.find(l => l.id === UI.editLine);
+  const intro = !inv.length ? `<p class="small" style="margin:4px 0 8px">One line per AI use, 10 to 20 lines, supplied by the CEO or the people they nominate. Start with:</p><ul class="small" style="margin:0 0 8px 18px"><li>Which AI tools have we licensed, and which do staff use without a licence?</li><li>Which of our providers use AI in the work they do for us?</li></ul>${!UI.practice && !RULES.modeLocked(S) ? `<p class="small soft">The mode (${esc(lbl(C.modes.map(m => [m.id, m.name]), S.engagement.mode))}) is fixed once the first line is added.</p>` : ''}` : '';
+  const n = inv.length, count = n ? `<p class="small soft" style="margin:4px 0">${n} line${n === 1 ? '' : 's'}${n < 10 ? ' · the framework expects 10 to 20' : n > 20 ? ' · more than the 20 the framework expects; consider grouping similar uses' : ''}</p>` : '';
+  return intro + count + table(can ? head.concat(['']) : head, rows) + (editing ? invForm(editing) : '')
+    + (can ? `<div class="row" style="gap:8px;margin:8px 0"><button class="btn sm" data-act="addLine">Add a line</button>${inv.length ? '<button class="btn sm ghost" data-act="inventoryCsv">Download as CSV</button>' : ''}${UI.practice ? '<span class="small soft">Worked example: try it. Nothing is saved.</span>' : ''}</div>` : (inv.length ? '<div class="row" style="margin:8px 0"><button class="btn sm ghost" data-act="inventoryCsv">Download as CSV</button></div>' : (!why ? '' : `<p class="small soft">${esc(why)}</p>`)))
+    + worklist();
+}
+/* A question to counsel for a line marked yes in field 8, once per line. Returns its ref, or '' if one exists. */
+function raiseADM(l) {
+  if (lineQuestion(l)) return '';
+  S.questions = S.questions || [];
+  const n = S.questions.reduce((m, q) => Math.max(m, +String(q.ref).replace(/\D/g, '') || 0), 0) + 1, ref = 'QC-' + String(n).padStart(2, '0');
+  S.questions.push({ ref, step: 'B1', lines: [l.id], question: `Line ${l.id}${l.use ? ' (' + l.use + ')' : ''} is recorded as making, or substantially contributing to, decisions about individuals. Does the privacy policy need to describe it under APPs 1.7 to 1.9, which apply from 10 December 2026?`, status: 'open', response: '', sentOn: todayISO(), raisedBy: myId() });
+  log('add', 'questions.' + ref, null, 'open');
+  return ref;
+}
+function setInv(id, k, v) {
+  const why = invWhy(); if (why) { toast(why); render(); return; }
+  const l = (S.inventory || []).find(x => x.id === id); if (!l) return;
+  const from = l[k]; if (from === v) return;
+  l[k] = v; log('edit', `inventory.${id}.${k}`, from == null ? null : from, v);
+  if (k === 'adm') {
+    if (v) { const ref = raiseADM(l); toast(ref ? `${ref} raised to counsel on line ${id}. The line is on the worklist.` : `Line ${id} is back on the worklist. Its question to counsel is already raised.`); }
+    else { const q = lineQuestion(l); toast(`Line ${id} is off the worklist.` + (q && q.status !== 'answered' ? ` ${q.ref} stays open for counsel to close.` : '')); }
+  }
+  rerender();
+}
+/* Redraw after a change without losing the place: keep the scroll position and the field the person moved to. */
+function rerender() { setTimeout(() => { const a = document.activeElement, fid = a && a.id, y = scrollY; render(); scrollTo(0, y); if (fid) { const el = document.getElementById(fid); if (el) el.focus(); } }, 0); }
+function worklistMarkdown() {
+  const e = S.engagement, cell = v => String(v == null ? '' : v).replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  const resolved = RULES.isResolved(S), firm = (e.practitioner || {}).firm, line = (e.practitioner || {}).line;
+  const out = [];
+  if (String(e.privilegeMarking || '').trim()) out.push(e.privilegeMarking.trim(), '');
+  out.push('# Automated-decision worklist', '',
+    `**${cell(e.company || '[company]')}**${e.reference ? ' · ' + cell(e.reference) : ''} · ${resolved ? 'As resolved' : 'Draft'}, ${dl(todayISO())}`, '');
+  if (firm) out.push(cell(line || ('Prepared by ' + firm)), '');
+  out.push('Every line of the AI inventory (B1) recorded as making, or substantially contributing to, a decision about an individual using their personal information. It is a list of facts for counsel’s review of the privacy policy against APPs 1.7 to 1.9, which apply from 10 December 2026. It states no conclusion on what the policy must say.', '',
+    '| Line | Use | Area | Kinds of decision | Personal information used | Owner | Question to counsel |', '| --- | --- | --- | --- | --- | --- | --- |');
+  admLines().forEach(l => { const q = lineQuestion(l); out.push(`| ${cell(l.id)} | ${cell(l.use)} | ${cell(l.area ? areaName(l.area) : '')} | ${cell(l.decisions || 'Not recorded')} | ${cell(l.personalInfo || 'Not recorded')} | ${cell(pname(l.owner))} | ${q ? cell(q.ref + ', ' + (q.status === 'answered' ? 'answered' : 'open')) : 'None yet'} |`); });
+  const qs = admLines().map(lineQuestion).filter(Boolean).filter((q, i, a) => a.indexOf(q) === i);
+  if (qs.length) { out.push('', '## Questions to counsel', ''); qs.forEach(q => out.push(`- **${cell(q.ref)}** (raised ${dl(q.sentOn)}). ${cell(q.question)}${q.response ? ' *Counsel’s answer:* ' + cell(q.response) : ' *Not yet answered.*'}`)); }
+  out.push('', '## Sources', '');
+  admLines().forEach(l => out.push(`- ${cell(l.id)}: ${cell(l.source || 'Not recorded')}`));
+  return out.join('\n');
+}
+function saveBlob(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
+/* The inventory as CSV: one row per line, codes and their names, for the CEO's working list or a spreadsheet. */
+function downloadInventoryCsv() {
+  const q = v => { const t = String(v == null ? '' : v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const head = ['Line', 'Use', 'Tool and provider', 'Area', 'Who uses it', 'Authority', 'Information it sees', 'Tool kind', 'Decisions about individuals', 'Kinds of decision', 'Personal information used', 'Owner', 'Source', 'Question to counsel'];
+  const rows = (S.inventory || []).map(l => { const qq = lineQuestion(l); return [l.id, l.use, l.tool, l.area ? areaName(l.area) : '', l.who, l.authority ? l.authority + ' ' + lbl(SC.authority, l.authority) : '', l.info ? l.info + ' ' + lbl(SC.infoClass, l.info) : '', l.kind ? l.kind + ' ' + lbl(SC.toolKind, l.kind) : '', l.adm ? 'Yes' : 'No', l.adm ? l.decisions : '', l.adm ? l.personalInfo : '', pname(l.owner), l.source, qq ? qq.ref + ' (' + qq.status + ')' : '']; });
+  const e = S.engagement, lines = [];
+  if (String(e.privilegeMarking || '').trim()) lines.push(q(e.privilegeMarking.trim()));
+  lines.push(head.map(q).join(','), ...rows.map(r => r.map(q).join(',')));
+  saveBlob(new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }), `AI inventory${e.company ? ' - ' + e.company.replace(/[\\/:*?"<>|]/g, '') : ''}.csv`);
+  toast('CSV downloaded');
+}
+/* Your actions: what is waiting on the signed-in person. The GC answers questions to counsel here. */
+function actionsPanel() {
+  if (UI.practice || !SRV.user) return '';
+  const u = me(), items = [];
+  if (!RULES.deny('answer', u, S)) (S.questions || []).filter(q => q.status !== 'answered').forEach(q => {
+    const v = (UI.answer || {})[q.ref] || '';
+    items.push(`<div class="panel2" style="padding:12px 14px" id="act-${esc(q.ref)}"><div class="row between"><strong>${refTip(q.ref)} · question to counsel${q.step ? ' at ' + esc(q.step) : ''}</strong><span class="small soft">Raised ${esc(dl(q.sentOn))}${q.raisedBy ? ' by ' + esc(pname(q.raisedBy)) : ''}</span></div><p style="margin:6px 0">${esc(q.question)}</p>
+      <label class="f" for="ans_${esc(q.ref)}"><span>Counsel’s answer</span><textarea class="in" id="ans_${esc(q.ref)}" data-ans="${esc(q.ref)}" rows="2">${esc(v)}</textarea></label>
+      <div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="answerQ" data-ref="${esc(q.ref)}">Record the answer</button></div></div>`);
+  });
+  if (!RULES.deny('inventory', u, S)) {
+    const inc = (S.inventory || []).filter(l => missing(l).length);
+    if (inc.length) items.push(`<div class="panel2" style="padding:12px 14px"><strong>AI inventory (B1): ${inc.length} line${inc.length === 1 ? '' : 's'} to complete</strong><p class="small" style="margin:6px 0 0">${inc.map(l => `${esc(l.id)}: ${esc(missing(l).join(', '))}`).join('<br>')}</p><div class="row" style="margin-top:8px"><button class="btn sm" data-act="goB1">Open the inventory</button></div></div>`);
+  }
+  return `<section class="card" id="actions"><h2 class="sh">Your actions</h2>${items.length ? `<div class="stack" style="gap:8px">${items.join('')}</div>` : '<p class="small soft" style="margin:0">Nothing is waiting on you.</p>'}</section>`;
+}
+function downloadWorklist() {
+  if (!window.RAFExport) { toast('The Word export did not load. Reload the page and try again.'); return; }
+  const e = S.engagement;
+  toast('Preparing the Word document…');
+  window.RAFExport.toDocx(worklistMarkdown(), { insurer: e.company, reference: e.reference, creator: (e.practitioner || {}).firm || 'Triodian', wide: true }).then(blob => {
+    saveBlob(blob, `Automated-decision worklist${e.company ? ' - ' + e.company.replace(/[\\/:*?"<>|]/g, '') : ''}.docx`); toast('Word document downloaded');
+  }, err => toast('The Word document could not be made: ' + (err && err.message || err)));
+}
 function stepBody(id) {
   const e = S.engagement, qs = (S.questions || []).filter(q => q.step === id);
   const questions = qs.length ? `<p class="mini" style="margin:12px 0 4px">Questions to counsel</p>` + table(['Ref', 'Question', 'Status', 'Counsel’s answer'], qs.map(q => [refTip(q.ref), esc(q.question) + '<br>' + by(q.raisedBy), q.status === 'answered' ? '<span class="badge b-green">Answered</span>' : '<span class="badge b-ochre">Open</span>', esc(q.response || '')])) : '';
@@ -176,7 +307,7 @@ function stepBody(id) {
     h = `<dl class="kv"><dt>Company</dt><dd>${esc(e.company || '—')} · ${esc(lbl(C.entityTypes, e.entityType) || '—')} · ${esc(lbl(C.jurisdictions, e.jurisdiction))}</dd><dt>Mode</dt><dd>${esc(lbl(C.modes.map(m => [m.id, m.name]), e.mode))}</dd><dt>Scope agreed</dt><dd>${sa.gcBy ? 'GC: ' + esc(pname(sa.gcBy)) + ', ' + esc(dl(sa.gcOn)) : 'GC: not yet'} · ${sa.chairBy ? 'Chair: ' + esc(pname(sa.chairBy)) + ', ' + esc(dl(sa.chairOn)) : 'Chair: not yet'}</dd></dl>`
       + (mb ? `<p class="mini" style="margin:12px 0 4px">Obligations in scope, from the Atlas matter brief (${esc(mb.scope)})</p>` + table(['Tier', 'References'], mb.tiers.map(t => [esc(t.tier), t.refs.length ? t.refs.map(r => `<span class="mono">${esc(r[0])}</span> ${esc(r[1])}`).join('<br>') : '<span class="soft">None</span>'])) + '<p class="small soft">The brief lists what sources say by tier. Counsel decides what applies.</p>' : '<p class="small soft">No Atlas matter brief imported yet.</p>');
   } else if (id === 'B1') {
-    h = table(['Line', 'Use', 'Area', 'Authority', 'Sees', 'Tool kind', { html: tip('About individuals', C.tips.adm) }, 'Owner'], (S.inventory || []).map(l => [refTip(l.id), esc(l.use) + `<br><span class="small soft">${esc(l.tool)} · ${esc(l.who)} · ${esc(l.source)}</span>`, esc(areaName(l.area)), authTip(l.authority), classTip(l.info), kindTip(l.kind), l.adm ? '<span class="badge b-ochre">Yes · to counsel</span>' : 'No', esc(pname(l.owner))]));
+    h = inventoryBody();
   } else if (id === 'B2') {
     const b2 = pos('B2');
     h = table(['Area', 'Posture', 'Condition', 'Proposed by'], S.areas.filter(a => b2[a.id]).map(a => { const x = b2[a.id]; return [esc(a.name), `<strong>${esc(lbl(SC.posture, x.posture))}</strong><br><span class="small soft">${esc((SC.posture.find(r => r[0] === x.posture) || [])[2] || '')}</span>`, esc(x.condition || ''), by(x.proposedBy)]; }));
@@ -223,6 +354,7 @@ function mainScreen() {
   const areas = S.areas.map((a, i) => `<div class="row" style="gap:8px"><input class="in" data-area="${i}" value="${esc(a.name)}" aria-label="Area ${i + 1}" ${why ? 'disabled' : ''}>${why ? '' : `<button class="btn sm ghost" data-act="delArea" data-i="${i}" aria-label="Remove ${esc(a.name)}">Remove</button>`}</div>`).join('');
   const steps = C.steps.map(s => `<details class="pr" id="step-${s.id}" ${UI.open && UI.open[s.id] ? 'open' : ''}><summary style="display:block"><span class="row between" style="width:100%"><strong style="color:var(--ink);font-size:15px"><span class="stepid">${s.id}</span>${esc(s.name)}</strong>${hasContent(s.id) ? '<span class="badge b-green">Recorded</span>' : '<span class="badge b-grey">Not yet</span>'}</span><span style="display:block;margin:6px 0 2px;font-weight:400;color:var(--ink);font-size:14px">${esc(s.question)}</span><span class="small soft" style="font-weight:400">Answered as: ${esc(s.answeredAs)}${e.mode === 'connected' && s.direction ? ` · Connected: ${esc(s.direction)}` : ''}</span></summary><div style="padding:0 20px 16px">${stepBody(s.id)}</div></details>`).join('');
   return `${opening('AI Board Direction', esc(e.company || 'New engagement'), 'Set-up comes first. The ten steps follow, worked through in the workshop and resolved at the next board meeting.')}
+  ${actionsPanel()}
   <section class="card"><h2 class="sh">1 · Engagement</h2>${whyNote}<div class="fgrid">
     ${fld('Company', 'engagement.company', e.company)}
     ${fld('Entity type', 'engagement.entityType', e.entityType, { select: [['', 'Choose…'], ...C.entityTypes] })}
@@ -241,7 +373,7 @@ function mainScreen() {
   </div></section>
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">4 · Areas of the business</h2>${why ? '' : '<button class="btn sm" data-act="addArea">Add an area</button>'}</div><p class="small soft">The board sets a posture for each area at B2. Change these to the company's own list.</p><div class="stack" style="gap:8px">${areas}</div></section>
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">5 · People</h2>${SRV.user && SRV.user.isAdmin ? '<a class="btn sm" href="/admin/">Manage in Admin</a>' : ''}</div><p class="small soft">Everyone with a role in this engagement. Roles are given in Admin.</p><div class="stack" style="gap:8px">${people}</div></section>
-  <section class="card"><h2 class="sh">6 · The ten steps</h2><p class="small soft">From the Board AI Appetite Framework, section 4.1. Open a step to see what is recorded.${UI.practice ? '' : ' The screens for entering each step are added in phase 1 of the development plan.'}</p><div class="steplist">${steps}</div></section>`;
+  <section class="card"><h2 class="sh">6 · The ten steps</h2><p class="small soft">From the Board AI Appetite Framework, section 4.1. Open a step to see what is recorded.${UI.practice ? ' In the worked example you can try the AI inventory (B1): add or change a line. Nothing is saved.' : ' The AI inventory (B1) can be entered now. The screens for the other steps are added in phase 1 of the development plan.'}</p><div class="steplist">${steps}</div></section>`;
 }
 function render() {
   const app = document.getElementById('app');
@@ -252,6 +384,8 @@ function render() {
 document.addEventListener('change', ev => {
   const t = ev.target;
   if (t.dataset.path) setPath(t.dataset.path, t.value);
+  else if (t.dataset.ans) { UI.answer = UI.answer || {}; UI.answer[t.dataset.ans] = t.value; }
+  else if (t.dataset.inv) setInv(t.dataset.inv, t.dataset.k, t.type === 'checkbox' ? t.checked : (t.tagName === 'SELECT' ? t.value : t.value.trim()));
   else if (t.dataset.area != null) { if (deny('setup')) return; const a = S.areas[+t.dataset.area], v = t.value.trim(); if (!a || a.name === v) return; const from = a.name; a.name = v; log('edit', 'areas.' + a.id, from, v); }
 });
 document.addEventListener('toggle', ev => { const d = ev.target; if (d && d.id && d.id.startsWith('step-')) { UI.open = UI.open || {}; UI.open[d.id.slice(5)] = d.open; } }, true);
@@ -282,9 +416,42 @@ document.addEventListener('click', async ev => {
   if (act === 'acct') { UI.acct = !UI.acct; UI.drawer = false; render(); }
   if (act === 'drawer') { UI.drawer = !UI.drawer; UI.acct = false; render(); }
   if (act === 'example') { markExampleLeft(false); openExample(); scrollTo(0, 0); }
-  if (act === 'leaveExample') { markExampleLeft(true); UI.practice = false; UI.drawer = false; UI.open = {}; if (REAL) { S = REAL.S; SRV.rev = REAL.rev; SRV.exists = REAL.exists; } REAL = null; render(); scrollTo(0, 0); }
+  if (act === 'leaveExample') { markExampleLeft(true); UI.practice = false; UI.drawer = false; UI.open = {}; UI.editLine = ""; UI.confirmDel = ""; if (REAL) { S = REAL.S; SRV.rev = REAL.rev; SRV.exists = REAL.exists; } REAL = null; render(); scrollTo(0, 0); }
   if (act === 'new') { S = blank(); SRV.rev = 0; render(); await save(); if (SRV.exists) await load(); }
   if (act === 'addArea') { const n = S.areas.reduce((m, a) => Math.max(m, +String(a.id).replace(/\D/g, '') || 0), 0) + 1; S.areas.push({ id: 'A' + n, name: 'New area' }); log('add', 'areas.A' + n, null, 'New area'); render(); }
+  if (act === 'addLine') {
+    const why = invWhy(); if (why) { toast(why); return; }
+    S.inventory = S.inventory || [];
+    const first = !S.inventory.length, n = S.inventory.reduce((m, l) => Math.max(m, +String(l.id).replace(/\D/g, '') || 0), 0) + 1;
+    const l = { id: 'L' + n, use: '', tool: '', area: '', who: '', authority: '', info: '', kind: '', adm: false, owner: '', source: `${myName()}, ${dl(todayISO())}`, decisions: '', personalInfo: '' };
+    S.inventory.push(l); log('add', 'inventory.' + l.id, null, 'added');
+    UI.editLine = l.id; UI.confirmDel = ''; UI.open = UI.open || {}; UI.open.B1 = true; render();
+    const el = document.getElementById(`inv_${l.id}_use`); if (el) el.focus();
+    if (first && !UI.practice) toast(`Line ${l.id} added. The mode is now fixed as ${lbl(C.modes.map(m => [m.id, m.name]), S.engagement.mode).toLowerCase()}.`);
+  }
+  if (act === 'editLine') { UI.editLine = UI.editLine === b.dataset.id ? '' : b.dataset.id; UI.confirmDel = ''; render(); const el = document.getElementById(`inv_${UI.editLine}_use`); if (el) { el.focus({ preventScroll: true }); document.getElementById('invedit').scrollIntoView({ block: 'center' }); } }
+  if (act === 'doneLine') { UI.editLine = ''; UI.confirmDel = ''; render(); }
+  if (act === 'keepLine') { UI.confirmDel = ''; render(); }
+  if (act === 'delLine') {
+    const id = b.dataset.id; if (invWhy()) { toast(invWhy()); return; }
+    if (UI.confirmDel !== id) { UI.confirmDel = id; render(); return; }
+    const i = S.inventory.findIndex(l => l.id === id); if (i < 0) return;
+    const l = S.inventory.splice(i, 1)[0], q = lineQuestion(l); log('remove', 'inventory.' + id, l.use || id, null);
+    UI.editLine = ''; UI.confirmDel = ''; render();
+    toast(`Line ${id} removed.` + (q && q.status !== 'answered' ? ` ${q.ref} stays open for counsel to close.` : ''));
+  }
+  if (act === 'worklistDocx') downloadWorklist();
+  if (act === 'inventoryCsv') downloadInventoryCsv();
+  if (act === 'goB1') { UI.open = UI.open || {}; UI.open.B1 = true; render(); const d = document.getElementById('step-B1'); if (d) d.scrollIntoView({ block: 'start' }); }
+  if (act === 'answerQ') {
+    const ref = b.dataset.ref, why = deny('answer'); if (why) { toast(why); return; }
+    const box = document.getElementById('ans_' + ref), text = (box ? box.value : '').trim();
+    if (!text) { toast('Write the answer first.'); if (box) box.focus(); return; }
+    const q = (S.questions || []).find(x => x.ref === ref); if (!q) return;
+    q.response = text; q.respondedOn = todayISO(); q.respondedBy = SRV.user.id; q.status = 'answered';
+    log('answer', 'questions.' + ref, 'open', 'answered'); if (UI.answer) delete UI.answer[ref];
+    render(); toast(ref + ' answered. Triodian is told.');
+  }
   if (act === 'delArea') { const a = S.areas.splice(+b.dataset.i, 1)[0]; if (a) log('remove', 'areas.' + a.id, a.name, null); render(); }
 });
 
@@ -297,6 +464,7 @@ document.addEventListener('click', async ev => {
   SRV.user = r.body.user; SRV.site = r.body.site || '';
   await load();
   if (openExampleByDefault()) openExample();
+  else if (location.hash === '#actions') { const el = document.getElementById('actions'); if (el) el.scrollIntoView({ block: 'start' }); }
 })();
 window.BDApp = { state: () => S, render, practice: () => UI.practice };
 })();

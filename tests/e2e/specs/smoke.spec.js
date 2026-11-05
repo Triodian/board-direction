@@ -34,7 +34,7 @@ test('the server refuses what the page would refuse', async () => {
   expect(r1.status).toBe(403);
   const r2 = await editAs(U.recorder, d => { d.positions.B2 = { A1: { posture: 'S2', proposedBy: 'nobody' } }; });
   expect(r2.status).toBe(403);
-  const r3 = await editAs(U.advisor, d => { d.questions.push({ ref: 'QC-01', question: 'Must the board set this?', status: 'open', sentOn: '2026-11-05' }); });
+  const r3 = await editAs(U.advisor, d => { d.questions.push({ ref: 'QC-' + String(d.questions.length + 50), question: 'Must the board set this?', status: 'open', sentOn: '2026-11-05' }); });
   expect(r3.status).toBe(200);
 });
 
