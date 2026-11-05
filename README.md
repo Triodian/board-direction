@@ -6,11 +6,11 @@ Triodian recording. It runs as a Cloudflare Worker: the files in `public/` are s
 `src/worker.js` handles `/api/*`. The server design is the AI Confidentiality Exposure Assessment app's
 (`Triodian/confidentiality-exposure-assessment`), which shares the AI Use Assessment's.
 
-**Status:** development plan task 1.1 (the skeleton). Sign-in, admin, profile, set-up, the shared roles and the
+**Status:** development plan tasks 1.1 (the skeleton) and 1.9 (the worked example). Sign-in, admin, profile, set-up, the shared roles and the
 server-side save check are in place. The step screens, checks and outputs come in tasks 1.4 to 1.13.
 
 - `public/` – the app
-  - `/` – the engagement (`index.html`, `bd.js`, `bd-content.js`, `app.css`)
+  - `/` – the engagement (`index.html`, `bd.js`, `bd-content.js`, `app.css`) and the worked example (`bd-example.js`: a fictional company, browser only, never saved)
   - `/shared/rules.js` – the roles and per-change permission rules, one copy read by the browser and the server
   - `/admin/` – users, their roles, access requests and activity (administrators only), from `account.js`
   - `/profile/` – your name, organisation, email address and preferences, from `account.js`
