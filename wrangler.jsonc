@@ -1,0 +1,47 @@
+// Cloudflare Worker configuration for AI Board Direction. Cloudflare reads this file on every deploy from GitHub.
+// Same shape as the AI Confidentiality Exposure Assessment Worker; only the names, addresses and databases differ.
+// No demo sign-in and no demo administrators: this is a client-profile deployment (development plan, task 0.2).
+{
+  "name": "board-direction",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+
+  // Only reachable at the custom domain (behind Cloudflare Access sign-in).
+  // The default workers.dev address and preview addresses are switched off.
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "board-direction.triodian.com", "custom_domain": true }],
+
+  "d1_databases": [
+    { "binding": "DB", "database_name": "board-direction-db", "database_id": "c4e6c7c8-ba12-48f7-aef9-652822b15d52" }
+  ],
+  "observability": { "enabled": true },
+
+  // Daily at 07:00 Brisbane time: remind the GC about questions open for five days or more (lib/core/notify.js).
+  "triggers": { "crons": ["0 21 * * *"] },
+
+  // Email notifications are sent through Cloudflare Email Service from notifications@triodian.com. Until triodian.com
+  // is onboarded there, each send fails and is listed as Failed in Admin → Notifications; saves are never affected.
+  // To hold messages instead of sending, set NOTIFY_SENDING to "off".
+  "send_email": [{ "name": "EMAIL" }],
+
+  "vars": { "NOTIFY_SENDING": "on", "NOTIFY_FROM": "notifications@triodian.com" },
+
+  // Test copy with its own database. Deployed with `npx wrangler deploy --env test` from the `test` branch.
+  "env": {
+    "test": {
+      "name": "board-direction-test",
+      "workers_dev": false,
+      "preview_urls": false,
+      "routes": [{ "pattern": "board-direction-test.triodian.com", "custom_domain": true }],
+      "d1_databases": [
+        { "binding": "DB", "database_name": "board-direction-test-db", "database_id": "fca13599-7382-47ec-8b61-e1c2af45aa22" }
+      ],
+      "vars": { "SITE_LABEL": "Test site", "SITE_URL": "https://board-direction-test.triodian.com", "NOTIFY_SENDING": "on", "NOTIFY_FROM": "notifications@triodian.com" },
+      "send_email": [{ "name": "EMAIL" }],
+      "triggers": { "crons": ["0 21 * * *"] },
+      "observability": { "enabled": true }
+    }
+  }
+}
