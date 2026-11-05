@@ -125,7 +125,14 @@ window.BD_CONTENT = {
       "answeredAs": "A posture, Avoid to Pursue, for each area of the business",
       "position": "BP2",
       "direction": "BD1",
-      "task": "1.5, 1.13"
+      "task": "1.5, 1.13",
+      "prompts": [
+        "Where would AI most help our people or customers? Where would we least want to see it?",
+        "Is there an area where a mistake by AI would be hard to explain to customers or staff?",
+        "Does any area already use AI beyond the posture we are about to set? (Compare with B1.)",
+        "Are we content for providers to use AI in an area where we would not use it ourselves?"
+      ],
+      "start": "The current state: each area starts at the posture that matches the highest authority the inventory records there. The board confirms or changes it."
     },
     {
       "id": "B3",
@@ -134,7 +141,14 @@ window.BD_CONTENT = {
       "answeredAs": "A list of uses, each testable against the inventory",
       "position": "BP3",
       "direction": "BD2",
-      "task": "1.5"
+      "task": "1.5",
+      "prompts": [
+        "Is there anything we would stop at once if we found it in the inventory?",
+        "Is there a decision about a person we would never let AI make alone?",
+        "Is there information that must never reach any AI tool?",
+        "Would we accept a provider doing something we have ruled out for ourselves?"
+      ],
+      "start": "None. A list of uses boards commonly consider is shown only if the board asks. Its inclusion is not a recommendation."
     },
     {
       "id": "B4",
@@ -143,7 +157,13 @@ window.BD_CONTENT = {
       "answeredAs": "A list of events, each with who brings it and when",
       "position": "BP4",
       "direction": "BD3",
-      "task": "1.5"
+      "task": "1.5",
+      "prompts": [
+        "At what authority level do we want to approve a use before it starts?",
+        "What can the CEO approve alone, and must it be reported?",
+        "How quickly must we hear of an exception?"
+      ],
+      "start": "The six events RV1 to RV6, with the authority level in RV1, before or after, and who brings each left for the session."
     },
     {
       "id": "B5",
@@ -152,7 +172,14 @@ window.BD_CONTENT = {
       "answeredAs": "Permitted, with conditions, or not permitted, for each class and tool kind",
       "position": "BP5",
       "direction": "BD4",
-      "task": "1.5"
+      "task": "1.5",
+      "prompts": [
+        "What do our existing confidentiality, privacy and acceptable-use policies already say? We start there.",
+        "Would we know if a board paper were pasted into a chatbot on a phone?",
+        "Do our advisers’ engagement letters say anything about their AI tools?",
+        "Does a ban move the use somewhere we cannot see?"
+      ],
+      "start": "What existing policies already say. Cells no policy covers are left for the session."
     },
     {
       "id": "B6",
@@ -161,7 +188,13 @@ window.BD_CONTENT = {
       "answeredAs": "A statement and a threshold for each kind of harm",
       "position": "BP6",
       "direction": "BD5",
-      "task": "1.5"
+      "task": "1.5",
+      "prompts": [
+        "Do we already have thresholds for incidents, losses or complaints? If so, we use them unchanged.",
+        "Does one person wrongly treated count, or does it take a pattern?",
+        "Which operations could an AI failure, ours or a provider’s, stop?"
+      ],
+      "start": "Existing incident, loss and complaint thresholds, unchanged. A new threshold is set only where none exists."
     },
     {
       "id": "B7",
@@ -170,7 +203,12 @@ window.BD_CONTENT = {
       "answeredAs": "Three to five measures, and the events reported between meetings",
       "position": "BP7",
       "direction": "BD6",
-      "task": "1.5"
+      "task": "1.5",
+      "prompts": [
+        "Which three to five numbers would tell us whether AI is being used as we intend?",
+        "What must reach the chair before the next meeting, and how fast?"
+      ],
+      "start": "The five measures BM1 to BM5 and four events EV1 to EV4, with limits, owners and times left for the session."
     },
     {
       "id": "B8",
@@ -179,7 +217,13 @@ window.BD_CONTENT = {
       "answeredAs": "A named owner for the whole and for each area",
       "position": "BP8",
       "direction": "BD7",
-      "task": "1.5"
+      "task": "1.5",
+      "prompts": [
+        "Does AI sit with the audit and risk committee, the full board, or a new committee?",
+        "Is the accountable executive the one closest to the technology, or to the risk?",
+        "In connected mode: does the AI owner match the accountability map, and the accountable persons under it?"
+      ],
+      "start": "The existing committee charter and delegations."
     },
     {
       "id": "B9",
@@ -389,11 +433,113 @@ window.BD_CONTENT = {
       "RV": "A decision reserved to the board (step B4): it comes back to the board before or after it happens.",
       "BM": "A board measure (step B7): reported to the board at each meeting.",
       "EV": "An event (step B7) that must reach the board between meetings, within the time shown.",
-      "QC": "A question to counsel: a legal point logged for the GC to answer, not settled in the room."
+      "QC": "A question to counsel: a legal point logged for the GC to answer, not settled in the room.",
+      "GL": "A governance goal (step B2): what the board wants AI governance to achieve, with an owner and a measure B7 reports."
     },
     "adm": "Whether this AI makes, or substantially contributes to, a decision about a person using their personal information. Australia’s Privacy Act requires these to be described in the privacy policy from 10 December 2026; counsel decides what that means for each line.",
     "reality": "Inventory lines that already go past a position the board has set. They are not failures: each one becomes an action on the 90-day list, so the board takes its positions knowing what they mean today.",
     "recorded": "Something has been recorded for this step.",
-    "notYet": "Nothing has been recorded for this step yet."
+    "notYet": "Nothing has been recorded for this step yet.",
+    "notSet": "Not set: the room could not settle this position. It is recorded with who will set it and by when, so nothing is left blank."
+  },
+  "starting": {
+    "goals": [
+      "Use AI where it creates value for customers, staff or the company, safely",
+      "Keep the trust of customers, staff and the community in how we use AI",
+      "Meet our obligations on AI, as counsel advises",
+      "Keep operating if an AI provider fails or changes its service"
+    ],
+    "redLineCandidates": [
+      "AI making a final decision to hire, dismiss or discipline a person, with no person reviewing it",
+      "AI-written content sent to customers as if a person wrote it",
+      "G6 information entered into any tool outside the company’s own estate",
+      "AI holding credentials to make payments or change production systems unattended",
+      "Biometric identification or monitoring of staff or customers",
+      "Personal information used to train an external model",
+      "AI monitoring staff communications without notice to them"
+    ],
+    "reserved": [
+      [
+        "RV1",
+        "A new AI use at or above [authority level]"
+      ],
+      [
+        "RV2",
+        "A new AI use in an area marked Avoid"
+      ],
+      [
+        "RV3",
+        "An exception to a red line"
+      ],
+      [
+        "RV4",
+        "A new provider whose AI sees G5 or G6 information"
+      ],
+      [
+        "RV5",
+        "A material AI incident (as defined at B6)"
+      ],
+      [
+        "RV6",
+        "A change to the statement or the measures"
+      ]
+    ],
+    "measures": [
+      [
+        "BM1",
+        "AI uses in the inventory, and how many are new since the last report",
+        "n/a"
+      ],
+      [
+        "BM2",
+        "Uses that cross a red line or exceed their area’s posture without board approval",
+        "0"
+      ],
+      [
+        "BM3",
+        "Material AI incidents",
+        "0"
+      ],
+      [
+        "BM4",
+        "Known uses of information marked N in B5",
+        "0"
+      ],
+      [
+        "BM5",
+        "Actions on the 90-day list overdue",
+        ""
+      ]
+    ],
+    "events": [
+      [
+        "EV1",
+        "A material AI incident",
+        "Chair"
+      ],
+      [
+        "EV2",
+        "A red line crossed",
+        "Chair"
+      ],
+      [
+        "EV3",
+        "A regulator, customer or counterparty raises AI use with the company",
+        "Chair and GC"
+      ],
+      [
+        "EV4",
+        "A provider changes the AI it uses for an area marked Avoid or Cautious",
+        "Accountable executive"
+      ]
+    ],
+    "thresholdHints": {
+      "H1": "Number affected, or kind of harm",
+      "H2": "Number affected, or kind of harm",
+      "H3": "Amount per event and per year",
+      "H4": "Service and duration",
+      "H5": "Kind of breach",
+      "H6": "Description"
+    }
   }
 };

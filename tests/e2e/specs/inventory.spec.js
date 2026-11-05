@@ -9,7 +9,7 @@ async function ensureEngagement(browser) {
   await expect(mo.locator('#savechip')).toHaveText(/Saved/, { timeout: 10_000 });
   await mo.context().close();
 }
-const openB1 = async p => { await p.locator('#step-B1 summary').click(); await expect(p.locator('#step-B1')).toHaveAttribute('open', ''); };
+const openB1 = async p => { await p.locator('#step-B1 > summary').click(); await expect(p.locator('#step-B1')).toHaveAttribute('open', ''); };
 
 test('the CEO adds a line, marks it as deciding about individuals, and a question goes to counsel', async ({ browser }) => {
   await ensureEngagement(browser);
