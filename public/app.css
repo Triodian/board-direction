@@ -377,7 +377,9 @@ dl.kv dd{margin:0}
 .hdr .steps::-webkit-scrollbar{display:none}
 .hdr .steps button{flex:0 0 auto}
 .hdr-r{flex:0 0 auto}
-.hdr .checkcount,.hdr .apptitle,.hdr .vrule{display:none}
+.hdr .checkcount{display:none}
+/* AI Board Direction has no step buttons in the header, so the app name stays beside the logo, as in AI Risk Appetite. */
+.hdr .apptitle{flex:0 1 auto}
 .hdr .steps button{padding:6px 8px 5px}
 /* Admin and profile header on a phone: the tabs take the free width and scroll, so none is hidden behind the avatar. */
 @media (max-width:639px){body:has(.area-tabs) .hdr-in .apptitle,body:has(.area-tabs) .hdr-in .vrule{display:none}.area-tabs{flex:1 1 auto;min-width:0}.area-tabs button{padding-left:8px;padding-right:8px}}

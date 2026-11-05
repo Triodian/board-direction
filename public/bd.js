@@ -99,7 +99,7 @@ function header() {
   const priv = e ? (String(e.privilegeMarking || '').trim() ? `<span class="priv">${esc(e.privilegeMarking)}</span>` : '<span class="priv none">No privilege marking set. Counsel directs the marking.</span>') : '';
   return `<header class="hdr"><div class="hdr-in">
     <a class="brand" href="/" aria-label="Triodian · AI Board Direction" style="text-decoration:none">${LOGO(22)}</a>
-    <span class="vrule" aria-hidden="true"></span><span class="apptitle">Board Direction</span>
+    <span class="vrule" aria-hidden="true"></span><span class="apptitle">AI Board Direction</span>
     <div class="hdr-r">${saveChip()}${u ? `<span class="acct"><button class="avatar-link" data-act="acct" aria-haspopup="menu" aria-expanded="${UI.acct}" aria-label="Account: ${esc(u.name || u.email)}"><span class="avatar" aria-hidden="true">${esc(initials(u.name || u.email))}</span></button>${UI.acct ? `<div class="acct-menu" role="menu">
       <div class="acct-who"><span class="avatar" aria-hidden="true">${esc(initials(u.name || u.email))}</span><div><strong>${esc(u.name || u.email)}</strong><div class="small soft">${esc(roles || 'No role in this engagement')}${u.isAdmin ? ' · administrator' : ''}</div></div></div>
       <a role="menuitem" class="item" href="/profile/">Your profile</a>${u.isAdmin ? '<a role="menuitem" class="item" href="/admin/">Admin · users and activity</a>' : ''}<a role="menuitem" class="item" href="/user-guide/">User guide</a><a role="menuitem" class="item signout" href="/auth/logout">Sign out</a></div>` : ''}</span>` : ''}<button class="iconbtn" data-act="drawer" aria-label="Menu" aria-expanded="${UI.drawer}">☰</button></div>
