@@ -220,7 +220,7 @@ function inventoryBody() {
   const intro = !inv.length ? `<p class="small" style="margin:4px 0 8px">One line per AI use, 10 to 20 lines, supplied by the CEO or the people they nominate. Start with:</p><ul class="small" style="margin:0 0 8px 18px"><li>Which AI tools have we licensed, and which do staff use without a licence?</li><li>Which of our providers use AI in the work they do for us?</li></ul>${!UI.practice && !RULES.modeLocked(S) ? `<p class="small soft">The mode (${esc(lbl(C.modes.map(m => [m.id, m.name]), S.engagement.mode))}) is fixed once the first line is added.</p>` : ''}` : '';
   const n = inv.length, count = n ? `<p class="small soft" style="margin:4px 0">${n} line${n === 1 ? '' : 's'}${n < 10 ? ' · the framework expects 10 to 20' : n > 20 ? ' · more than the 20 the framework expects; consider grouping similar uses' : ''}</p>` : '';
   return intro + count + table(can ? head.concat(['']) : head, rows) + (editing ? invForm(editing) : '')
-    + (can ? `<div class="row" style="gap:8px;margin:8px 0"><button class="btn sm" data-act="addLine">Add a line</button>${UI.practice ? '<span class="small soft">Worked example: try it. Nothing is saved.</span>' : ''}</div>` : (inv.length || !why ? '' : `<p class="small soft">${esc(why)}</p>`))
+    + (can ? `<div class="row" style="gap:8px;margin:8px 0"><button class="btn sm" data-act="addLine">Add a line</button>${inv.length ? '<button class="btn sm ghost" data-act="inventoryCsv">Download as CSV</button>' : ''}${UI.practice ? '<span class="small soft">Worked example: try it. Nothing is saved.</span>' : ''}</div>` : (inv.length ? '<div class="row" style="margin:8px 0"><button class="btn sm ghost" data-act="inventoryCsv">Download as CSV</button></div>' : (!why ? '' : `<p class="small soft">${esc(why)}</p>`)))
     + worklist();
 }
 /* A question to counsel for a line marked yes in field 8, once per line. Returns its ref, or '' if one exists. */
@@ -262,12 +262,40 @@ function worklistMarkdown() {
   admLines().forEach(l => out.push(`- ${cell(l.id)}: ${cell(l.source || 'Not recorded')}`));
   return out.join('\n');
 }
+function saveBlob(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
+/* The inventory as CSV: one row per line, codes and their names, for the CEO's working list or a spreadsheet. */
+function downloadInventoryCsv() {
+  const q = v => { const t = String(v == null ? '' : v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const head = ['Line', 'Use', 'Tool and provider', 'Area', 'Who uses it', 'Authority', 'Information it sees', 'Tool kind', 'Decisions about individuals', 'Kinds of decision', 'Personal information used', 'Owner', 'Source', 'Question to counsel'];
+  const rows = (S.inventory || []).map(l => { const qq = lineQuestion(l); return [l.id, l.use, l.tool, l.area ? areaName(l.area) : '', l.who, l.authority ? l.authority + ' ' + lbl(SC.authority, l.authority) : '', l.info ? l.info + ' ' + lbl(SC.infoClass, l.info) : '', l.kind ? l.kind + ' ' + lbl(SC.toolKind, l.kind) : '', l.adm ? 'Yes' : 'No', l.adm ? l.decisions : '', l.adm ? l.personalInfo : '', pname(l.owner), l.source, qq ? qq.ref + ' (' + qq.status + ')' : '']; });
+  const e = S.engagement, lines = [];
+  if (String(e.privilegeMarking || '').trim()) lines.push(q(e.privilegeMarking.trim()));
+  lines.push(head.map(q).join(','), ...rows.map(r => r.map(q).join(',')));
+  saveBlob(new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }), `AI inventory${e.company ? ' - ' + e.company.replace(/[\\/:*?"<>|]/g, '') : ''}.csv`);
+  toast('CSV downloaded');
+}
+/* Your actions: what is waiting on the signed-in person. The GC answers questions to counsel here. */
+function actionsPanel() {
+  if (UI.practice || !SRV.user) return '';
+  const u = me(), items = [];
+  if (!RULES.deny('answer', u, S)) (S.questions || []).filter(q => q.status !== 'answered').forEach(q => {
+    const v = (UI.answer || {})[q.ref] || '';
+    items.push(`<div class="panel2" style="padding:12px 14px" id="act-${esc(q.ref)}"><div class="row between"><strong>${refTip(q.ref)} · question to counsel${q.step ? ' at ' + esc(q.step) : ''}</strong><span class="small soft">Raised ${esc(dl(q.sentOn))}${q.raisedBy ? ' by ' + esc(pname(q.raisedBy)) : ''}</span></div><p style="margin:6px 0">${esc(q.question)}</p>
+      <label class="f" for="ans_${esc(q.ref)}"><span>Counsel’s answer</span><textarea class="in" id="ans_${esc(q.ref)}" data-ans="${esc(q.ref)}" rows="2">${esc(v)}</textarea></label>
+      <div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="answerQ" data-ref="${esc(q.ref)}">Record the answer</button></div></div>`);
+  });
+  if (!RULES.deny('inventory', u, S)) {
+    const inc = (S.inventory || []).filter(l => missing(l).length);
+    if (inc.length) items.push(`<div class="panel2" style="padding:12px 14px"><strong>AI inventory (B1): ${inc.length} line${inc.length === 1 ? '' : 's'} to complete</strong><p class="small" style="margin:6px 0 0">${inc.map(l => `${esc(l.id)}: ${esc(missing(l).join(', '))}`).join('<br>')}</p><div class="row" style="margin-top:8px"><button class="btn sm" data-act="goB1">Open the inventory</button></div></div>`);
+  }
+  return `<section class="card" id="actions"><h2 class="sh">Your actions</h2>${items.length ? `<div class="stack" style="gap:8px">${items.join('')}</div>` : '<p class="small soft" style="margin:0">Nothing is waiting on you.</p>'}</section>`;
+}
 function downloadWorklist() {
   if (!window.RAFExport) { toast('The Word export did not load. Reload the page and try again.'); return; }
   const e = S.engagement;
   toast('Preparing the Word document…');
   window.RAFExport.toDocx(worklistMarkdown(), { insurer: e.company, reference: e.reference, creator: (e.practitioner || {}).firm || 'Triodian', wide: true }).then(blob => {
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Automated-decision worklist${e.company ? ' - ' + e.company.replace(/[\\/:*?"<>|]/g, '') : ''}.docx`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); toast('Word document downloaded');
+    saveBlob(blob, `Automated-decision worklist${e.company ? ' - ' + e.company.replace(/[\\/:*?"<>|]/g, '') : ''}.docx`); toast('Word document downloaded');
   }, err => toast('The Word document could not be made: ' + (err && err.message || err)));
 }
 function stepBody(id) {
@@ -326,6 +354,7 @@ function mainScreen() {
   const areas = S.areas.map((a, i) => `<div class="row" style="gap:8px"><input class="in" data-area="${i}" value="${esc(a.name)}" aria-label="Area ${i + 1}" ${why ? 'disabled' : ''}>${why ? '' : `<button class="btn sm ghost" data-act="delArea" data-i="${i}" aria-label="Remove ${esc(a.name)}">Remove</button>`}</div>`).join('');
   const steps = C.steps.map(s => `<details class="pr" id="step-${s.id}" ${UI.open && UI.open[s.id] ? 'open' : ''}><summary style="display:block"><span class="row between" style="width:100%"><strong style="color:var(--ink);font-size:15px"><span class="stepid">${s.id}</span>${esc(s.name)}</strong>${hasContent(s.id) ? '<span class="badge b-green">Recorded</span>' : '<span class="badge b-grey">Not yet</span>'}</span><span style="display:block;margin:6px 0 2px;font-weight:400;color:var(--ink);font-size:14px">${esc(s.question)}</span><span class="small soft" style="font-weight:400">Answered as: ${esc(s.answeredAs)}${e.mode === 'connected' && s.direction ? ` · Connected: ${esc(s.direction)}` : ''}</span></summary><div style="padding:0 20px 16px">${stepBody(s.id)}</div></details>`).join('');
   return `${opening('AI Board Direction', esc(e.company || 'New engagement'), 'Set-up comes first. The ten steps follow, worked through in the workshop and resolved at the next board meeting.')}
+  ${actionsPanel()}
   <section class="card"><h2 class="sh">1 · Engagement</h2>${whyNote}<div class="fgrid">
     ${fld('Company', 'engagement.company', e.company)}
     ${fld('Entity type', 'engagement.entityType', e.entityType, { select: [['', 'Choose…'], ...C.entityTypes] })}
@@ -355,6 +384,7 @@ function render() {
 document.addEventListener('change', ev => {
   const t = ev.target;
   if (t.dataset.path) setPath(t.dataset.path, t.value);
+  else if (t.dataset.ans) { UI.answer = UI.answer || {}; UI.answer[t.dataset.ans] = t.value; }
   else if (t.dataset.inv) setInv(t.dataset.inv, t.dataset.k, t.type === 'checkbox' ? t.checked : (t.tagName === 'SELECT' ? t.value : t.value.trim()));
   else if (t.dataset.area != null) { if (deny('setup')) return; const a = S.areas[+t.dataset.area], v = t.value.trim(); if (!a || a.name === v) return; const from = a.name; a.name = v; log('edit', 'areas.' + a.id, from, v); }
 });
@@ -411,6 +441,17 @@ document.addEventListener('click', async ev => {
     toast(`Line ${id} removed.` + (q && q.status !== 'answered' ? ` ${q.ref} stays open for counsel to close.` : ''));
   }
   if (act === 'worklistDocx') downloadWorklist();
+  if (act === 'inventoryCsv') downloadInventoryCsv();
+  if (act === 'goB1') { UI.open = UI.open || {}; UI.open.B1 = true; render(); const d = document.getElementById('step-B1'); if (d) d.scrollIntoView({ block: 'start' }); }
+  if (act === 'answerQ') {
+    const ref = b.dataset.ref, why = deny('answer'); if (why) { toast(why); return; }
+    const box = document.getElementById('ans_' + ref), text = (box ? box.value : '').trim();
+    if (!text) { toast('Write the answer first.'); if (box) box.focus(); return; }
+    const q = (S.questions || []).find(x => x.ref === ref); if (!q) return;
+    q.response = text; q.respondedOn = todayISO(); q.respondedBy = SRV.user.id; q.status = 'answered';
+    log('answer', 'questions.' + ref, 'open', 'answered'); if (UI.answer) delete UI.answer[ref];
+    render(); toast(ref + ' answered. Triodian is told.');
+  }
   if (act === 'delArea') { const a = S.areas.splice(+b.dataset.i, 1)[0]; if (a) log('remove', 'areas.' + a.id, a.name, null); render(); }
 });
 
@@ -423,6 +464,7 @@ document.addEventListener('click', async ev => {
   SRV.user = r.body.user; SRV.site = r.body.site || '';
   await load();
   if (openExampleByDefault()) openExample();
+  else if (location.hash === '#actions') { const el = document.getElementById('actions'); if (el) el.scrollIntoView({ block: 'start' }); }
 })();
 window.BDApp = { state: () => S, render, practice: () => UI.practice };
 })();

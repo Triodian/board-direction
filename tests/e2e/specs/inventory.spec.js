@@ -51,6 +51,29 @@ test('the CEO adds a line, marks it as deciding about individuals, and a questio
   await ceo.context().close();
 });
 
+test('the question shows in the GC’s actions, and the GC answers it there', async ({ browser }) => {
+  await ensureEngagement(browser);
+  const open = (await api('GET', '/api/engagement', undefined, U.gc)).body.data.questions.find(q => q.step === 'B1' && q.status === 'open');
+  expect(open).toBeTruthy();
+  const gc = await pageAs(browser, U.gc);
+  await expect(gc.locator('#actions')).toContainText(open.ref);
+  await gc.locator(`#ans_${open.ref}`).fill('Yes. The policy describes it from 10 December.');
+  await gc.click(`[data-act="answerQ"][data-ref="${open.ref}"]`);
+  await expect(gc.locator('#savechip')).toHaveText(/Saved/, { timeout: 10_000 });
+  const q = (await api('GET', '/api/engagement', undefined, U.gc)).body.data.questions.find(x => x.ref === open.ref);
+  expect(q).toMatchObject({ status: 'answered', response: 'Yes. The policy describes it from 10 December.' });
+  // the CEO can download the inventory as CSV
+  const ceo = await pageAs(browser, U.ceo);
+  await openB1(ceo);
+  const dl = ceo.waitForEvent('download');
+  await ceo.locator('[data-act="inventoryCsv"]').first().click();
+  const file = await dl, path = await file.path(), text = (await import('node:fs')).readFileSync(path, 'utf8');
+  expect(file.suggestedFilename()).toMatch(/\.csv$/);
+  expect(text).toContain('Line,Use,Tool and provider');
+  expect(gc._errors.concat(ceo._errors)).toEqual([]);
+  await gc.context().close(); await ceo.context().close();
+});
+
 test('only the CEO and Triodian change the inventory', async ({ browser }) => {
   await ensureEngagement(browser);
   const dir = await pageAs(browser, U.director);
