@@ -54,6 +54,14 @@ function setPath(path, v) {
   log('edit', path, typeof from === 'object' ? null : from, v);
 }
 
+/* The worked example opens by default. Leaving it is remembered for this browser session, so a reload stays out.
+   A link to My actions (from an email) opens the real engagement. Same in all Triodian apps. */
+const EX_LEFT = 'triodian.example.left';
+const exampleLeft = () => { try { return sessionStorage.getItem(EX_LEFT) === '1'; } catch (e) { return false; } };
+const markExampleLeft = left => { try { if (left) sessionStorage.setItem(EX_LEFT, '1'); else sessionStorage.removeItem(EX_LEFT); } catch (e) {} };
+const openExampleByDefault = () => !exampleLeft() && location.hash !== '#actions';
+/* Opens the worked example: a fictional company, board and advisers, never saved. */
+function openExample() { if (!UI.practice) REAL = { S, rev: SRV.rev, exists: SRV.exists }; S = window.BDExample(); UI.practice = true; UI.drawer = false; UI.open = {}; render(); }
 /* ---------- saving ---------- */
 function queueSave() { if (UI.practice) return; SRV.state = 'unsaved'; paintSave(); clearTimeout(timer); timer = setTimeout(save, 700); }
 async function save() {
@@ -248,8 +256,8 @@ document.addEventListener('click', async ev => {
   const act = b.dataset.act;
   if (act === 'acct') { UI.acct = !UI.acct; UI.drawer = false; render(); }
   if (act === 'drawer') { UI.drawer = !UI.drawer; UI.acct = false; render(); }
-  if (act === 'example') { if (!UI.practice) REAL = { S, rev: SRV.rev, exists: SRV.exists }; S = window.BDExample(); UI.practice = true; UI.drawer = false; UI.open = {}; render(); scrollTo(0, 0); }
-  if (act === 'leaveExample') { UI.practice = false; UI.drawer = false; UI.open = {}; if (REAL) { S = REAL.S; SRV.rev = REAL.rev; SRV.exists = REAL.exists; } REAL = null; render(); scrollTo(0, 0); }
+  if (act === 'example') { markExampleLeft(false); openExample(); scrollTo(0, 0); }
+  if (act === 'leaveExample') { markExampleLeft(true); UI.practice = false; UI.drawer = false; UI.open = {}; if (REAL) { S = REAL.S; SRV.rev = REAL.rev; SRV.exists = REAL.exists; } REAL = null; render(); scrollTo(0, 0); }
   if (act === 'new') { S = blank(); SRV.rev = 0; render(); await save(); if (SRV.exists) await load(); }
   if (act === 'addArea') { const n = S.areas.reduce((m, a) => Math.max(m, +String(a.id).replace(/\D/g, '') || 0), 0) + 1; S.areas.push({ id: 'A' + n, name: 'New area' }); log('add', 'areas.A' + n, null, 'New area'); render(); }
   if (act === 'delArea') { const a = S.areas.splice(+b.dataset.i, 1)[0]; if (a) log('remove', 'areas.' + a.id, a.name, null); render(); }
@@ -263,6 +271,7 @@ document.addEventListener('click', async ev => {
   if (!r.ok) { SRV.reason = r.error; render(); return; }
   SRV.user = r.body.user; SRV.site = r.body.site || '';
   await load();
+  if (openExampleByDefault()) openExample();
 })();
 window.BDApp = { state: () => S, render, practice: () => UI.practice };
 })();
