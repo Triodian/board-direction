@@ -52,6 +52,11 @@ window.BDExample = function buildExample() {
     ],
     positions: {
       B2: {
+        goals: [
+          { id: 'GL1', goal: 'Use AI to take routine work off staff in the office and on the packing lines, safely', owner: 'Tom Adeyemi, CEO', measure: 'BM1: AI uses in the inventory, and how many are new since the last report', proposedBy: 'p-ceo' },
+          { id: 'GL2', goal: 'Keep customers’ and applicants’ trust in how we use AI on them', owner: 'Priya Raman', measure: 'BM3: material AI incidents', proposedBy: 'p-dir2' },
+          { id: 'GL3', goal: 'Keep the lines running if an AI provider fails or changes its service', owner: 'Dana Whitfield', measure: 'Hours of packing-line stoppage caused by an AI provider, each quarter', proposedBy: 'p-dir1' },
+        ],
         A1: { posture: 'S2', condition: 'The chatbot hands any complaint or refund to a person', proposedBy: 'p-dir2' },
         A2: { posture: 'S3', condition: '', proposedBy: 'p-ceo' },
         A3: { posture: 'S2', condition: 'No applicant is rejected without a person reviewing', proposedBy: 'p-dir1' },

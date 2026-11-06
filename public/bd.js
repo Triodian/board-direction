@@ -153,6 +153,7 @@ const classTip = g => tip(`${esc(g)} ${esc(lbl(SC.infoClass, g))}`, (C.tips.info
 const kindTip = k => tip(esc(lbl(SC.toolKind, k)), (C.tips.toolKind || {})[k]);
 const authTip = a => tip(`${esc(a)} ${esc(lbl(SC.authority, a))}`, ((SC.authority.find(r => r[0] === a) || [])[2] || '') && `${a} ${lbl(SC.authority, a)}: ${(SC.authority.find(r => r[0] === a) || [])[2]}.`);
 const by = id => id ? `<span class="small soft">${esc(pname(id))}</span>` : '';
+const dis = x => x && x.dissent ? `<br><span class="small">Dissent: ${esc(x.dissent)}</span>` : '';
 const pos = k => (S.positions || {})[k] || {};
 const dl = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? new Date(v + 'T12:00:00Z').toLocaleDateString('en-AU', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' }) : (v || '');
 /* Highest authority a posture accepts (framework sections 2.3 and 4.2): Avoid A1, Cautious A2, Open A4, Pursue A6. */
@@ -227,7 +228,7 @@ function inventoryBody() {
 function raiseADM(l) {
   if (lineQuestion(l)) return '';
   S.questions = S.questions || [];
-  const n = S.questions.reduce((m, q) => Math.max(m, +String(q.ref).replace(/\D/g, '') || 0), 0) + 1, ref = 'QC-' + String(n).padStart(2, '0');
+  const ref = nextQRef();
   S.questions.push({ ref, step: 'B1', lines: [l.id], question: `Line ${l.id}${l.use ? ' (' + l.use + ')' : ''} is recorded as making, or substantially contributing to, decisions about individuals. Does the privacy policy need to describe it under APPs 1.7 to 1.9, which apply from 10 December 2026?`, status: 'open', response: '', sentOn: todayISO(), raisedBy: myId() });
   log('add', 'questions.' + ref, null, 'open');
   return ref;
@@ -297,6 +298,141 @@ function downloadWorklist() {
     saveBlob(blob, `Automated-decision worklist${e.company ? ' - ' + e.company.replace(/[\\/:*?"<>|]/g, '') : ''}.docx`); toast('Word document downloaded');
   }, err => toast('The Word document could not be made: ' + (err && err.message || err)));
 }
+/* ---------- B2 to B8: recording the board's positions (framework sections 5.3 to 6.4) ----------
+   Positions are proposed by a director, the chair, the CEO or (connected) the CRO, and recorded by them or by Triodian.
+   Each position carries who proposed it and any dissent. Every step has its prompts, its starting position and a
+   box to log a question to counsel. In the worked example anyone can try them; nothing is saved. */
+const posWhy = () => UI.practice ? '' : deny('position');
+const askWhy = () => UI.practice ? '' : deny('ask');
+function posObj(step) { S.positions = S.positions || {}; return (S.positions[step] = S.positions[step] || {}); }
+/* A path inside positions[step]: dotted keys, where a list is entered by an item's id (lines.RL1.use). */
+function walk(step, path, create) {
+  const ks = path.split('.'), last = ks.pop(); let o = posObj(step);
+  for (const k of ks) {
+    let n = Array.isArray(o) ? o.find(x => x && x.id === k) : o[k];
+    if (n == null) { if (!create || Array.isArray(o)) return null; n = o[k] = {}; }
+    o = n;
+  }
+  return { o, last };
+}
+function setPos(step, path, v) {
+  const why = posWhy(); if (why) { toast(why); render(); return; }
+  const w = walk(step, path, true); if (!w) return;
+  const from = w.o[w.last]; if ((from == null ? '' : from) === v) return;
+  w.o[w.last] = v; log('edit', `positions.${step}.${path}`, from == null ? null : from, v);
+  rerender();
+}
+const proposerOpts = () => (S.people || []).filter(p => p.active !== false && !RULES.proposerError(p.roles, S)).map(p => [p.id, p.name]);
+const keepOpt = (opts, v) => v && !opts.some(o => o[0] === v) ? opts.concat([[v, v]]) : opts;
+/* An input bound to a position. o: { select, blank, ph, list, rows, label } */
+function pIn(step, path, v, o) {
+  o = o || {};
+  const a = `id="p_${step}_${path.replace(/[^A-Za-z0-9]/g, '_')}" data-pos="${step}" data-ppath="${esc(path)}" aria-label="${esc(o.label || '')}"`;
+  if (o.select) return `<select class="in" ${a}>${[['', o.blank || '—'], ...keepOpt(o.select, v)].map(x => `<option value="${esc(x[0])}" ${String(v || '') === String(x[0]) ? 'selected' : ''}>${esc(x[1])}</option>`).join('')}</select>`;
+  if (o.rows) return `<textarea class="in" rows="${o.rows}" ${a} placeholder="${esc(o.ph || '')}">${esc(v || '')}</textarea>`;
+  return `<input class="in" ${a} value="${esc(v || '')}" placeholder="${esc(o.ph || '')}"${o.list ? ` list="${o.list}"` : ''}>`;
+}
+const propSel = (step, path, v) => pIn(step, path, v, { select: proposerOpts(), blank: 'Proposed by…', label: 'Proposed by' });
+const dissentIn = (step, path, v) => pIn(step, path, v, { ph: 'Dissent, if any', label: 'Dissent' });
+const delBtn = (step, list, id) => { const k = step + '.' + list + '.' + id, c = UI.confirmDel === k; return `<button class="btn sm ghost" data-act="delRow" data-step="${step}" data-list="${list}" data-id="${esc(id)}" aria-label="Remove ${esc(id)}">${c ? 'Confirm' : 'Remove'}</button>`; };
+function addRow(step, list, prefix, init) {
+  const P = posObj(step); P[list] = Array.isArray(P[list]) ? P[list] : [];
+  const n = P[list].reduce((m, x) => Math.max(m, +String(x.id || '').replace(/\D/g, '') || 0), 0) + 1;
+  const row = Object.assign({ id: prefix + n }, init || {});
+  P[list].push(row); log('add', `positions.${step}.${list}.${row.id}`, null, 'added');
+  return row;
+}
+/* B2's starting position (framework 5.3): the posture that matches the highest authority B1 records in the area. */
+const POSTURE_FOR = { 1: 'S1', 2: 'S2', 3: 'S3', 4: 'S3', 5: 'S4', 6: 'S4' };
+function startingPosture(areaId) {
+  const ls = (S.inventory || []).filter(l => l.area === areaId && /^A\d$/.test(l.authority || ''));
+  if (!ls.length) return null;
+  const top = ls.reduce((m, l) => (+l.authority.slice(1) > +m.authority.slice(1) ? l : m));
+  return { posture: POSTURE_FOR[+top.authority.slice(1)], line: top };
+}
+/* BK2 (framework 6.1): moving down a column of the B5 table, a marking may stay or tighten, never loosen. */
+const STRICT = { P: 1, C: 2, N: 3 };
+function loosened(cells) {
+  const out = [];
+  SC.toolKind.forEach(k => { let prev = null; SC.infoClass.forEach(g => { const m = cells[g[0] + ':' + k[0]]; if (!m) return; if (prev && STRICT[m] < STRICT[prev.m]) out.push({ g: g[0], k: k[0], above: prev.g }); prev = { m, g: g[0] }; }); });
+  return out;
+}
+const sub = t => `<p class="mini" style="margin:14px 0 4px">${t}</p>`;
+function stepAids(id) {
+  const s = C.steps.find(x => x.id === id) || {};
+  return (s.prompts ? `<details style="margin:4px 0 8px"><summary class="small" style="cursor:pointer">Prompts for the room</summary><ul class="small" style="margin:6px 0 0 18px">${s.prompts.map(p => `<li>${esc(p)}</li>`).join('')}</ul></details>` : '')
+    + (s.start ? `<p class="small soft" style="margin:0 0 8px"><strong>Starting position.</strong> ${esc(s.start)} It is a place to begin, not a recommendation.</p>` : '');
+}
+function posEditor(id) {
+  const P = (S.positions || {})[id] || {};
+  let h = '';
+  if (id === 'B2') {
+    const goals = P.goals || [];
+    h += sub(tip('Governance goals', 'What the board wants AI governance to achieve. Each goal has an owner and a measure, which B7 reports.') + ' · what AI governance should achieve');
+    h += table(['Ref', 'Goal', 'Owner', 'Measure (reported at B7)', 'Proposed by', ''], goals.map(g => [refTip(g.id), pIn(id, `goals.${g.id}.goal`, g.goal, { rows: 3, label: 'Goal ' + g.id }), pIn(id, `goals.${g.id}.owner`, g.owner, { ph: 'Named person', label: 'Owner of ' + g.id }), pIn(id, `goals.${g.id}.measure`, g.measure, { rows: 3, ph: 'How the board will see progress', label: 'Measure for ' + g.id }), propSel(id, `goals.${g.id}.proposedBy`, g.proposedBy), delBtn(id, 'goals', g.id)]));
+    h += `<div class="row" style="gap:8px;margin:6px 0"><button class="btn sm" data-act="addGoal">Add a goal</button>${goals.length ? '' : '<button class="btn sm ghost" data-act="toggleGoalIdeas">Goals boards often set</button>'}</div>`;
+    if (UI.goalIdeas && !goals.length) h += `<div class="panel2" style="padding:10px 14px"><p class="small soft" style="margin:0 0 6px">Examples only. The board writes its own goals; including one here is not a recommendation.</p>${C.starting.goals.map((g, i) => `<div class="row between" style="gap:8px;margin:4px 0"><span class="small">${esc(g)}</span><button class="btn sm ghost" data-act="addGoal" data-i="${i}">Start from this</button></div>`).join('')}</div>`;
+    h += sub('Posture by area');
+    const postures = SC.posture.map(r => [r[0], `${r[0]} ${r[1]}`]).concat([['NS', 'Not set']]);
+    h += table(['Area', { html: tip('Starting position', 'The posture that matches the highest authority the inventory (B1) records in the area. Confirm or change it.') }, 'Posture', 'Condition', 'Proposed by', 'Dissent'], S.areas.map(a => {
+      const x = P[a.id] || {}, st = startingPosture(a.id);
+      const start = st ? `${esc(lbl(SC.posture, st.posture))}<br><span class="small soft">from ${esc(st.line.id)} at ${esc(st.line.authority)}</span>${x.posture !== st.posture ? `<br><button class="lnk small" data-act="usePosture" data-area="${a.id}" data-v="${st.posture}">Use this</button>` : ''}` : '<span class="small soft">No inventory line</span>';
+      const ns = x.posture === 'NS' ? `<div class="stack" style="gap:4px;margin-top:4px">${pIn(id, `${a.id}.notSetOwner`, x.notSetOwner, { ph: 'Who will set it', label: 'Who will set the posture for ' + a.name })}${pIn(id, `${a.id}.notSetBy`, x.notSetBy, { ph: 'By when', label: 'By when' })}</div>` : '';
+      return [esc(a.name), start, pIn(id, `${a.id}.posture`, x.posture, { select: postures, blank: 'Choose…', label: 'Posture for ' + a.name }) + ns, pIn(id, `${a.id}.condition`, x.condition, { ph: 'Any condition', label: 'Condition for ' + a.name }), propSel(id, `${a.id}.proposedBy`, x.proposedBy), dissentIn(id, `${a.id}.dissent`, x.dissent)];
+    }));
+    const over = S.areas.filter(a => { const p = (P[a.id] || {}).posture, st = startingPosture(a.id); return p && p !== 'NS' && st && +String(st.line.authority).slice(1) > POSTURE_MAX[p]; });
+    if (over.length) h += `<p class="small" style="margin:4px 0">${tip('Reality note', C.tips.reality)}: the inventory already goes beyond the posture in ${over.map(a => esc(a.name)).join(', ')}. That is not a failure; it becomes an action on the 90-day list.</p>`;
+  } else if (id === 'B3') {
+    const lines = P.lines || [], scopes = [['All areas', 'All areas'], ...S.areas.map(a => [a.name, a.name])];
+    const applies = ['The company', 'Its providers', 'The company and its providers', 'The company and its advisers', 'The company, its providers and its advisers'].map(x => [x, x]);
+    h += table(['Ref', 'Red line: the use not accepted', 'Scope', 'Applies to', 'Proposed by', 'Dissent', ''], lines.map(x => [refTip(x.id), pIn(id, `lines.${x.id}.use`, x.use, { rows: 2, ph: 'A use someone reading an inventory line can test', label: 'Red line ' + x.id }), pIn(id, `lines.${x.id}.scope`, x.scope, { select: scopes, blank: 'Choose…', label: 'Scope of ' + x.id }), pIn(id, `lines.${x.id}.appliesTo`, x.appliesTo, { select: applies, blank: 'Choose…', label: x.id + ' applies to' }), propSel(id, `lines.${x.id}.proposedBy`, x.proposedBy), dissentIn(id, `lines.${x.id}.dissent`, x.dissent), delBtn(id, 'lines', x.id)]));
+    h += `<p class="small soft" style="margin:4px 0">Each red line must be testable: someone reading an inventory line must be able to say whether it crosses it.</p><div class="row" style="gap:8px;margin:6px 0"><button class="btn sm" data-act="addRedLine">Add a red line</button><button class="btn sm ghost" data-act="toggleCand">${UI.cand ? 'Hide' : 'Show'} the uses boards commonly consider</button></div>`;
+    if (UI.cand) h += `<div class="panel2" style="padding:10px 14px"><p class="small soft" style="margin:0 0 6px">Shown because the board asked. The board may adopt none, some or all; inclusion is not a recommendation.</p>${C.starting.redLineCandidates.map((c, i) => { const has = lines.some(l => l.use === c); return `<div class="row between" style="gap:8px;margin:4px 0"><span class="small">${esc(c)}</span>${has ? '<span class="badge b-green">Recorded</span>' : `<button class="btn sm ghost" data-act="addRedLine" data-i="${i}">Record as a red line</button>`}</div>`; }).join('')}</div>`;
+  } else if (id === 'B4') {
+    const ev = P.events || [];
+    h += table(['Ref', 'Event', 'Board approves before, or is told after', 'Brought by', 'Proposed by', 'Dissent', ''], ev.map(x => [refTip(x.id), pIn(id, `events.${x.id}.event`, x.event, { rows: 2, label: 'Event ' + x.id }), pIn(id, `events.${x.id}.timing`, x.timing, { list: 'dl_timing', ph: 'Before it starts', label: 'Timing of ' + x.id }), pIn(id, `events.${x.id}.by`, x.by, { list: 'dl_roles', ph: 'CEO', label: 'Who brings ' + x.id }), propSel(id, `events.${x.id}.proposedBy`, x.proposedBy), dissentIn(id, `events.${x.id}.dissent`, x.dissent), delBtn(id, 'events', x.id)]));
+    h += `<datalist id="dl_timing"><option value="Before it starts"><option value="Before it takes effect"><option value="Told within 24 hours"><option value="Told at the next meeting"></datalist><datalist id="dl_roles"><option value="CEO"><option value="Chair"><option value="CRO"><option value="GC"></datalist>`;
+    h += `<div class="row" style="gap:8px;margin:6px 0">${ev.length ? '' : '<button class="btn sm primary" data-act="loadStart" data-step="B4">Start from the six events RV1 to RV6</button>'}<button class="btn sm" data-act="addReserved">Add an event</button></div>`;
+  } else if (id === 'B5') {
+    const cells = P.cells || {}, bad = loosened(cells), isBad = (g, k) => bad.some(b => b.g === g && b.k === k);
+    const marks = [['P', 'P'], ['C', 'C'], ['N', 'N']];
+    h += table(['Class', ...SC.toolKind.map(k => ({ html: kindTip(k[0]) }))], SC.infoClass.map(g => [classTip(g[0]), ...SC.toolKind.map(k => { const v = cells[g[0] + ':' + k[0]]; const t = `${lbl(SC.infoClass, g[0])} in ${lbl(SC.toolKind, k[0]).replace(/^\w/, c => c.toLowerCase())}: ${v && C.tips.mark[v] ? C.tips.mark[v] : 'not marked yet.'}`; return `<span data-tip="${esc(t)}" style="display:block;${isBad(g[0], k[0]) ? 'outline:2px solid var(--red, #b42318);border-radius:6px' : ''}">${pIn(id, `cells.${g[0]}:${k[0]}`, v, { select: marks, blank: '—', label: `${lbl(SC.infoClass, g[0])} in ${lbl(SC.toolKind, k[0])}` })}</span>`; })]));
+    h += '<p class="small soft">P permitted · C permitted with conditions, written below · N not permitted. K6 (data-room and document movement) is not marked: it is a path into the other kinds, not a tool. Moving down a column, a marking may stay or tighten; it may not loosen.</p>';
+    if (bad.length) h += `<p class="small" role="alert" style="color:var(--red, #b42318);margin:4px 0">Loosens moving down: ${bad.map(b => `${esc(b.g)} in ${esc(lbl(SC.toolKind, b.k))} is less strict than ${esc(b.above)} above it`).join('; ')}. Check BK2 will fail until this changes.</p>`;
+    h += sub('Conditions') + '<p class="small soft" style="margin:0 0 6px">A condition must be something management can show, for example “only with the enterprise licence that does not train on our content”.</p>'
+      + `<div class="stack" style="gap:6px">${(P.conditions || []).map((c, i) => `<div style="display:flex;flex-wrap:nowrap;gap:8px;align-items:flex-start"><textarea class="in" style="flex:1 1 auto" rows="2" id="p_B5_cond_${i}" data-cond="${i}" aria-label="Condition ${i + 1}">${esc(c)}</textarea><button class="btn sm ghost" data-act="delCond" data-i="${i}">${UI.confirmDel === 'B5.cond.' + i ? 'Confirm' : 'Remove'}</button></div>`).join('')}</div><div class="row" style="margin:6px 0"><button class="btn sm" data-act="addCond">Add a condition</button></div>`
+      + `<div class="fgrid" style="margin-top:8px"><label class="f"><span>Proposed by</span>${propSel(id, 'proposedBy', P.proposedBy)}</label><label class="f"><span>Dissent</span>${dissentIn(id, 'dissent', P.dissent)}</label></div>`;
+  } else if (id === 'B6') {
+    const hs = P.harms || {}, hint = C.starting.thresholdHints;
+    h += table(['Harm to', 'We will not tolerate', 'Threshold', 'Source', 'Proposed by', 'Dissent'], SC.harm.map(x => { const v = hs[x[0]] || {}, k = `harms.${x[0]}`; return [esc(x[1]), pIn(id, k + '.statement', v.statement, { rows: 2, label: 'Not tolerated: ' + x[1] }), pIn(id, k + '.threshold', v.threshold, { ph: hint[x[0]], label: 'Threshold: ' + x[1] }), pIn(id, k + '.source', v.source, { list: 'dl_source', ph: 'Existing threshold, or New', label: 'Source: ' + x[1] }), propSel(id, k + '.proposedBy', v.proposedBy), dissentIn(id, k + '.dissent', v.dissent)]; }));
+    h += '<datalist id="dl_source"><option value="New"><option value="Risk appetite statement"><option value="Delegations of authority"><option value="Incident thresholds"><option value="Complaints policy"></datalist><p class="small soft">A material AI incident is an AI failure that reaches any threshold above. RV5 (B4) and EV1 (B7) use this definition.</p>';
+  } else if (id === 'B7') {
+    const ms = P.measures || [], ev = P.events || [], goals = (pos('B2').goals || []);
+    h += sub('At each meeting · three to five measures, each countable from the inventory or the action list');
+    h += table(['Ref', 'Measure', 'Limit', 'Owner', ''], ms.map(x => [refTip(x.id) + (x.goal ? `<br><span class="small soft">for ${esc(x.goal)}</span>` : ''), pIn(id, `measures.${x.id}.measure`, x.measure, { rows: 2, label: 'Measure ' + x.id }), pIn(id, `measures.${x.id}.limit`, x.limit, { ph: 'e.g. 0', label: 'Limit for ' + x.id }), pIn(id, `measures.${x.id}.owner`, x.owner, { ph: 'Named person', label: 'Owner of ' + x.id }), delBtn(id, 'measures', x.id)]));
+    if (ms.length > 5) h += '<p class="small" style="margin:4px 0">More than the five measures the framework suggests. Consider which the board will read.</p>';
+    const linked = g => ms.some(m => m.goal === g.id) || ms.some(m => g.measure && new RegExp('^' + m.id + '\\b').test(g.measure));
+    const open = goals.filter(g => g.measure && !linked(g));
+    if (open.length) h += `<div class="panel2" style="padding:10px 14px;margin:6px 0"><p class="small" style="margin:0 0 6px"><strong>From the governance goals (B2).</strong> Each goal’s measure is reported here.</p>${open.map(g => `<div class="row between" style="gap:8px;margin:4px 0"><span class="small">${refTip(g.id)} ${esc(g.measure)}</span><button class="btn sm ghost" data-act="goalMeasure" data-id="${esc(g.id)}">Add as a measure</button></div>`).join('')}</div>`;
+    h += sub('Between meetings');
+    h += table(['Ref', 'Event', 'Reported to', 'Within', ''], ev.map(x => [refTip(x.id), pIn(id, `events.${x.id}.event`, x.event, { rows: 2, label: 'Event ' + x.id }), pIn(id, `events.${x.id}.to`, x.to, { list: 'dl_to', label: x.id + ' reported to' }), pIn(id, `events.${x.id}.within`, x.within, { ph: 'e.g. 24 hours', label: x.id + ' within' }), delBtn(id, 'events', x.id)]));
+    h += '<datalist id="dl_to"><option value="Chair"><option value="Chair and GC"><option value="Accountable executive"><option value="Full board"></datalist>';
+    h += `<div class="row" style="gap:8px;margin:6px 0">${ms.length || ev.length ? '' : '<button class="btn sm primary" data-act="loadStart" data-step="B7">Start from BM1 to BM5 and EV1 to EV4</button>'}<button class="btn sm" data-act="addMeasure">Add a measure</button><button class="btn sm" data-act="addEvent">Add an event</button></div>`;
+    h += `<div class="fgrid" style="margin-top:8px"><label class="f"><span>Proposed by</span>${propSel(id, 'proposedBy', P.proposedBy)}</label><label class="f"><span>Dissent</span>${dissentIn(id, 'dissent', P.dissent)}</label></div>`;
+  } else if (id === 'B8') {
+    const o = P.owners || {}, ph = { AC1: 'e.g. Audit and risk committee, or the full board', AC2: 'Named director, or none', AC3: 'Named executive', AC4: 'One per area, or “each executive for their area”', AC5: 'Who, and within what limit' };
+    h += table(['Ref', 'Accountability', 'Named'], SC.accountability.map(a => [`<span class="mono">${a[0]}</span>`, esc(a[1]), pIn(id, `owners.${a[0]}`, o[a[0]], { ph: ph[a[0]], label: a[1] })]));
+    h += `<div class="fgrid" style="margin-top:8px"><label class="f"><span>Proposed by</span>${propSel(id, 'proposedBy', P.proposedBy)}</label><label class="f"><span>Dissent</span>${dissentIn(id, 'dissent', P.dissent)}</label></div>`;
+  }
+  return stepAids(id) + h + (UI.practice ? '<p class="small soft">Worked example: try it. Nothing is saved.</p>' : '');
+}
+/* Log a question to counsel from any step. */
+function askBox(id) {
+  if (askWhy()) return '';
+  const v = (UI.qdraft || {})[id] || '';
+  return `<details style="margin-top:10px" ${v ? 'open' : ''}><summary class="small" style="cursor:pointer">Log a question to counsel</summary><p class="small soft" style="margin:6px 0">For any point that turns on what the company is obliged to do. It goes to the GC in writing and is not settled in the room.</p><textarea class="in" rows="2" id="q_${id}" data-qstep="${id}" aria-label="Question to counsel at ${id}">${esc(v)}</textarea><div class="row" style="margin-top:6px"><button class="btn sm" data-act="askQ" data-step="${id}">Log the question</button></div></details>`;
+}
+function nextQRef() { const n = (S.questions || []).reduce((m, q) => Math.max(m, +String(q.ref).replace(/\D/g, '') || 0), 0) + 1; return 'QC-' + String(n).padStart(2, '0'); }
 function stepBody(id) {
   const e = S.engagement, qs = (S.questions || []).filter(q => q.step === id);
   const questions = qs.length ? `<p class="mini" style="margin:12px 0 4px">Questions to counsel</p>` + table(['Ref', 'Question', 'Status', 'Counsel’s answer'], qs.map(q => [refTip(q.ref), esc(q.question) + '<br>' + by(q.raisedBy), q.status === 'answered' ? '<span class="badge b-green">Answered</span>' : '<span class="badge b-ochre">Open</span>', esc(q.response || '')])) : '';
@@ -307,19 +443,21 @@ function stepBody(id) {
       + (mb ? `<p class="mini" style="margin:12px 0 4px">Obligations in scope, from the Atlas matter brief (${esc(mb.scope)})</p>` + table(['Tier', 'References'], mb.tiers.map(t => [esc(t.tier), t.refs.length ? t.refs.map(r => `<span class="mono">${esc(r[0])}</span> ${esc(r[1])}`).join('<br>') : '<span class="soft">None</span>'])) + '<p class="small soft">The brief lists what sources say by tier. Counsel decides what applies.</p>' : '<p class="small soft">No Atlas matter brief imported yet.</p>');
   } else if (id === 'B1') {
     h = inventoryBody();
+  } else if (RULES.POSITION_STEPS.includes(id) && !posWhy()) {
+    h = posEditor(id);
   } else if (id === 'B2') {
-    const b2 = pos('B2');
-    h = table(['Area', 'Posture', 'Condition', 'Proposed by'], S.areas.filter(a => b2[a.id]).map(a => { const x = b2[a.id]; return [esc(a.name), `<strong>${esc(lbl(SC.posture, x.posture))}</strong><br><span class="small soft">${esc((SC.posture.find(r => r[0] === x.posture) || [])[2] || '')}</span>`, esc(x.condition || ''), by(x.proposedBy)]; }));
+    const b2 = pos('B2'), goals = b2.goals || [];
+    h = (goals.length ? '<p class="mini" style="margin:8px 0 4px">Governance goals</p>' + table(['Ref', 'Goal', 'Owner', 'Measure', 'Proposed by'], goals.map(g => [refTip(g.id), esc(g.goal), esc(g.owner), esc(g.measure), by(g.proposedBy)])) + '<p class="mini" style="margin:12px 0 4px">Posture by area</p>' : '') + table(['Area', 'Posture', 'Condition', 'Proposed by'], S.areas.filter(a => b2[a.id]).map(a => { const x = b2[a.id]; return [esc(a.name), x.posture === 'NS' ? tip('<strong>Not set</strong>', C.tips.notSet) + `<br><span class="small soft">${esc([x.notSetOwner, x.notSetBy].filter(Boolean).join(', by '))}</span>` : `<strong>${esc(lbl(SC.posture, x.posture))}</strong><br><span class="small soft">${esc((SC.posture.find(r => r[0] === x.posture) || [])[2] || '')}</span>`, esc(x.condition || ''), by(x.proposedBy) + dis(x)]; }));
   } else if (id === 'B3') {
-    h = table(['Ref', 'Red line', 'Scope', 'Applies to', 'Proposed by'], (pos('B3').lines || []).map(x => [refTip(x.id), esc(x.use), esc(x.scope), esc(x.appliesTo), by(x.proposedBy)]));
+    h = table(['Ref', 'Red line', 'Scope', 'Applies to', 'Proposed by'], (pos('B3').lines || []).map(x => [refTip(x.id), esc(x.use), esc(x.scope), esc(x.appliesTo), by(x.proposedBy) + dis(x)]));
   } else if (id === 'B4') {
-    h = table(['Ref', 'Event', 'Board approves or is told', 'Brought by', 'Proposed by'], (pos('B4').events || []).map(x => [refTip(x.id), esc(x.event), esc(x.timing), esc(x.by), by(x.proposedBy)]));
+    h = table(['Ref', 'Event', 'Board approves or is told', 'Brought by', 'Proposed by'], (pos('B4').events || []).map(x => [refTip(x.id), esc(x.event), esc(x.timing), esc(x.by), by(x.proposedBy) + dis(x)]));
   } else if (id === 'B5') {
-    const b5 = pos('B5'), cells = b5.cells || {}, badge = (m, g, k) => { const t = m && C.tips.mark[m] ? `${lbl(SC.infoClass, g)} in ${lbl(SC.toolKind, k).toLowerCase()}: ${C.tips.mark[m]}` : ''; return m === 'P' ? tip('P', t, 'badge b-green') : m === 'C' ? tip('C', t, 'badge b-ochre') : m === 'N' ? tip('N', t, 'badge b-red') : tip('<span class="soft">—</span>', `${lbl(SC.infoClass, g)} in ${lbl(SC.toolKind, k).toLowerCase()}: not marked yet.`); };
+    const b5 = pos('B5'), cells = b5.cells || {}, badge = (m, g, k) => { const t = m && C.tips.mark[m] ? `${lbl(SC.infoClass, g)} in ${lbl(SC.toolKind, k).replace(/^\w/, c => c.toLowerCase())}: ${C.tips.mark[m]}` : ''; return m === 'P' ? tip('P', t, 'badge b-green') : m === 'C' ? tip('C', t, 'badge b-ochre') : m === 'N' ? tip('N', t, 'badge b-red') : tip('<span class="soft">—</span>', `${lbl(SC.infoClass, g)} in ${lbl(SC.toolKind, k).replace(/^\w/, c => c.toLowerCase())}: not marked yet.`); };
     h = Object.keys(cells).length ? table(['Class', ...SC.toolKind.map(k => ({ html: kindTip(k[0]) }))], SC.infoClass.map(g => [classTip(g[0]), ...SC.toolKind.map(k => badge(cells[g[0] + ':' + k[0]], g[0], k[0]))])) + '<p class="small soft">P permitted · C permitted with conditions · N not permitted.</p>' + (b5.conditions || []).map(c => `<p class="small">${esc(c)}</p>`).join('') + (b5.proposedBy ? `<p class="small soft">Proposed by ${esc(pname(b5.proposedBy))}</p>` : '') : '';
   } else if (id === 'B6') {
     const hs = pos('B6').harms || {};
-    h = table(['Harm to', 'We will not tolerate', 'Threshold', 'Source', 'Proposed by'], SC.harm.filter(x => hs[x[0]]).map(x => { const v = hs[x[0]]; return [esc(x[1]), esc(v.statement), esc(v.threshold), esc(v.source), by(v.proposedBy)]; }))
+    h = table(['Harm to', 'We will not tolerate', 'Threshold', 'Source', 'Proposed by'], SC.harm.filter(x => hs[x[0]]).map(x => { const v = hs[x[0]]; return [esc(x[1]), esc(v.statement), esc(v.threshold), esc(v.source), by(v.proposedBy) + dis(v)]; }))
       + (Object.keys(hs).length ? '<p class="small soft">A material AI incident is an AI failure that reaches any threshold above.</p>' : '');
   } else if (id === 'B7') {
     const b7 = pos('B7');
@@ -333,7 +471,7 @@ function stepBody(id) {
     h = (r.by ? `<dl class="kv"><dt>Resolution</dt><dd>${esc(r.text || '')}</dd><dt>Recorded by</dt><dd>${esc(pname(r.by))}, ${esc(dl(r.on))} · ${esc(r.minuteRef || '')}</dd><dt>Review</dt><dd>${esc(r.interval || '')}</dd></dl>` : '')
       + (rl.length ? `<p class="mini" style="margin:12px 0 4px">${tip('Reality note', C.tips.reality)}: inventory lines that already cross a position (each goes on the 90-day action list)</p>` + table(['Line', 'Use', 'Why'], rl.map(([l, why]) => [refTip(l.id), esc(l.use), esc(why)])) : '');
   }
-  return (h || '<p class="small soft">Nothing recorded yet. The screen for this step is added in development plan task ' + esc((C.steps.find(s => s.id === id) || {}).task || '') + '.</p>') + questions;
+  return (h || '<p class="small soft">Nothing recorded yet.' + (['B0', 'B9'].includes(id) ? ' The screen for this step is added in development plan task ' + esc((C.steps.find(s => s.id === id) || {}).task || '') + '.' : '') + '</p>') + questions + (id === 'B0' || id === 'B9' ? '' : askBox(id));
 }
 const hasContent = id => id === 'B0' ? !!(S.engagement.company) : id === 'B1' ? (S.inventory || []).length > 0 : id === 'B9' ? !!(S.resolution || {}).by : Object.keys(pos(id)).length > 0;
 
@@ -372,7 +510,7 @@ function mainScreen() {
   </div><div style="margin-top:14px">${TriodianBrand.logoControl(e.practitioner, deny('setup') ? 'disabled' : '')}</div></section>
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">4 · Areas of the business</h2>${why ? '' : '<button class="btn sm" data-act="addArea">Add an area</button>'}</div><p class="small soft">The board sets a posture for each area at B2. Change these to the company's own list.</p><div class="stack" style="gap:8px">${areas}</div></section>
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">5 · People</h2>${SRV.user && SRV.user.isAdmin ? '<a class="btn sm" href="/admin/">Manage in Admin</a>' : ''}</div><p class="small soft">Everyone with a role in this engagement. Roles are given in Admin.</p><div class="stack" style="gap:8px">${people}</div></section>
-  <section class="card"><h2 class="sh">6 · The ten steps</h2><p class="small soft">From the Board AI Appetite Framework, section 4.1. Open a step to see what is recorded.${UI.practice ? ' In the worked example you can try the AI inventory (B1): add or change a line. Nothing is saved.' : ' The AI inventory (B1) can be entered now. The screens for the other steps are added in phase 1 of the development plan.'}</p><div class="steplist">${steps}</div></section>`;
+  <section class="card"><h2 class="sh">6 · The ten steps</h2><p class="small soft">From the Board AI Appetite Framework, section 4.1. Open a step to see what is recorded.${UI.practice ? ' In the worked example you can try the inventory (B1) and the positions (B2 to B8). Nothing is saved.' : ' The AI inventory (B1) and the board’s positions (B2 to B8) can be entered now. Set-up and pre-read (B0) and the resolution (B9) follow in phase 1 of the development plan.'}</p><div class="steplist">${steps}</div></section>`;
 }
 function render() {
   const app = document.getElementById('app');
@@ -384,6 +522,9 @@ TriodianBrand.bind(v => { setPath('engagement.practitioner.logo', v); render(); 
 document.addEventListener('change', ev => {
   const t = ev.target;
   if (t.dataset.path) setPath(t.dataset.path, t.value);
+  else if (t.dataset.pos) setPos(t.dataset.pos, t.dataset.ppath, t.tagName === 'SELECT' ? t.value : t.value.trim());
+  else if (t.dataset.cond != null) { const why = posWhy(); if (why) { toast(why); return; } const P = posObj('B5'), i = +t.dataset.cond; P.conditions = P.conditions || []; const from = P.conditions[i], v = t.value.trim(); if (from === v) return; P.conditions[i] = v; log('edit', 'positions.B5.conditions.' + i, from == null ? null : from, v); rerender(); }
+  else if (t.dataset.qstep) { UI.qdraft = UI.qdraft || {}; UI.qdraft[t.dataset.qstep] = t.value; }
   else if (t.dataset.ans) { UI.answer = UI.answer || {}; UI.answer[t.dataset.ans] = t.value; }
   else if (t.dataset.inv) setInv(t.dataset.inv, t.dataset.k, t.type === 'checkbox' ? t.checked : (t.tagName === 'SELECT' ? t.value : t.value.trim()));
   else if (t.dataset.area != null) { if (deny('setup')) return; const a = S.areas[+t.dataset.area], v = t.value.trim(); if (!a || a.name === v) return; const from = a.name; a.name = v; log('edit', 'areas.' + a.id, from, v); }
@@ -441,6 +582,47 @@ document.addEventListener('click', async ev => {
     toast(`Line ${id} removed.` + (q && q.status !== 'answered' ? ` ${q.ref} stays open for counsel to close.` : ''));
   }
   if (act === 'worklistDocx') downloadWorklist();
+  // B2 to B8
+  const posAct = ['addGoal', 'usePosture', 'addRedLine', 'addReserved', 'loadStart', 'addMeasure', 'addEvent', 'goalMeasure', 'delRow', 'addCond', 'delCond'];
+  if (posAct.includes(act) && posWhy()) { toast(posWhy()); return; }
+  const focusNew = sel => { render(); const el = document.querySelector(sel); if (el) { el.focus({ preventScroll: true }); el.scrollIntoView({ block: 'center' }); } };
+  if (act === 'toggleGoalIdeas') { UI.goalIdeas = !UI.goalIdeas; render(); }
+  if (act === 'toggleCand') { UI.cand = !UI.cand; render(); }
+  if (act === 'addGoal') { const g = addRow('B2', 'goals', 'GL', { goal: b.dataset.i != null ? C.starting.goals[+b.dataset.i] : '', owner: '', measure: '', proposedBy: '' }); UI.goalIdeas = false; focusNew(`#p_B2_goals_${g.id}_goal`); }
+  if (act === 'usePosture') setPos('B2', b.dataset.area + '.posture', b.dataset.v);
+  if (act === 'addRedLine') { const r = addRow('B3', 'lines', 'RL', { use: b.dataset.i != null ? C.starting.redLineCandidates[+b.dataset.i] : '', scope: 'All areas', appliesTo: '', proposedBy: '' }); focusNew(b.dataset.i != null ? `#p_B3_lines_${r.id}_appliesTo` : `#p_B3_lines_${r.id}_use`); }
+  if (act === 'addReserved') { const r = addRow('B4', 'events', 'RV', { event: '', timing: '', by: '', proposedBy: '' }); focusNew(`#p_B4_events_${r.id}_event`); }
+  if (act === 'loadStart') {
+    const st = b.dataset.step, P = posObj(st);
+    if (st === 'B4' && !(P.events || []).length) { P.events = C.starting.reserved.map(([id, event]) => ({ id, event, timing: '', by: '', proposedBy: '' })); log('add', 'positions.B4.events', null, 'starting events RV1 to RV6'); }
+    if (st === 'B7' && !(P.measures || []).length && !(P.events || []).length) { P.measures = C.starting.measures.map(([id, measure, limit]) => ({ id, measure, limit, owner: '' })); P.events = C.starting.events.map(([id, event, to]) => ({ id, event, to, within: '' })); log('add', 'positions.B7', null, 'starting measures BM1 to BM5 and events EV1 to EV4'); }
+    render();
+  }
+  if (act === 'addMeasure') { const r = addRow('B7', 'measures', 'BM', { measure: '', limit: '', owner: '' }); focusNew(`#p_B7_measures_${r.id}_measure`); }
+  if (act === 'addEvent') { const r = addRow('B7', 'events', 'EV', { event: '', to: '', within: '' }); focusNew(`#p_B7_events_${r.id}_event`); }
+  if (act === 'goalMeasure') { const g = (pos('B2').goals || []).find(x => x.id === b.dataset.id); if (g) { addRow('B7', 'measures', 'BM', { measure: g.measure, limit: '', owner: g.owner || '', goal: g.id }); render(); } }
+  if (act === 'delRow') {
+    const { step, list, id } = b.dataset, k = step + '.' + list + '.' + id;
+    if (UI.confirmDel !== k) { UI.confirmDel = k; render(); return; }
+    const arr = posObj(step)[list] || [], i = arr.findIndex(x => x.id === id);
+    if (i >= 0) { const x = arr.splice(i, 1)[0]; log('remove', `positions.${step}.${list}.${id}`, x.use || x.event || x.goal || x.measure || id, null); }
+    UI.confirmDel = ''; render();
+  }
+  if (act === 'addCond') { const P = posObj('B5'); P.conditions = P.conditions || []; P.conditions.push(''); log('add', 'positions.B5.conditions.' + (P.conditions.length - 1), null, ''); focusNew(`#p_B5_cond_${P.conditions.length - 1}`); }
+  if (act === 'delCond') {
+    const i = +b.dataset.i, k = 'B5.cond.' + i;
+    if (UI.confirmDel !== k) { UI.confirmDel = k; render(); return; }
+    const P = posObj('B5'), from = (P.conditions || []).splice(i, 1)[0]; log('remove', 'positions.B5.conditions.' + i, from || '', null); UI.confirmDel = ''; render();
+  }
+  if (act === 'askQ') {
+    const st = b.dataset.step, why = askWhy(); if (why) { toast(why); return; }
+    const box = document.getElementById('q_' + st), text = (box ? box.value : '').trim();
+    if (!text) { toast('Write the question first.'); if (box) box.focus(); return; }
+    const ref = nextQRef(); S.questions = S.questions || [];
+    S.questions.push({ ref, step: st, question: text, status: 'open', response: '', sentOn: todayISO(), raisedBy: myId() });
+    log('add', 'questions.' + ref, null, 'open'); if (UI.qdraft) delete UI.qdraft[st];
+    render(); toast(`${ref} logged for counsel.`);
+  }
   if (act === 'inventoryCsv') downloadInventoryCsv();
   if (act === 'goB1') { UI.open = UI.open || {}; UI.open.B1 = true; render(); const d = document.getElementById('step-B1'); if (d) d.scrollIntoView({ block: 'start' }); }
   if (act === 'answerQ') {
