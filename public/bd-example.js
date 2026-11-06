@@ -17,7 +17,7 @@ window.BDExample = function buildExample() {
     engagement: {
       id: 'example', example: true, company: 'Harrow Valley Foods Pty Ltd', entityType: 'privateCompany', jurisdiction: 'AU', mode: 'standalone',
       reference: 'HVF-BD-2026', privilegeMarking: 'Privileged and confidential · prepared at the request of counsel',
-      practitioner: { firm: 'Kestrel Board Advisory', line: 'Prepared by Kestrel Board Advisory using the Triodian method' },
+      practitioner: { firm: 'Kestrel Board Advisory', line: 'Prepared by Kestrel Board Advisory using the Triodian method', logo: TriodianBrand.EXAMPLE_LOGO },
       boardDates: { workshop: '2026-11-18', resolution: '2026-12-02' }, gcActsAsCounsel: false, secondApproverId: '',
       matterBrief: {
         loadedOn: '2026-11-09', scope: 'Private company · Australia · use cases UC1, UC3, UC6',

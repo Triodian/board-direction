@@ -104,7 +104,7 @@ function header() {
     <div class="hdr-r">${saveChip()}${u ? `<span class="acct"><button class="avatar-link" data-act="acct" aria-haspopup="menu" aria-expanded="${UI.acct}" aria-label="Account: ${esc(u.name || u.email)}"><span class="avatar" aria-hidden="true">${esc(initials(u.name || u.email))}</span></button>${UI.acct ? `<div class="acct-menu" role="menu">
       <div class="acct-who"><span class="avatar" aria-hidden="true">${esc(initials(u.name || u.email))}</span><div><strong>${esc(u.name || u.email)}</strong><div class="small soft">${esc(roles || 'No role in this engagement')}${u.isAdmin ? ' · administrator' : ''}</div></div></div>
       <a role="menuitem" class="item" href="/profile/">Your profile</a>${u.isAdmin ? '<a role="menuitem" class="item" href="/admin/">Admin · users and activity</a>' : ''}<a role="menuitem" class="item" href="/user-guide/">User guide</a><a role="menuitem" class="item signout" href="/auth/logout">Sign out</a></div>` : ''}</span>` : ''}<button class="iconbtn" data-act="drawer" aria-label="Menu" aria-expanded="${UI.drawer}">☰</button></div>
-  </div>${e ? `<div class="docband"><div class="docband-in">${priv}<span class="stat"><strong>${esc(e.company || '[company not set]')}</strong> · ${esc((C.modes.find(m => m.id === e.mode) || {}).name || '')} mode</span></div></div>` : ''}</header>
+  </div>${e ? `<div class="docband"><div class="docband-in"><span style="display:inline-flex;align-items:center;gap:14px;flex-wrap:wrap">${priv}${TriodianBrand.chip(e.practitioner)}</span><span class="stat"><strong>${esc(e.company || '[company not set]')}</strong> · ${esc((C.modes.find(m => m.id === e.mode) || {}).name || '')} mode</span></div></div>` : ''}</header>
   ${SRV.site ? `<div class="examplebar" style="background:#FDF0E1;color:#8A4B08;border-color:#F0D2AE">${esc(SRV.site)}: a test site for trying things out, not the live engagement</div>` : ''}
   ${UI.practice ? '<div class="examplebar">Worked example: a fictional company, board and advisers, for practice only. Nothing is saved. <button class="lnk" data-act="leaveExample">Leave the worked example</button></div>' : ''}`;
 }
@@ -249,12 +249,11 @@ function setInv(id, k, v) {
 function rerender() { setTimeout(() => { const a = document.activeElement, fid = a && a.id, y = scrollY; render(); scrollTo(0, y); if (fid) { const el = document.getElementById(fid); if (el) el.focus(); } }, 0); }
 function worklistMarkdown() {
   const e = S.engagement, cell = v => String(v == null ? '' : v).replace(/\|/g, '\\|').replace(/\n/g, ' ');
-  const resolved = RULES.isResolved(S), firm = (e.practitioner || {}).firm, line = (e.practitioner || {}).line;
+  const resolved = RULES.isResolved(S);
   const out = [];
   if (String(e.privilegeMarking || '').trim()) out.push(e.privilegeMarking.trim(), '');
   out.push('# Automated-decision worklist', '',
     `**${cell(e.company || '[company]')}**${e.reference ? ' · ' + cell(e.reference) : ''} · ${resolved ? 'As resolved' : 'Draft'}, ${dl(todayISO())}`, '');
-  if (firm) out.push(cell(line || ('Prepared by ' + firm)), '');
   out.push('Every line of the AI inventory (B1) recorded as making, or substantially contributing to, a decision about an individual using their personal information. It is a list of facts for counsel’s review of the privacy policy against APPs 1.7 to 1.9, which apply from 10 December 2026. It states no conclusion on what the policy must say.', '',
     '| Line | Use | Area | Kinds of decision | Personal information used | Owner | Question to counsel |', '| --- | --- | --- | --- | --- | --- | --- |');
   admLines().forEach(l => { const q = lineQuestion(l); out.push(`| ${cell(l.id)} | ${cell(l.use)} | ${cell(l.area ? areaName(l.area) : '')} | ${cell(l.decisions || 'Not recorded')} | ${cell(l.personalInfo || 'Not recorded')} | ${cell(pname(l.owner))} | ${q ? cell(q.ref + ', ' + (q.status === 'answered' ? 'answered' : 'open')) : 'None yet'} |`); });
@@ -297,7 +296,7 @@ function downloadWorklist() {
   if (!window.RAFExport) { toast('The Word export did not load. Reload the page and try again.'); return; }
   const e = S.engagement;
   toast('Preparing the Word document…');
-  window.RAFExport.toDocx(worklistMarkdown(), { insurer: e.company, reference: e.reference, creator: (e.practitioner || {}).firm || 'Triodian', wide: true }).then(blob => {
+  window.RAFExport.toDocx(worklistMarkdown(), { insurer: e.company, reference: e.reference, creator: 'Triodian AI Board Direction', brand: e.practitioner, wide: true }).then(blob => {
     saveBlob(blob, `Automated-decision worklist${e.company ? ' - ' + e.company.replace(/[\\/:*?"<>|]/g, '') : ''}.docx`); toast('Word document downloaded');
   }, err => toast('The Word document could not be made: ' + (err && err.message || err)));
 }
@@ -681,10 +680,10 @@ function mainScreen() {
   <section class="card"><h2 class="sh">2 · Mode</h2>
     <div class="fgrid">${fld('Mode', 'engagement.mode', e.mode, { select: C.modes.map(m => [m.id, m.name]) })}</div>
     <p class="small soft" style="margin:6px 0 0">${esc((C.modes.find(m => m.id === e.mode) || {}).for || '')}${locked ? ' The mode is fixed now the AI inventory has a line.' : ' The mode is fixed once the AI inventory (B1) has a line.'}</p></section>
-  <section class="card"><h2 class="sh">3 · Practitioner</h2><p class="small soft" style="margin:0 0 8px">The firm whose name appears on the outputs beside the privilege marking.</p><div class="fgrid">
+  <section class="card"><h2 class="sh">3 · Practitioner</h2><p class="small soft" style="margin:0 0 8px">The GC’s or advisory firm’s name, a line under it and a logo. They appear in the header and above the privilege marking on every Word and PDF output.</p><div class="fgrid">
     ${fld('Firm', 'engagement.practitioner.firm', (e.practitioner || {}).firm)}
     ${fld('Line under the name', 'engagement.practitioner.line', (e.practitioner || {}).line, { ph: 'Prepared by [firm] using the Triodian method' })}
-  </div></section>
+  </div><div style="margin-top:14px">${TriodianBrand.logoControl(e.practitioner, deny('setup') ? 'disabled' : '')}</div></section>
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">4 · Areas of the business</h2>${why ? '' : '<button class="btn sm" data-act="addArea">Add an area</button>'}</div><p class="small soft">The board sets a posture for each area at B2. Change these to the company's own list.</p><div class="stack" style="gap:8px">${areas}</div></section>
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">5 · People</h2>${SRV.user && SRV.user.isAdmin ? '<a class="btn sm" href="/admin/">Manage in Admin</a>' : ''}</div><p class="small soft">Everyone with a role in this engagement. Roles are given in Admin.</p><div class="stack" style="gap:8px">${people}</div></section>
   <section class="card"><h2 class="sh">6 · The ten steps</h2><p class="small soft">From the Board AI Appetite Framework, section 4.1. Open a step to see what is recorded.${UI.practice ? ' In the worked example you can try the inventory (B1) and the positions (B2 to B8). Nothing is saved.' : ' The AI inventory (B1) and the board’s positions (B2 to B8) can be entered now. Set-up and pre-read (B0) and the resolution (B9) follow in phase 1 of the development plan.'}</p><div class="steplist">${steps}</div></section>`;
@@ -695,6 +694,7 @@ function render() {
 }
 
 /* ---------- events ---------- */
+TriodianBrand.bind(v => { setPath('engagement.practitioner.logo', v); render(); }, toast);
 document.addEventListener('change', ev => {
   const t = ev.target;
   if (t.id === 'brief_file') { const f = t.files && t.files[0]; if (!f) return; if (f.size > 2 * 1024 * 1024) { toast('That file is too large to be a matter brief.'); return; } f.text().then(loadBriefText); t.value = ''; return; }
