@@ -34,7 +34,7 @@ test('the worked example: every output downloads, opens as Word, and carries the
     const body = text(unzip(f.buf, 'word/document.xml'));
     expect(body, id).toContain(phrase);
     const foot = text(unzip(f.buf, 'word/footer1.xml')), headx = text(unzip(f.buf, 'word/header1.xml'));
-    expect(foot, id + ' footer').toContain('Resolved by the board, 2 December 2026');
+    expect(foot, id + ' footer').toContain('Resolved by the board, version V2, 2 December 2026');
     expect(headx, id + ' header').toContain('Privileged and confidential');
   }
   const j = await grab(p, 'confidentiality');
