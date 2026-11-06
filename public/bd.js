@@ -692,6 +692,18 @@ function b9Body() {
     h += `<p class="small soft">Not yet resolved. ${esc(why)}</p>`;
   }
   if (rl.length) h += `<p class="mini" style="margin:12px 0 4px">${tip('Reality note', C.tips.reality)}: inventory lines that already cross a position (each goes on the 90-day action list)</p>` + table(['Line', 'Use', 'Why'], rl.map(([l, w]) => [refTip(l.id), esc(l.use), esc(w)]));
+  return h + versionsPanel();
+}
+/* Versions (framework 9.4): the server issues one at each sign-off (the scope agreed, the resolution). Each can be
+   compared with the engagement now, to see what has changed since. */
+function versionsPanel() {
+  const vs = S.versions || [];
+  let h = sub(tip('Versions', 'A version is issued at each sign-off: when the scope is agreed (B0) and when the board resolves (B9). Each keeps the areas, the inventory and the positions as they were, so later changes can be seen.') + ' · issued at each sign-off');
+  if (!vs.length) return h + '<p class="small soft" style="margin:0">None yet. The first is issued when the GC and the chair have both agreed the scope.</p>';
+  const now = window.BDVersions.snapshotOf(S);
+  h += table(['Version', 'Sign-off', 'When', 'By', ''], vs.slice().reverse().map(v => [`<span class="mono">${esc(v.id)}</span>`, esc(v.label), esc(dl(String(v.at || '').slice(0, 10))), esc(v.by || ''), `<button class="lnk small" data-act="compareVersion" data-id="${esc(v.id)}" aria-expanded="${UI.compare === v.id}">${UI.compare === v.id ? 'Hide' : 'Compare with now'}</button>`]));
+  const v = vs.find(x => x.id === UI.compare);
+  if (v) { const d = window.BDVersions.compareSnapshots(v.snapshot, now); h += `<div class="panel2" style="padding:10px 14px;margin:6px 0" id="compare"><p class="small" style="margin:0 0 4px"><strong>Since ${esc(v.id)}</strong> (${esc(v.label)}, ${esc(dl(String(v.at || '').slice(0, 10)))})</p>${d.length ? `<ul class="small" style="margin:0 0 0 18px">${d.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '<p class="small soft" style="margin:0">Nothing has changed.</p>'}</div>`; }
   return h;
 }
 function stepBody(id) {
@@ -880,6 +892,7 @@ document.addEventListener('click', async ev => {
     toast(`Line ${id} removed.` + (q && q.status !== 'answered' ? ` ${q.ref} stays open for counsel to close.` : ''));
   }
   if (act === 'worklistDocx') downloadWorklist();
+  if (act === 'compareVersion') { UI.compare = UI.compare === b.dataset.id ? '' : b.dataset.id; render(); }
   if (act === 'output') downloadOutput(b.dataset.id);
   if (act === 'goStep') { const st = b.dataset.step; UI.open = UI.open || {}; UI.open[st] = true; render(); const d = document.getElementById('step-' + st); if (d) d.scrollIntoView({ block: 'start' }); }
   if (act === 'goChecks') { const d = document.getElementById('checks'); if (d) d.scrollIntoView({ block: 'start' }); }

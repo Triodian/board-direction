@@ -3,21 +3,215 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>User guide · AI Board Direction · Triodian</title>
+<title>User guide · AI Board Direction</title>
+<meta name="description" content="User guide for AI Board Direction: what it is for, who does what, the ten steps B0 to B9, the director briefing, the checks, the resolution and versions, outputs and notifications.">
 <link rel="icon" href="/triodian-mark.svg" type="image/svg+xml">
+<link rel="preload" href="/fonts/source-serif-4-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/app.css">
-<style>.hdr{border-top-color:var(--aubergine)}</style>
+<style>
+/* User guide for AI Board Direction. Uses the app's design system (app.css) and its tokens.
+   Guide-only classes are prefixed g- so they do not collide with the app's own .steps, .sub and .sh. */
+.hdr{border-top-color:var(--aubergine)}
+.g-back{font:500 13px var(--sans);color:var(--ink-soft);text-decoration:none;white-space:nowrap;border:1px solid var(--rule);border-radius:6px;padding:6px 10px;background:var(--card)}
+.g-back:hover{color:var(--ink);border-color:var(--ink-soft)}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+.g-page{max-width:820px;margin:0 auto;padding:40px 24px 80px}
+@media (max-width:639px){.g-page{padding:28px 16px 64px}}
+.g-paper{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:8px clamp(18px,4vw,44px) 40px}
+.g-docline{display:flex;flex-wrap:wrap;gap:4px 16px;padding:14px 0 12px;margin-bottom:22px;border-bottom:1px solid var(--rule-soft);font:400 13px var(--sans);color:var(--ink-faint)}
+.g-hero h1{font:600 clamp(30px,5vw,40px)/1.12 var(--serif);letter-spacing:-.01em;margin:0 0 14px;text-wrap:balance}
+.g-lede{font:400 19px/1.5 var(--serif);color:var(--ink-soft);margin:0 0 18px}
+.g-paper p,.g-paper li,.g-paper dd{font:400 16px/1.62 var(--serif);color:var(--ink)}
+.g-paper p{margin:0 0 12px}
+.g-paper h2{font:600 clamp(23px,3.4vw,28px)/1.2 var(--serif);margin:0 0 6px;text-wrap:balance}
+.g-paper h3{font:600 19px/1.3 var(--serif);margin:26px 0 8px}
+.g-paper h4{font:600 15px/1.3 var(--sans);margin:20px 0 6px;color:var(--ink)}
+.g-paper ul,.g-paper ol{margin:0 0 12px;padding-left:1.3rem}
+.g-paper li{margin:0 0 6px;padding-left:2px}
+.g-paper li::marker{color:var(--ink-faint)}
+.g-paper strong{font-weight:600}
+.g-ui{font:600 .9em var(--sans)}
+.g-code{font:600 .86em var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap}
+section.g-sec{padding-top:40px;margin-top:36px;border-top:1px solid var(--rule)}
+.g-eyebrow{font:500 12px var(--sans);color:var(--ink-faint);margin:0 0 6px}
+.g-intro{color:var(--ink-soft)}
+.g-toc{background:var(--parchment-2);border:1px solid var(--rule);border-radius:10px;padding:16px 20px 10px;margin:22px 0 4px}
+.g-toc .g-eyebrow{margin-bottom:8px}
+.g-toc ol{margin:0;padding-left:1.4rem;columns:2;column-gap:28px}
+@media (max-width:639px){.g-toc ol{columns:1}}
+.g-toc li{font:400 15px/1.45 var(--sans);margin:0 0 6px;break-inside:avoid}
+.g-toc a{color:var(--ink);text-decoration:none}
+.g-toc a:hover{color:var(--aubergine);text-decoration:underline}
+.g-note{display:block;padding:12px 16px;margin:16px 0;background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--ink-soft);border-radius:4px}
+.g-note p:last-child{margin-bottom:0}
+.g-note.priv{border-left-color:var(--privilege)}
+.g-note.priv .g-lbl{color:var(--privilege)}
+.g-note.new{border-left-color:var(--navy);background:#F3F5F8}
+.g-lbl{font:600 13px var(--sans);margin-right:6px;color:var(--ink)}
+.g-paper .tw{margin:10px 0 16px}
+.g-paper table.lg td{font:400 14px/1.5 var(--sans);color:var(--ink-soft)}
+.g-paper table.lg td:first-child{color:var(--ink);font-weight:600}
+.g-paper table.lg td.code{white-space:nowrap}
+.g-role{padding:16px 0 4px;border-top:1px solid var(--rule-soft);margin-top:14px}
+.g-role:first-of-type{border-top:0}
+.g-role h3{margin-top:0}
+.g-cant{font:400 14px/1.5 var(--sans);color:var(--ink-soft);border-left:3px solid var(--red);padding:6px 0 6px 12px;margin:6px 0 12px}
+.g-cant b{color:var(--red);font-weight:600;margin-right:4px}
+.g-top{display:inline-block;margin-top:14px;font:500 13px var(--sans);color:var(--ink-faint);text-decoration:none}
+.g-top:hover{color:var(--aubergine)}
+dl.g-dl{margin:0 0 12px;border-top:1px solid var(--rule-soft)}
+dl.g-dl>div{display:grid;grid-template-columns:minmax(0,12rem) minmax(0,1fr);gap:2px 18px;padding:9px 2px;border-bottom:1px solid var(--rule-soft)}
+@media (max-width:639px){dl.g-dl>div{grid-template-columns:minmax(0,1fr)}}
+dl.g-dl dt{font:600 14px/1.45 var(--sans);color:var(--ink)}
+dl.g-dl dd{margin:0;font-size:15px;color:var(--ink-soft)}
+.g-foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--rule);display:flex;gap:12px;align-items:center;flex-wrap:wrap;font:400 13px var(--sans);color:var(--ink-faint)}
+.g-foot img{height:18px;width:auto;display:block}
+@media print{
+  .hdr,.g-top,.g-back{display:none!important}
+  html,body{background:#fff}
+  .g-page{padding:0;max-width:none}
+  .g-paper{border:0;padding:0}
+  section.g-sec{break-before:auto}
+  .tw,.g-note,.g-role{break-inside:avoid}
+  a{color:inherit;text-decoration:none}
+}
+</style>
 </head>
 <body>
-<header class="hdr"><div class="hdr-in"><a class="brand" href="/" aria-label="Triodian · back to the engagement" style="text-decoration:none"><img class="logo" src="/triodian-logo.svg" alt="Triodian" style="height:22px;width:auto;display:block"></a><span class="vrule" aria-hidden="true"></span><span class="apptitle">User guide</span><div class="hdr-r"><a class="lnk hdr-back" href="/">Back to the engagement</a></div></div></header>
-<main id="main"><div class="wrap">
-<div class="opening"><div class="eyebrow">AI Board Direction</div><h1 class="h1">User guide</h1><p class="sub">The full guide is written with the step screens (development plan, task 1.10).</p></div>
-<section class="card"><h2 class="sh">What this app does</h2>
-<p>It takes a board through ten steps, B0 to B9, from what AI the company uses to a resolved position on AI. The board advisor facilitates, the general counsel acts as counsel, and Triodian records. Positions are proposed by the board and management only.</p>
-<p>It runs in one of two modes. <strong>Standalone</strong>, for companies outside prudential regulation, produces the whole appetite. <strong>Connected</strong>, for APRA, ASIC or MAS regulated entities, produces board directions that the AI Risk Appetite engagement must stay within.</p>
-<p>It records what the board decides and who proposed it. It does not recommend what the board's position should be. Questions about the company's legal obligations are recorded for counsel.</p></section>
-<section class="card"><h2 class="sh">Getting started</h2>
-<ol><li>An administrator adds people in Admin and gives each a role.</li><li>Triodian or an administrator starts the engagement and completes set-up: company, mode, areas of the business and board dates.</li><li>The steps follow as their screens are added.</li></ol></section>
+<header class="hdr"><div class="hdr-in"><a class="brand" href="/" aria-label="Triodian · back to the engagement" style="text-decoration:none"><img class="logo" src="/triodian-logo.svg" alt="Triodian" style="height:22px;width:auto;display:block"></a><span class="vrule" aria-hidden="true"></span><span class="apptitle">User guide</span><div class="hdr-r"><a class="g-back" href="/">Back to the engagement</a></div></div></header>
+<main class="g-page" id="main"><div class="g-paper">
+<div class="g-docline"><span>AI Board Direction</span><span>User guide</span><span>Board AI Appetite Framework, draft of 5 November 2026</span></div>
+<div class="g-hero"><h1>AI Board Direction: user guide</h1><p class="g-lede">The app takes a board from “what AI do we use?” to a resolved position on AI: where it wants AI, what it will not accept, what must come back to it, what information may go where, what harm it will not tolerate, what it expects to hear, and who is accountable.</p></div>
+<nav class="g-toc" aria-label="Contents"><p class="g-eyebrow">Contents</p><ol>
+<li><a href="#for">What the app is for</a></li><li><a href="#before">Before you start</a></li><li><a href="#who">Who does what</a></li><li><a href="#steps">The ten steps</a></li><li><a href="#b0">Set-up, the brief and the briefing (B0)</a></li><li><a href="#b1">The AI inventory (B1)</a></li><li><a href="#positions">Recording positions (B2 to B8)</a></li><li><a href="#counsel">Questions to counsel</a></li><li><a href="#checks">The checks</a></li><li><a href="#resolve">Resolving (B9) and versions</a></li><li><a href="#outputs">Outputs</a></li><li><a href="#notify">Email notifications and your profile</a></li><li><a href="#codes">Codes used in the app</a></li>
+</ol></nav>
+
+<section class="g-sec" id="for"><p class="g-eyebrow">1</p><h2>What the app is for</h2>
+<p>The board works through ten templated steps, B0 to B9, usually in one workshop of about three hours, and resolves the result at its next meeting. The board advisor facilitates, the general counsel (in-house or fractional) acts as counsel, and Triodian supplies the structure and records.</p>
+<p>The engagement runs in one of two modes, chosen at set-up. <strong>Standalone</strong>, for companies outside prudential regulation, produces the whole appetite: an AI risk appetite statement the board resolves. <strong>Connected</strong>, for APRA, ASIC or MAS regulated entities, produces board directions that the AI Risk Appetite engagement must stay within; the board approves that engagement’s statement afterwards. The mode is fixed once the inventory has a line.</p>
+<div class="g-note"><p><span class="g-lbl">Two standing rules.</span>The appetite is the board’s: the app records what the board decides and who proposed it, and never says what the position should be. Anything that turns on what the company is obliged to do is a question for counsel, logged in writing and not settled in the room. The app holds no client data or personal information: uses and information are described by kind.</p></div></section>
+
+<section class="g-sec" id="before"><p class="g-eyebrow">2</p><h2>Before you start</h2>
+<p>Sign in with your work email, or with the demonstration account you were given. An administrator adds each person in <span class="g-ui">Admin</span> and gives them one or more roles. What you can change depends on your roles; the server checks every save against the same rules the screens show, and a control you cannot use says why.</p>
+<p>The app opens in the <span class="g-ui">worked example</span>: Harrow Valley Foods, a fictional company with its board and advisers, worked through every step. You can try every screen in it, including the inventory, the positions and the director briefing. Nothing in it is saved. Choose <span class="g-ui">Leave the worked example</span> in the band at the top to reach your own engagement; the menu (☰ → Practice) brings the example back.</p>
+<p>The <span class="g-ui">Switch app</span> button opens the other Triodian apps. In connected mode the order is the AI Obligations Atlas, this app, AI Risk Appetite, then AI Use Assessment.</p>
+<p>Codes such as A3, G6 or BM2 explain themselves: hover over one, or move to it with the keyboard.</p></section>
+
+<section class="g-sec" id="who"><p class="g-eyebrow">3</p><h2>Who does what</h2>
+<div class="tw"><table class="lg"><thead><tr><th>Role</th><th>Does</th></tr></thead><tbody>
+<tr><td>Chair</td><td>Chairs the workshop and proposes positions. Agrees the scope at B0, takes the director briefing, and records the resolution at B9.</td></tr>
+<tr><td>Directors</td><td>Propose and test positions in the workshop. Each takes the director briefing.</td></tr>
+<tr><td>CEO or accountable executive</td><td>Supplies the AI inventory (B1) with the people they nominate. Proposes positions with the board. Owns the 90-day action list.</td></tr>
+<tr><td>CRO (connected mode)</td><td>Proposes positions with the board, and owns the AI Risk Appetite engagement that follows.</td></tr>
+<tr><td>General counsel</td><td>Agrees the scope and the privilege position at B0. Answers the questions to counsel. Settles the wording of the outputs and drafts the acceptable-use policy.</td></tr>
+<tr><td>Board advisor</td><td>Facilitates: agenda, pre-read, workshop, minute. Sees the directors’ briefing answers, to see what to explain at the workshop.</td></tr>
+<tr><td>Triodian (method owner, recorder)</td><td>Sets up the engagement, loads the matter brief, records positions as the board proposes them, and runs the checks.</td></tr>
+<tr><td>Area owners</td><td>Confirm the positions for their area of the business.</td></tr>
+</tbody></table></div>
+<p class="g-cant"><b>Not in the app’s power:</b>the board advisor, the GC and Triodian never propose a position. Only a director, the chair, the CEO or, in connected mode, the CRO can be named as proposer, and the server refuses anyone else.</p>
+<p>Where the GC also acts as counsel, tick <span class="g-ui">The GC also acts as counsel</span> in set-up and name a second approver: that executive or director gives the second agreement to the scope instead of the chair, and every output records that the GC held both roles.</p></section>
+
+<section class="g-sec" id="steps"><p class="g-eyebrow">4</p><h2>The ten steps</h2>
+<div class="tw"><table class="lg"><thead><tr><th>Step</th><th>The question to the board</th></tr></thead><tbody>
+<tr><td class="code">B0 Set-up</td><td>What applies to us, and what do directors need to know first?</td></tr>
+<tr><td class="code">B1 Where AI is used</td><td>What AI do we use now, directly and through providers?</td></tr>
+<tr><td class="code">B2 Posture</td><td>Where do we want AI to create value, and how cautious are we in each area? (With the governance goals.)</td></tr>
+<tr><td class="code">B3 Red lines</td><td>Which uses of AI do we not accept at all?</td></tr>
+<tr><td class="code">B4 Reserved</td><td>Which AI decisions must come back to us?</td></tr>
+<tr><td class="code">B5 Confidential information</td><td>What information may go into which AI tools?</td></tr>
+<tr><td class="code">B6 Harm</td><td>What failure would be unacceptable to customers, staff or the company?</td></tr>
+<tr><td class="code">B7 Reporting</td><td>What should management report to us about AI, and how fast?</td></tr>
+<tr><td class="code">B8 Accountability</td><td>Which committee, director and executive own AI?</td></tr>
+<tr><td class="code">B9 Resolve</td><td>Do we resolve this, and when do we look again?</td></tr>
+</tbody></table></div>
+<p>Each step opens to show its question, what is recorded, and, where you can record, the screen for it. Every step from B2 to B8 shows <span class="g-ui">Prompts for the room</span> and its <span class="g-ui">starting position</span>: a place to begin the discussion, never a recommendation.</p></section>
+
+<section class="g-sec" id="b0"><p class="g-eyebrow">5</p><h2>Set-up, the brief and the briefing (B0)</h2>
+<h3>Set-up</h3>
+<p>Triodian or an administrator records the company, entity type, jurisdiction, mode, areas of the business, the privilege marking counsel directs, the practitioner’s firm and logo (shown on every output), and the workshop and resolution dates.</p>
+<h3>The matter brief</h3>
+<p>Build a matter brief in the AI Obligations Atlas for the company’s entity type and jurisdiction, download it as JSON, and load it at B0 (<span class="g-ui">Choose the brief file</span>, or paste it). The obligations in scope appear by tier: Binding, Expected and Anticipated. The tiers describe the sources; counsel decides what applies. The questions counsel will need to determine can be logged to counsel in one step. A brief built for another jurisdiction or entity type is flagged. The lawyer’s matter label is not kept.</p>
+<h3>Agreement to the scope</h3>
+<p>The GC, then the chair (or the second approver), each record their agreement in their own name. If the brief is loaded again afterwards, the agreement is flagged so it can be given again. You can withdraw an agreement you recorded.</p>
+<h3>The director briefing</h3>
+<p>Every director takes the briefing before the workshop: AI in plain terms, the obligations in scope, how directors’ duties bear on AI (as questions for counsel), common ways AI fails, the ten steps and two scales, then four questions that check understanding. It takes about fifteen minutes. Choosing an answer shows the explanation; it is a check, not a test.</p>
+<div class="g-note priv"><p><span class="g-lbl">Who sees your answers.</span>Only you and the facilitators (the board advisor and Triodian). The engagement records only the date you confirmed reading it and the date you completed it. Other directors, the chair and the GC do not see your answers. Step B9 lists any director who has not completed the briefing, and the chair decides whether to proceed.</p></div>
+<p>The briefing downloads as a Word pre-read, and the <span class="g-ui">director education record</span> (read and completion dates, no answers) downloads for the company secretary.</p></section>
+
+<section class="g-sec" id="b1"><p class="g-eyebrow">6</p><h2>The AI inventory (B1)</h2>
+<p>The CEO, or Triodian for them, records one line per AI use, usually 10 to 20 lines, with ten fields: the use, the tool and provider, the area, who uses it, its authority (A1 to A6), the highest class of information it sees (G1 to G6), the tool kind (K1 to K7), whether it decides about individuals, its owner, and the source. A use nobody can describe is recorded as not known, never left off. Lines with a field missing are marked <span class="g-ui">Incomplete</span>.</p>
+<p><strong>Decisions about individuals.</strong> Ticking field 8 records that the use makes, or substantially contributes to, a decision about a person using their personal information. It raises a question to counsel and puts the line on the <span class="g-ui">automated-decision worklist</span> for the GC, with the kinds of decision and the personal information used. The worklist downloads as Word. It records facts only; whether the Privacy Act requirements apply is counsel’s determination.</p>
+<p>The inventory downloads as CSV.</p></section>
+
+<section class="g-sec" id="positions"><p class="g-eyebrow">7</p><h2>Recording positions (B2 to B8)</h2>
+<p>In the workshop the steps are taken in order, and each position is tested against a line of the inventory before it is recorded. Each item is a block: the wording at full width, then the short fields. Every position records who proposed it and any dissent.</p>
+<dl class="g-dl">
+<div><dt>B2 Posture</dt><dd>First the <strong>governance goals</strong>: what AI governance should achieve, each with an owner and a measure that B7 reports. Then a posture for each area, from Avoid to Pursue, with any condition. Each area shows its starting position from the inventory, with <span class="g-ui">Use this</span>. A posture the room cannot settle is recorded as Not set, with who will set it and by when.</dd></div>
+<div><dt>B3 Red lines</dt><dd>Each red line names the use, its scope and who it applies to, and is tested against the inventory: name the line that crosses it, or record that none does now. The uses boards commonly consider are shown only if the board asks.</dd></div>
+<div><dt>B4 Reserved</dt><dd>Start from the six events RV1 to RV6, or add your own. Each records whether the board approves before or is told after, and who brings it.</dd></div>
+<div><dt>B5 Confidential information</dt><dd>For each class of information and kind of tool: P permitted, C with conditions (written below the table), or N not permitted. Moving down a column a marking may stay or tighten; a marking that loosens is flagged at once.</dd></div>
+<div><dt>B6 Harm</dt><dd>For each kind of harm, what the board will not tolerate and the threshold, preferably an existing one. Together they define a material AI incident.</dd></div>
+<div><dt>B7 Reporting</dt><dd>Start from BM1 to BM5 and EV1 to EV4, or add your own. A governance goal’s measure can be added here and stays linked to its goal.</dd></div>
+<div><dt>B8 Accountability</dt><dd>The committee, the lead director, the accountable executive, the owner of each area’s positions, and who may approve an exception.</dd></div>
+</dl>
+<p>The board advisor and the GC see every position but do not edit them.</p></section>
+
+<section class="g-sec" id="counsel"><p class="g-eyebrow">8</p><h2>Questions to counsel</h2>
+<p>Every step from B1 to B8 has <span class="g-ui">Log a question to counsel</span>. Questions are numbered QC-01 onward and go to the GC by email. The GC answers them under <span class="g-ui">Your actions</span> at the top of the engagement, and Triodian is told. Counsel can still answer questions after the board resolves; the minute lists any still open.</p></section>
+
+<section class="g-sec" id="checks"><p class="g-eyebrow">9</p><h2>The checks</h2>
+<p><span class="g-ui">Checks before the outputs leave draft</span> runs the seven checks of the framework as you record: BK1 complete, BK2 ordered, BK3 consistent, BK4 testable, BK5 owned, BK6 covered and BK7 referred. A failing check lists each item to resolve, with a link to its step. Failures go back to the CEO and the chair; Triodian does not resolve them.</p>
+<p>The checks never stop the board resolving. They show what is incomplete or inconsistent, so the board decides knowingly. The <span class="g-ui">reality note</span> is separate: inventory lines that already cross a position (above an area’s posture, crossing a red line, or using information marked N). It is not a failure; each line goes on the 90-day action list.</p></section>
+
+<section class="g-sec" id="resolve"><p class="g-eyebrow">10</p><h2>Resolving (B9) and versions</h2>
+<p>Before the meeting, B9 shows what the chair should see: steps with nothing recorded, checks not passing, questions open, directors yet to complete the briefing, and the reality note. The chair drafts the resolution (it saves as it is written), any amendments made at the meeting, the minute reference, the review interval and the change events that bring the positions back. <span class="g-ui">Record the resolution</span> asks for a second click, because it locks the engagement: positions and the inventory can no longer change.</p>
+<p><strong>Versions.</strong> A version is issued at each sign-off: when the scope is agreed (B0) and when the board resolves (B9). Each keeps the areas, the inventory and the positions as they were. Under <span class="g-ui">Versions</span> in B9, <span class="g-ui">Compare with now</span> lists what has changed since. A resolved output’s status names the version, for example “Resolved by the board, version V2”.</p>
+<p><strong>The next review.</strong> When the review interval passes or a change event occurs, the method owner or an administrator chooses <span class="g-ui">Start the next review</span>. The resolved engagement is kept read-only; the inventory and positions carry over as starting positions for the board to confirm, and questions, the briefing and the resolution start afresh.</p></section>
+
+<section class="g-sec" id="outputs"><p class="g-eyebrow">11</p><h2>Outputs</h2>
+<div class="tw"><table class="lg"><thead><tr><th>Output</th><th>For</th></tr></thead><tbody>
+<tr><td>AI risk appetite statement (standalone)</td><td>The board, to resolve. Ten sections, opening with the governance goals.</td></tr>
+<tr><td>Board directions paper (connected)</td><td>The board, then the AI Risk Appetite engagement. Directions BD1 to BD7.</td></tr>
+<tr><td>Acceptable-use policy outline (standalone)</td><td>The GC, to draft the staff policy. It is not a policy.</td></tr>
+<tr><td>Board minute</td><td>The company secretary.</td></tr>
+<tr><td>90-day action list</td><td>The CEO: every gap between the inventory and the positions, with an owner and a date.</td></tr>
+<tr><td>Automated-decision worklist</td><td>The GC.</td></tr>
+<tr><td>Engagement plan</td><td>Everyone: the six steps, with dates, who, and where each stands.</td></tr>
+<tr><td>Director education record</td><td>The chair and the company secretary.</td></tr>
+<tr><td>Confidentiality position file (JSON, standalone)</td><td>A later confidential-matter assessment, which shows a suggested required rung on each channel for counsel to confirm.</td></tr>
+</tbody></table></div>
+<p>Every Word output carries the privilege marking on its first line and in the page header, and its status in the footer of every page: “Draft, not resolved by the board” until the chair records the resolution. Outputs state what was recorded and who proposed it. They never say what the law requires or what the board should decide, and they name no product.</p></section>
+
+<section class="g-sec" id="notify"><p class="g-eyebrow">12</p><h2>Email notifications and your profile</h2>
+<p>A save that gives someone something to do sends them an email:</p>
+<ul><li><strong>A question to counsel</strong> goes to the GC; counsel’s answer goes to Triodian.</li>
+<li><strong>The scope:</strong> one agreement tells the other party (the chair, or the second approver, and the GC).</li>
+<li><strong>A step waiting for you:</strong> once the scope is agreed, the CEO hears that the inventory is next, and each director that their briefing is ready.</li>
+<li><strong>The resolution recorded</strong> goes to everyone with a role.</li></ul>
+<p>And once a day, at most once per person:</p>
+<ul><li>the GC, while any question to counsel has been open five days or more;</li>
+<li>in the three days before the workshop, each director who has not completed the briefing, and the CEO while the inventory is empty or incomplete;</li>
+<li>in the week before the resolution meeting, the chair and Triodian: how many checks pass, how many questions are open and how many directors have not completed the briefing.</li></ul>
+<p>Emails carry step names, references and counts only: no positions and no inventory detail. You can turn them off, and change your name, organisation and email address, under <span class="g-ui">Your profile</span>.</p></section>
+
+<section class="g-sec" id="codes"><p class="g-eyebrow">13</p><h2>Codes used in the app</h2>
+<dl class="g-dl">
+<div><dt>S1 to S4</dt><dd>Posture: Avoid, Cautious, Open, Pursue.</dd></div>
+<div><dt>A1 to A6</dt><dd>Authority: Assists, Recommends, Decides, Moves money, Acts unattended, Changes systems.</dd></div>
+<div><dt>G1 to G6</dt><dd>Information class: Public, Internal, Commercial in confidence, Personal information, Restricted, Board and transaction.</dd></div>
+<div><dt>K1 to K7</dt><dd>Tool kind: enterprise assistant, sanctioned tool, meeting AI, unsanctioned on a managed device, personal device, data-room movement (K6, not marked), adviser’s tools.</dd></div>
+<div><dt>H1 to H6</dt><dd>Harm to customers, staff and applicants, the company’s money, operations, legal and regulatory standing, reputation and trust.</dd></div>
+<div><dt>GL, RL, RV, BM, EV, AC</dt><dd>Governance goals (B2), red lines (B3), reserved events (B4), measures and events (B7), accountabilities (B8).</dd></div>
+<div><dt>BK1 to BK7</dt><dd>The checks before the outputs leave draft.</dd></div>
+<div><dt>BD1 to BD7</dt><dd>Board directions, in connected mode.</dd></div>
+<div><dt>BO1 to BO8</dt><dd>The outputs of the framework.</dd></div>
+<div><dt>QC-01 onward</dt><dd>Questions to counsel.</dd></div>
+<div><dt>V1 onward</dt><dd>Versions, issued at each sign-off.</dd></div>
+</dl>
+<a class="g-top" href="#main">Back to the top</a>
+<div class="g-foot"><img src="/triodian-mark.svg" alt=""><span>AI Board Direction · Triodian</span></div></section>
 </div></main>
 </body>
 </html>

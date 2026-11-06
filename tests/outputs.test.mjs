@@ -18,7 +18,7 @@ const docs = { statement: O.statement(), directions: O.directions(), aupOutline:
 for (const [id, md] of Object.entries(docs)) {
   ok(`${id}: generates`, typeof md === 'string' && md.length > 300, String(md.length));
   ok(`${id}: privilege marking on the first line`, md.split('\n')[0] === S.engagement.privilegeMarking.trim(), md.split('\n')[0]);
-  ok(`${id}: carries the status`, md.includes('Resolved by the board, 2 December 2026'), (md.match(/\*\*Harrow.*$/m) || [''])[0]);
+  ok(`${id}: carries the status`, md.includes('Resolved by the board, version V2, 2 December 2026'), (md.match(/\*\*Harrow.*$/m) || [''])[0]);
   ok(`${id}: names no product`, !/AI Board Direction|Obligations Atlas|AI Use Assessment app|Triodian app/.test(md));
   ok(`${id}: says nothing about what the law requires`, !/law requires|legally required|you must comply|complies with/i.test(md));
   ok(`${id}: no unfilled template brackets except the overall position`, !/\[(company|date|reference|areas|whom|time)\]/.test(md.replace(/^.*\[For the board.*$/m, '')), (md.match(/\[[a-z ]+\]/g) || []).join(', '));

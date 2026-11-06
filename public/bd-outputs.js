@@ -28,7 +28,9 @@
     const resolved = !!(S.resolution && S.resolution.by), r = S.resolution || {};
     const connected = e.mode === 'connected';
     const company = e.company || '[company]';
-    const status = resolved ? `Resolved by the board, ${dl(r.on)}${r.minuteRef ? ', ' + r.minuteRef : ''}` : 'Draft, not resolved by the board';
+    // framework 9.2: "Resolved by the board, version [n], [date], minute [ref]"
+    const rv = [...(S.versions || [])].reverse().find(v => /Resolved/.test(v.label || ''));
+    const status = resolved ? `Resolved by the board${rv ? ', version ' + rv.id : ''}, ${dl(r.on)}${r.minuteRef ? ', ' + r.minuteRef : ''}` : 'Draft, not resolved by the board';
     const lc = t => String(t || '').replace(/\.$/, '').replace(/^([A-Z])(?=[a-z])/, c => c.toLowerCase());
     const tableMd = (head, rows) => rows.length ? ['| ' + head.map(cell).join(' | ') + ' |', '| ' + head.map(() => '---').join(' | ') + ' |', ...rows.map(x => '| ' + x.map(cell).join(' | ') + ' |')].join('\n') : '';
 

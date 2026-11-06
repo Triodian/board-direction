@@ -12,7 +12,7 @@ window.BDExample = function buildExample() {
     ['A9', 'IT and security'], ['A10', 'Board and executive work'],
   ].map(([id, name]) => ({ id, name }));
   const L = (id, use, tool, area, who, authority, info, kind, adm, owner, source) => ({ id, use, tool, area, who, authority, info, kind, adm, owner, source });
-  return {
+  const S = {
     schema: 'triodian.bd.v1',
     engagement: {
       id: 'example', example: true, company: 'Harrow Valley Foods Pty Ltd', entityType: 'privateCompany', jurisdiction: 'AU', mode: 'standalone',
@@ -140,7 +140,14 @@ window.BDExample = function buildExample() {
       by: 'p-chair', on: '2026-12-02', minuteRef: 'Board minute 2026/12-04', interval: 'Annual, with the board’s risk review',
       text: 'The board resolves the AI risk appetite statement as recorded in steps B2 to B8, and directs the CEO to complete the 90-day action list.',
     },
-    versions: [], previous: null, history: [],
+    versions: [], previous: null, history: [],  // versions are added below, from the record itself
   };
+  // Two sign-offs, so two versions: the scope agreed (before the workshop, no positions yet) and the resolution.
+  const snap = (positions, res) => ({ areas: S.areas.map(a => a.name), positions: JSON.parse(JSON.stringify(positions)), inventoryLines: S.inventory.length, inventory: S.inventory.map(l => l.id), resolution: res });
+  S.versions = [
+    { id: 'V1', label: 'Scope agreed (B0)', at: '2026-11-11T09:12:00Z', by: 'Margaret Lowe', snapshot: snap({}, null) },
+    { id: 'V2', label: 'Resolved by the board (B9)', at: '2026-12-02T15:40:00Z', by: 'Margaret Lowe', snapshot: snap(S.positions, { on: '2026-12-02', minuteRef: 'Board minute 2026/12-04' }) },
+  ];
+  return S;
 };
 })();

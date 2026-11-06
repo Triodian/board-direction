@@ -71,6 +71,22 @@ test('the worked example shows the recorded resolution and its change events', a
   await expect(p.locator('#step-B9')).toContainText('Board minute 2026/12-04');
   await expect(p.locator('#step-B9')).toContainText('A material AI incident');
   await expect(p.locator('#res_text')).toHaveCount(0);
+  // versions: V1 at the scope agreement, V2 at the resolution; compare V1 with now
+  await expect(p.locator('#step-B9')).toContainText('Resolved by the board (B9)');
+  await p.click('[data-act="compareVersion"][data-id="V1"]');
+  await expect(p.locator('#compare')).toContainText('B3 Red lines: recorded since.');
+  await expect(p.locator('#compare')).toContainText('Resolved by the board since.');
+  await p.click('[data-act="compareVersion"][data-id="V2"]');
+  await expect(p.locator('#compare')).toContainText('Nothing has changed.');
   expect(errs).toEqual([]);
+  await ctx.close();
+});
+
+test('the user guide covers the steps, the briefing, the checks, versions and notifications', async ({ browser }) => {
+  const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.director } });
+  const p = await ctx.newPage();
+  await p.goto('/user-guide/');
+  for (const h of ['The ten steps', 'Set-up, the brief and the briefing (B0)', 'The checks', 'Resolving (B9) and versions', 'Email notifications and your profile']) await expect(p.locator('h2', { hasText: h })).toHaveCount(1);
+  await expect(p.locator('body')).toContainText('Only you and the facilitators');
   await ctx.close();
 });
