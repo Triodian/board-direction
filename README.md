@@ -8,11 +8,12 @@ Triodian recording. It runs as a Cloudflare Worker: the files in `public/` are s
 
 **Status:** development plan tasks 1.1 (the skeleton), 1.4 (B0 set-up and the Atlas matter brief), 1.5 (step screens
 B0 to B9, with the chair's resolution and the next review), 1.6 and 1.11 (inventory and the automated-decision worklist), 1.9 (the worked example), 1.12 (the director
-briefing) and 1.13 (governance goals). Still to come: the checks (1.7), outputs (1.8) and the user guide (1.10).
+briefing) and 1.13 (governance goals). 1.7 (the checks BK1 to BK7). Still to come: outputs (1.8) and the user guide (1.10).
 
 - `public/` – the app
   - `/` – the engagement (`index.html`, `bd.js`, `bd-content.js`, `app.css`) and the worked example (`bd-example.js`: a fictional company, browser only, never saved)
   - `/shared/rules.js` – the roles and per-change permission rules, one copy read by the browser and the server
+  - `/shared/checks.js` – the checks BK1 to BK7 (framework 10.1), run in the browser as positions change; unit tests in `tests/checks.test.mjs`
   - `/shared/matter-brief.js` – reads an AI Obligations Atlas matter brief (`triodian.matterBrief/1`) for B0; browser and server
   - `/admin/` – users, their roles, access requests and activity (administrators only), from `account.js`
   - `/profile/` – your name, organisation, email address and preferences, from `account.js`

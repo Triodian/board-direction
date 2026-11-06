@@ -75,9 +75,9 @@ window.BDExample = function buildExample() {
         A10: { posture: 'S2', condition: 'Board papers only in the licensed assistant', proposedBy: 'p-chair' },
       },
       B3: { lines: [
-        { id: 'RL1', use: 'AI making a final decision to hire, dismiss or discipline a person, with no person reviewing it', scope: 'All areas', appliesTo: 'The company and its providers', proposedBy: 'p-dir1' },
-        { id: 'RL2', use: 'Board papers, pricing or acquisition information (G6) entered into any tool outside the company’s own estate', scope: 'All areas', appliesTo: 'The company and its advisers', proposedBy: 'p-chair' },
-        { id: 'RL3', use: 'AI holding credentials to release payments unattended', scope: 'Finance and payments', appliesTo: 'The company and its providers', proposedBy: 'p-dir1' },
+        { id: 'RL1', use: 'AI making a final decision to hire, dismiss or discipline a person, with no person reviewing it', scope: 'All areas', appliesTo: 'The company and its providers', testedAgainst: 'none', proposedBy: 'p-dir1' },
+        { id: 'RL2', use: 'Board papers, pricing or acquisition information (G6) entered into any tool outside the company’s own estate', scope: 'All areas', appliesTo: 'The company and its advisers', testedAgainst: 'L8', proposedBy: 'p-chair' },
+        { id: 'RL3', use: 'AI holding credentials to release payments unattended', scope: 'Finance and payments', appliesTo: 'The company and its providers', testedAgainst: 'none', proposedBy: 'p-dir1' },
       ] },
       B4: { events: [
         { id: 'RV1', event: 'A new AI use at A3 (Decides) or above', timing: 'Before it starts', by: 'CEO', proposedBy: 'p-chair' },

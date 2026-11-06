@@ -166,6 +166,7 @@ function reality() {
     const p = (b2[l.area] || {}).posture, n = +String(l.authority || '').slice(1);
     if (p && n > POSTURE_MAX[p]) out.push([l, `${l.authority} ${lbl(SC.authority, l.authority)} is above what ${lbl(SC.posture, p)} accepts in ${areaName(l.area)}`]);
     if (cells[l.info + ':' + l.kind] === 'N') out.push([l, `${l.info} ${lbl(SC.infoClass, l.info)} through ${lbl(SC.toolKind, l.kind)} is marked not permitted`]);
+    (pos('B3').lines || []).filter(x => x.testedAgainst === l.id).forEach(x => out.push([l, `crosses red line ${x.id}`]));
   });
   return out;
 }
@@ -353,12 +354,7 @@ function startingPosture(areaId) {
   return { posture: POSTURE_FOR[+top.authority.slice(1)], line: top };
 }
 /* BK2 (framework 6.1): moving down a column of the B5 table, a marking may stay or tighten, never loosen. */
-const STRICT = { P: 1, C: 2, N: 3 };
-function loosened(cells) {
-  const out = [];
-  SC.toolKind.forEach(k => { let prev = null; SC.infoClass.forEach(g => { const m = cells[g[0] + ':' + k[0]]; if (!m) return; if (prev && STRICT[m] < STRICT[prev.m]) out.push({ g: g[0], k: k[0], above: prev.g }); prev = { m, g: g[0] }; }); });
-  return out;
-}
+const loosened = cells => window.BDChecks.loosened(cells);
 const sub = t => `<p class="mini" style="margin:14px 0 4px">${t}</p>`;
 function stepAids(id) {
   const s = C.steps.find(x => x.id === id) || {};
@@ -387,7 +383,8 @@ function posEditor(id) {
   } else if (id === 'B3') {
     const lines = P.lines || [], scopes = [['All areas', 'All areas'], ...S.areas.map(a => [a.name, a.name])];
     const applies = ['The company', 'Its providers', 'The company and its providers', 'The company and its advisers', 'The company, its providers and its advisers'].map(x => [x, x]);
-    h += table(['Ref', 'Red line: the use not accepted', 'Scope', 'Applies to', 'Proposed by', 'Dissent', ''], lines.map(x => [refTip(x.id), pIn(id, `lines.${x.id}.use`, x.use, { rows: 2, ph: 'A use someone reading an inventory line can test', label: 'Red line ' + x.id }), pIn(id, `lines.${x.id}.scope`, x.scope, { select: scopes, blank: 'Choose…', label: 'Scope of ' + x.id }), pIn(id, `lines.${x.id}.appliesTo`, x.appliesTo, { select: applies, blank: 'Choose…', label: x.id + ' applies to' }), propSel(id, `lines.${x.id}.proposedBy`, x.proposedBy), dissentIn(id, `lines.${x.id}.dissent`, x.dissent), delBtn(id, 'lines', x.id)]));
+    const tested = [['none', 'No line crosses it now'], ...(S.inventory || []).map(l => [l.id, `${l.id} crosses it: ${String(l.use || '').slice(0, 40)}`])];
+    h += table(['Ref', 'Red line: the use not accepted', 'Scope', 'Applies to', { html: tip('Tested against', 'Each red line is tested against the inventory (B1) before it is recorded: name the line that crosses it, or record that none does now. A line that crosses it goes on the 90-day action list.') }, 'Proposed by', 'Dissent', ''], lines.map(x => [refTip(x.id), pIn(id, `lines.${x.id}.use`, x.use, { rows: 2, ph: 'A use someone reading an inventory line can test', label: 'Red line ' + x.id }), pIn(id, `lines.${x.id}.scope`, x.scope, { select: scopes, blank: 'Choose…', label: 'Scope of ' + x.id }), pIn(id, `lines.${x.id}.appliesTo`, x.appliesTo, { select: applies, blank: 'Choose…', label: x.id + ' applies to' }), pIn(id, `lines.${x.id}.testedAgainst`, x.testedAgainst, { select: tested, blank: 'Not yet tested', label: x.id + ' tested against' }), propSel(id, `lines.${x.id}.proposedBy`, x.proposedBy), dissentIn(id, `lines.${x.id}.dissent`, x.dissent), delBtn(id, 'lines', x.id)]));
     h += `<p class="small soft" style="margin:4px 0">Each red line must be testable: someone reading an inventory line must be able to say whether it crosses it.</p><div class="row" style="gap:8px;margin:6px 0"><button class="btn sm" data-act="addRedLine">Add a red line</button><button class="btn sm ghost" data-act="toggleCand">${UI.cand ? 'Hide' : 'Show'} the uses boards commonly consider</button></div>`;
     if (UI.cand) h += `<div class="panel2" style="padding:10px 14px"><p class="small soft" style="margin:0 0 6px">Shown because the board asked. The board may adopt none, some or all; inclusion is not a recommendation.</p>${C.starting.redLineCandidates.map((c, i) => { const has = lines.some(l => l.use === c); return `<div class="row between" style="gap:8px;margin:4px 0"><span class="small">${esc(c)}</span>${has ? '<span class="badge b-green">Recorded</span>' : `<button class="btn sm ghost" data-act="addRedLine" data-i="${i}">Record as a red line</button>`}</div>`; }).join('')}</div>`;
   } else if (id === 'B4') {
@@ -629,6 +626,8 @@ function b9Before() {
   if (unset.length) items.push(`Steps with nothing recorded: ${unset.join(', ')}.`);
   if (open.length) items.push(`${open.length} question${open.length === 1 ? '' : 's'} to counsel still open: ${open.map(q => esc(q.ref)).join(', ')}. The minute lists them.`);
   if (nb.length) items.push(`${tip('Director briefing', 'The B0 pre-read and check of understanding.')} not completed: ${nb.map(p => esc(p.name)).join(', ')}. The chair decides whether to proceed.`);
+  const ck = runChecks().filter(c => !c.ok);
+  if (ck.length) items.push(`Checks not passing: ${ck.map(c => `${c.id} ${esc(c.name)}`).join(', ')}. <button class="lnk small" data-act="goChecks">See the checks</button>`);
   if (rl.length) items.push(`${tip('Reality note', C.tips.reality)}: ${rl.length} inventory line${rl.length === 1 ? '' : 's'} already cross a position. Each goes on the 90-day action list.`);
   return items;
 }
@@ -677,7 +676,7 @@ function stepBody(id) {
     const b2 = pos('B2'), goals = b2.goals || [];
     h = (goals.length ? '<p class="mini" style="margin:8px 0 4px">Governance goals</p>' + table(['Ref', 'Goal', 'Owner', 'Measure', 'Proposed by'], goals.map(g => [refTip(g.id), esc(g.goal), esc(g.owner), esc(g.measure), by(g.proposedBy)])) + '<p class="mini" style="margin:12px 0 4px">Posture by area</p>' : '') + table(['Area', 'Posture', 'Condition', 'Proposed by'], S.areas.filter(a => b2[a.id]).map(a => { const x = b2[a.id]; return [esc(a.name), x.posture === 'NS' ? tip('<strong>Not set</strong>', C.tips.notSet) + `<br><span class="small soft">${esc([x.notSetOwner, x.notSetBy].filter(Boolean).join(', by '))}</span>` : `<strong>${esc(lbl(SC.posture, x.posture))}</strong><br><span class="small soft">${esc((SC.posture.find(r => r[0] === x.posture) || [])[2] || '')}</span>`, esc(x.condition || ''), by(x.proposedBy) + dis(x)]; }));
   } else if (id === 'B3') {
-    h = table(['Ref', 'Red line', 'Scope', 'Applies to', 'Proposed by'], (pos('B3').lines || []).map(x => [refTip(x.id), esc(x.use), esc(x.scope), esc(x.appliesTo), by(x.proposedBy) + dis(x)]));
+    h = table(['Ref', 'Red line', 'Scope', 'Applies to', 'Tested against', 'Proposed by'], (pos('B3').lines || []).map(x => [refTip(x.id), esc(x.use), esc(x.scope), esc(x.appliesTo), x.testedAgainst === 'none' ? 'No line crosses it' : x.testedAgainst ? `${refTip(x.testedAgainst)} crosses it` : '<span class="soft">Not yet tested</span>', by(x.proposedBy) + dis(x)]));
   } else if (id === 'B4') {
     h = table(['Ref', 'Event', 'Board approves or is told', 'Brought by', 'Proposed by'], (pos('B4').events || []).map(x => [refTip(x.id), esc(x.event), esc(x.timing), esc(x.by), by(x.proposedBy) + dis(x)]));
   } else if (id === 'B5') {
@@ -738,7 +737,17 @@ function mainScreen() {
   </div><div style="margin-top:14px">${TriodianBrand.logoControl(e.practitioner, deny('setup') ? 'disabled' : '')}</div></section>
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">4 · Areas of the business</h2>${why ? '' : '<button class="btn sm" data-act="addArea">Add an area</button>'}</div><p class="small soft">The board sets a posture for each area at B2. Change these to the company's own list.</p><div class="stack" style="gap:8px">${areas}</div></section>
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">5 · People</h2>${SRV.user && SRV.user.isAdmin ? '<a class="btn sm" href="/admin/">Manage in Admin</a>' : ''}</div><p class="small soft">Everyone with a role in this engagement. Roles are given in Admin.</p><div class="stack" style="gap:8px">${people}</div></section>
-  <section class="card"><h2 class="sh">6 · The ten steps</h2><p class="small soft">From the Board AI Appetite Framework, section 4.1. Open a step to see what is recorded.${UI.practice ? ' In the worked example you can try the inventory (B1) and the positions (B2 to B8). Nothing is saved.' : ' The AI inventory (B1) and the board’s positions (B2 to B8) can be entered now. Set-up and pre-read (B0) and the resolution (B9) follow in phase 1 of the development plan.'}</p><div class="steplist">${steps}</div></section>`;
+  <section class="card"><h2 class="sh">6 · The ten steps</h2><p class="small soft">From the Board AI Appetite Framework, section 4.1. Open a step to see what is recorded.${UI.practice ? ' In the worked example you can try the inventory (B1) and the positions (B2 to B8). Nothing is saved.' : ''}</p><div class="steplist">${steps}</div></section>
+  ${checksSection()}`;
+}
+/* ---------- the checks BK1 to BK7 (framework 10.1; plan task 1.7) ---------- */
+const runChecks = () => window.BDChecks.runChecks(S, { harm: Object.fromEntries(SC.harm), owners: Object.fromEntries(SC.accountability) });
+function checksSection() {
+  const res = runChecks(), n = res.filter(c => c.ok).length;
+  const row = c => `<details class="pr" style="margin:0" ${!c.ok && UI.checkOpen && UI.checkOpen[c.id] ? 'open' : ''} data-check="${c.id}"><summary style="display:block;cursor:${c.ok ? 'default' : 'pointer'}"><span class="row between" style="width:100%"><span><span class="stepid">${c.id}</span><strong style="color:var(--ink)">${esc(c.name)}</strong> <span class="small soft">· ${esc(c.rule)}</span></span>${c.ok ? '<span class="badge b-green">Passes</span>' : `<span class="badge b-red">${c.items.length} to resolve</span>`}</span></summary>${c.ok ? '' : `<ul class="small" style="margin:6px 20px 10px 36px">${c.items.slice(0, 40).map(i => `<li>${esc(i.text)} <button class="lnk small" data-act="goStep" data-step="${i.step}">Go to ${i.step}</button></li>`).join('')}${c.items.length > 40 ? `<li class="soft">and ${c.items.length - 40} more</li>` : ''}</ul>`}</details>`;
+  return `<section class="card" id="checks"><div class="row between"><h2 class="sh" style="margin:0">7 · Checks before the outputs leave draft</h2><span class="badge ${n === res.length ? 'b-green' : 'b-grey'}">${n} of ${res.length} pass</span></div>
+    <p class="small soft">From the framework, section 10.1, run on what is recorded as it changes. A check that fails goes back to the CEO and the chair to resolve; Triodian does not resolve it. The checks never stop the board resolving: they show what is incomplete or inconsistent, so the board decides knowingly.</p>
+    <div class="checklist" style="display:grid;gap:10px">${res.map(row).join('')}</div></section>`;
 }
 function render() {
   const app = document.getElementById('app');
@@ -762,7 +771,7 @@ document.addEventListener('change', ev => {
   else if (t.dataset.inv) setInv(t.dataset.inv, t.dataset.k, t.type === 'checkbox' ? t.checked : (t.tagName === 'SELECT' ? t.value : t.value.trim()));
   else if (t.dataset.area != null) { if (deny('setup')) return; const a = S.areas[+t.dataset.area], v = t.value.trim(); if (!a || a.name === v) return; const from = a.name; a.name = v; log('edit', 'areas.' + a.id, from, v); }
 });
-document.addEventListener('toggle', ev => { const d = ev.target; if (d && d.id === 'briefing') UI.briefOpen = d.open; if (d && d.id && d.id.startsWith('step-')) { UI.open = UI.open || {}; UI.open[d.id.slice(5)] = d.open; } }, true);
+document.addEventListener('toggle', ev => { const d = ev.target; if (d && d.dataset && d.dataset.check) { UI.checkOpen = UI.checkOpen || {}; UI.checkOpen[d.dataset.check] = d.open; } if (d && d.id === 'briefing') UI.briefOpen = d.open; if (d && d.id && d.id.startsWith('step-')) { UI.open = UI.open || {}; UI.open[d.id.slice(5)] = d.open; } }, true);
 /* The tip box: one element, placed under the item (or above it near the bottom of the window). */
 let tipFor = null;
 function showTip(el) {
@@ -815,6 +824,8 @@ document.addEventListener('click', async ev => {
     toast(`Line ${id} removed.` + (q && q.status !== 'answered' ? ` ${q.ref} stays open for counsel to close.` : ''));
   }
   if (act === 'worklistDocx') downloadWorklist();
+  if (act === 'goStep') { const st = b.dataset.step; UI.open = UI.open || {}; UI.open[st] = true; render(); const d = document.getElementById('step-' + st); if (d) d.scrollIntoView({ block: 'start' }); }
+  if (act === 'goChecks') { const d = document.getElementById('checks'); if (d) d.scrollIntoView({ block: 'start' }); }
   // B9
   if (act === 'recordResolution') {
     const why = resWhy(); if (why) { toast(why); return; }
