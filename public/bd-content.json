@@ -662,5 +662,37 @@
       }
     ]
   },
-  "atlasBriefUrl": "https://obligations-atlas.triodian.com/#/brief"
+  "atlasBriefUrl": "https://obligations-atlas.triodian.com/#/brief",
+  "resolution": {
+    "starting": "The board resolves the AI risk appetite statement as recorded in steps B2 to B8, and directs the CEO to complete the 90-day action list.",
+    "startingConnected": "The board confirms the board directions BD1 to BD7 as recorded in steps B2 to B8, and approves the AI risk appetite statement prepared within them.",
+    "interval": "Annual, with the board’s risk review",
+    "changeEvents": [
+      [
+        "CE1",
+        "A material AI incident",
+        "B3, B5, B6 and B7"
+      ],
+      [
+        "CE2",
+        "A new AI use at or above the RV1 level",
+        "That use, against B2 to B5, before it starts"
+      ],
+      [
+        "CE3",
+        "A change in the company’s regulatory position",
+        "The mode; a connected engagement if the company becomes regulated"
+      ],
+      [
+        "CE4",
+        "New law or regulator guidance on AI, as counsel advises",
+        "All steps, on counsel’s advice"
+      ],
+      [
+        "CE5",
+        "The review interval has passed",
+        "All steps"
+      ]
+    ]
+  }
 }
