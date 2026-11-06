@@ -69,3 +69,8 @@ cd tests/e2e && npm ci && npx playwright install chromium && npx playwright test
 npx wrangler dev --local-upstream localhost --var LOCAL_DEV_NO_SIGNIN_EMAIL:you@example.com
 ```
 `LOCAL_DEV_NO_SIGNIN_EMAIL` only works on localhost. Locally, an `X-Dev-User` header picks a different user for testing.
+
+## Licence
+
+AI Board Direction is open source under the [Apache License, Version 2.0](LICENSE). Copyright 2026 Triodian Pty Ltd.
+Third-party components bundled with it keep their own licences; see [`NOTICE`](NOTICE).
