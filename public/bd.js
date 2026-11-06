@@ -297,7 +297,7 @@ function downloadWorklist() {
   if (!window.RAFExport) { toast('The Word export did not load. Reload the page and try again.'); return; }
   const e = S.engagement;
   toast('Preparing the Word document…');
-  window.RAFExport.toDocx(worklistMarkdown(), { insurer: e.company, reference: e.reference, creator: 'Triodian AI Board Direction', brand: e.practitioner, wide: true }).then(blob => {
+  window.RAFExport.toDocx(worklistMarkdown(), { insurer: e.company, reference: footerRef(), creator: (e.practitioner || {}).firm || 'Triodian', brand: e.practitioner, wide: true }).then(blob => {
     saveBlob(blob, `Automated-decision worklist${e.company ? ' - ' + e.company.replace(/[\\/:*?"<>|]/g, '') : ''}.docx`); toast('Word document downloaded');
   }, err => toast('The Word document could not be made: ' + (err && err.message || err)));
 }
@@ -629,10 +629,13 @@ function educationMarkdown() {
   return out.join('\n');
 }
 const notBriefed = () => boardPeople().filter(p => !((S.education || {})[p.id] || {}).completedOn);
-function downloadDocx(md, name) {
+/* The footer of every page carries the reference and the status: draft until the chair records the resolution. */
+const outputsFor = () => window.BDOutputs.make(S, C, { today: todayISO() });
+const footerRef = () => [S.engagement.reference, outputsFor().status].filter(Boolean).join(' · ');
+function downloadDocx(md, name, opt) {
   if (!window.RAFExport) { toast('The Word export did not load. Reload the page and try again.'); return; }
   const e = S.engagement; toast('Preparing the Word document…');
-  window.RAFExport.toDocx(md, { insurer: e.company, reference: e.reference, creator: (e.practitioner || {}).firm || 'Triodian' })
+  window.RAFExport.toDocx(md, { insurer: e.company, reference: footerRef(), creator: (e.practitioner || {}).firm || 'Triodian', brand: e.practitioner, wide: !!(opt && opt.wide) })
     .then(blob => { saveBlob(blob, `${name}${e.company ? ' - ' + e.company.replace(/[\\/:*?"<>|]/g, '') : ''}.docx`); toast('Word document downloaded'); }, err => toast('The Word document could not be made: ' + (err && err.message || err)));
 }
 /* ---------- B9: resolve and review (framework section 6.5) ----------
@@ -767,7 +770,25 @@ function mainScreen() {
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">4 · Areas of the business</h2>${why ? '' : '<button class="btn sm" data-act="addArea">Add an area</button>'}</div><p class="small soft">The board sets a posture for each area at B2. Change these to the company's own list.</p><div class="stack" style="gap:8px">${areas}</div></section>
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">5 · People</h2>${SRV.user && SRV.user.isAdmin ? '<a class="btn sm" href="/admin/">Manage in Admin</a>' : ''}</div><p class="small soft">Everyone with a role in this engagement. Roles are given in Admin.</p><div class="stack" style="gap:8px">${people}</div></section>
   <section class="card"><h2 class="sh">6 · The ten steps</h2><p class="small soft">From the Board AI Appetite Framework, section 4.1. Open a step to see what is recorded.${UI.practice ? ' In the worked example you can try the inventory (B1) and the positions (B2 to B8). Nothing is saved.' : ''}</p><div class="steplist">${steps}</div></section>
-  ${checksSection()}`;
+  ${checksSection()}
+  ${outputsSection()}`;
+}
+/* ---------- the outputs (framework section 8; plan task 1.8), built by public/bd-outputs.js ---------- */
+function outputsSection() {
+  const mode = S.engagement.mode || 'standalone', list = window.BDOutputs.LIST.filter(o => o.mode === 'both' || o.mode === mode);
+  const O = outputsFor(), res = runChecks(), n = res.filter(c => c.ok).length, resolved = RULES.isResolved(S);
+  const rows = list.map(o => [o.ref ? `<span class="mono">${o.ref}</span>` : '', `<strong>${esc(o.name)}</strong>`, esc(o.for), `<button class="btn sm" data-act="output" data-id="${o.id}">${o.kind === 'json' ? 'Download (JSON)' : 'Download (Word)'}</button>`]);
+  return `<section class="card" id="outputs"><div class="row between"><h2 class="sh" style="margin:0">8 · Outputs</h2><span class="badge ${resolved ? 'b-green' : 'b-grey'}">${esc(O.status)}</span></div>
+    <p class="small soft">Every output carries the privilege marking on its first line and its status on every page. Each is marked draft until the chair records the resolution at B9.${n < res.length ? ` ${res.length - n} of the ${res.length} checks do not pass yet; the outputs say what is not set.` : ''} They state what was recorded and who proposed it, never what the law requires.</p>
+    ${table(['', 'Output', 'For', ''], rows)}</section>`;
+}
+function downloadOutput(id) {
+  const O = outputsFor(), e = S.engagement, safe = e.company ? ' - ' + e.company.replace(/[\\/:*?"<>|]/g, '') : '';
+  const meta = window.BDOutputs.LIST.find(x => x.id === id); if (!meta) return;
+  if (id === 'worklist') return downloadWorklist();
+  if (id === 'education') return downloadDocx(educationMarkdown(), 'Director education record');
+  if (id === 'confidentiality') { saveBlob(new Blob([JSON.stringify(O.confidentiality(), null, 2)], { type: 'application/json' }), `Confidentiality position${safe}.json`); toast('Confidentiality position file downloaded'); return; }
+  downloadDocx(O[id](), meta.name, { wide: id === 'statement' || id === 'directions' || id === 'actionList' || id === 'plan' });
 }
 /* ---------- the checks BK1 to BK7 (framework 10.1; plan task 1.7) ---------- */
 const runChecks = () => window.BDChecks.runChecks(S, { harm: Object.fromEntries(SC.harm), owners: Object.fromEntries(SC.accountability) });
@@ -859,6 +880,7 @@ document.addEventListener('click', async ev => {
     toast(`Line ${id} removed.` + (q && q.status !== 'answered' ? ` ${q.ref} stays open for counsel to close.` : ''));
   }
   if (act === 'worklistDocx') downloadWorklist();
+  if (act === 'output') downloadOutput(b.dataset.id);
   if (act === 'goStep') { const st = b.dataset.step; UI.open = UI.open || {}; UI.open[st] = true; render(); const d = document.getElementById('step-' + st); if (d) d.scrollIntoView({ block: 'start' }); }
   if (act === 'goChecks') { const d = document.getElementById('checks'); if (d) d.scrollIntoView({ block: 'start' }); }
   // B9
