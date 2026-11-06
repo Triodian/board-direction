@@ -7,8 +7,8 @@ Triodian recording. It runs as a Cloudflare Worker: the files in `public/` are s
 (`Triodian/confidentiality-exposure-assessment`), which shares the AI Use Assessment's.
 
 **Status:** development plan tasks 1.1 (the skeleton), 1.4 (B0 set-up and the Atlas matter brief), 1.5 (step screens
-B1 to B8), 1.6 and 1.11 (inventory and the automated-decision worklist), 1.9 (the worked example), 1.12 (the director
-briefing) and 1.13 (governance goals). Still to come: the B9 screen, the checks (1.7), outputs (1.8) and the user guide (1.10).
+B0 to B9, with the chair's resolution and the next review), 1.6 and 1.11 (inventory and the automated-decision worklist), 1.9 (the worked example), 1.12 (the director
+briefing) and 1.13 (governance goals). Still to come: the checks (1.7), outputs (1.8) and the user guide (1.10).
 
 - `public/` – the app
   - `/` – the engagement (`index.html`, `bd.js`, `bd-content.js`, `app.css`) and the worked example (`bd-example.js`: a fictional company, browser only, never saved)

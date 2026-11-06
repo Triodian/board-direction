@@ -609,6 +609,60 @@ function downloadDocx(md, name) {
   window.RAFExport.toDocx(md, { insurer: e.company, reference: e.reference, creator: (e.practitioner || {}).firm || 'Triodian' })
     .then(blob => { saveBlob(blob, `${name}${e.company ? ' - ' + e.company.replace(/[\\/:*?"<>|]/g, '') : ''}.docx`); toast('Word document downloaded'); }, err => toast('The Word document could not be made: ' + (err && err.message || err)));
 }
+/* ---------- B9: resolve and review (framework section 6.5) ----------
+   The chair drafts and records the resolution: its wording, the meeting and minute reference, the review interval and
+   the change events that bring the positions back. Before recording, the screen shows what the chair should see:
+   open questions to counsel, directors who have not completed the briefing, and the reality note. Recording locks
+   the engagement; Triodian then starts the next review when an interval or change event comes round. */
+const resWhy = () => UI.practice ? 'The worked example is already resolved.' : deny('resolve');
+function setRes(k, v) {
+  const why = resWhy(); if (why) { toast(why); render(); return; }
+  S.resolution = S.resolution || {};
+  const from = S.resolution[k]; if ((from == null ? '' : from) === v) return;
+  S.resolution[k] = v; log('edit', 'resolution.' + k, from == null ? null : (typeof from === 'object' ? null : from), typeof v === 'object' ? null : v);
+  rerender();
+}
+function b9Before() {
+  const open = (S.questions || []).filter(q => q.status !== 'answered'), nb = notBriefed(), rl = reality();
+  const unset = RULES.POSITION_STEPS.filter(s => !Object.keys(pos(s)).length);
+  const items = [];
+  if (unset.length) items.push(`Steps with nothing recorded: ${unset.join(', ')}.`);
+  if (open.length) items.push(`${open.length} question${open.length === 1 ? '' : 's'} to counsel still open: ${open.map(q => esc(q.ref)).join(', ')}. The minute lists them.`);
+  if (nb.length) items.push(`${tip('Director briefing', 'The B0 pre-read and check of understanding.')} not completed: ${nb.map(p => esc(p.name)).join(', ')}. The chair decides whether to proceed.`);
+  if (rl.length) items.push(`${tip('Reality note', C.tips.reality)}: ${rl.length} inventory line${rl.length === 1 ? '' : 's'} already cross a position. Each goes on the 90-day action list.`);
+  return items;
+}
+function b9Body() {
+  const r = S.resolution || {}, why = resWhy(), R = C.resolution, e = S.engagement, rl = reality();
+  const before = b9Before();
+  let h = before.length ? `<div class="panel2" style="padding:10px 14px;margin:4px 0 10px"><p class="small" style="margin:0 0 4px"><strong>Before the board resolves</strong></p><ul class="small" style="margin:0 0 0 18px">${before.map(x => `<li>${x}</li>`).join('')}</ul></div>` : '';
+  if (r.by) {
+    h += `<dl class="kv"><dt>Resolution</dt><dd>${esc(r.text || '')}</dd>${r.amendments ? `<dt>Amendments</dt><dd>${esc(r.amendments)}</dd>` : ''}<dt>Recorded by</dt><dd>${esc(pname(r.by))}, ${esc(dl(r.on))}${r.minuteRef ? ' · ' + esc(r.minuteRef) : ''}</dd><dt>Review</dt><dd>${esc(r.interval || '')}</dd>${r.proceedNote ? `<dt>Chair’s note</dt><dd>${esc(r.proceedNote)}</dd>` : ''}</dl>`;
+    const ce = (R.changeEvents || []).filter(x => (r.changeEvents || R.changeEvents.map(y => y[0])).includes(x[0]));
+    if (ce.length) h += sub('Change events · the positions come back when any of these occurs') + table(['Event', 'What is revisited'], ce.map(x => [esc(x[1]), esc(x[2])]));
+    if (!UI.practice && SRV.user && (SRV.user.isAdmin || (SRV.user.roles || []).includes('methodOwner')))
+      h += `<div class="panel2" style="padding:10px 14px;margin:10px 0"><p class="small" style="margin:0 0 6px"><strong>The next review.</strong> When the review interval passes or a change event occurs, start the next review. This engagement is kept read-only; the inventory and positions carry over as starting positions for the board to confirm.</p><button class="btn sm" data-act="nextReview">${UI.confirmDel === 'nextReview' ? 'Confirm: start the next review' : 'Start the next review'}</button></div>`;
+  } else if (!why) {
+    const text = r.text != null ? r.text : (e.mode === 'connected' ? R.startingConnected : R.starting);
+    const ce = r.changeEvents || R.changeEvents.map(x => x[0]);
+    h += `<p class="small soft" style="margin:0 0 8px">The chair records the board’s resolution at the meeting. Draft it here; it saves as you go and is recorded only when you choose “Record the resolution”.</p>
+      <div class="stack" style="gap:8px">
+        <label class="f" for="res_text"><span>Resolution</span><textarea class="in" rows="3" id="res_text" data-res="text">${esc(text)}</textarea></label>
+        <label class="f" for="res_amend"><span>Amendments made at the meeting, if any</span><textarea class="in" rows="2" id="res_amend" data-res="amendments" placeholder="For example: B2, Finance and payments changed from Cautious to Avoid">${esc(r.amendments || '')}</textarea></label>
+        <div class="fgrid"><label class="f" for="res_on"><span>Meeting date</span><input class="in" type="date" id="res_on" data-res="meetingOn" value="${esc(r.meetingOn || (e.boardDates || {}).resolution || '')}"></label>
+        <label class="f" for="res_min"><span>Minute reference</span><input class="in" id="res_min" data-res="minuteRef" value="${esc(r.minuteRef || '')}" placeholder="e.g. Board minute 2026/12-04"></label>
+        <label class="f" for="res_int"><span>Review interval</span><input class="in" id="res_int" data-res="interval" value="${esc(r.interval != null ? r.interval : R.interval)}"></label></div>
+      </div>` + sub('Change events · the positions come back when any of these occurs')
+      + R.changeEvents.map(x => `<label style="display:flex;gap:10px;align-items:flex-start;margin:4px 0;cursor:pointer"><input type="checkbox" data-ce="${x[0]}" ${ce.includes(x[0]) ? 'checked' : ''} style="margin-top:4px;width:16px;height:16px;flex:0 0 auto"><span>${esc(x[1])} <span class="small soft">· revisits ${esc(x[2].replace(/^([A-Z])(?=[a-z])/, c => c.toLowerCase()))}</span></span></label>`).join('')
+      + (notBriefed().length ? `<label class="f" for="res_note" style="margin-top:8px"><span>Chair’s note on proceeding</span><input class="in" id="res_note" data-res="proceedNote" value="${esc(r.proceedNote || '')}" placeholder="e.g. Noted that one director has not completed the briefing, and proceeded"></label>` : '')
+      + `<div class="row" style="gap:8px;margin-top:12px"><button class="btn primary" data-act="recordResolution">${UI.confirmDel === 'resolve' ? 'Confirm: record the resolution and lock the engagement' : 'Record the resolution'}</button>${UI.confirmDel === 'resolve' ? '<button class="btn ghost" data-act="keepLine">Not yet</button>' : ''}</div>
+      <p class="small soft" style="margin:6px 0 0">Recording locks the engagement: positions can no longer change. Counsel can still answer open questions.</p>`;
+  } else {
+    h += `<p class="small soft">Not yet resolved. ${esc(why)}</p>`;
+  }
+  if (rl.length) h += `<p class="mini" style="margin:12px 0 4px">${tip('Reality note', C.tips.reality)}: inventory lines that already cross a position (each goes on the 90-day action list)</p>` + table(['Line', 'Use', 'Why'], rl.map(([l, w]) => [refTip(l.id), esc(l.use), esc(w)]));
+  return h;
+}
 function stepBody(id) {
   const e = S.engagement, qs = (S.questions || []).filter(q => q.step === id);
   const questions = qs.length ? `<p class="mini" style="margin:12px 0 4px">Questions to counsel</p>` + table(['Ref', 'Question', 'Status', 'Counsel’s answer'], qs.map(q => [refTip(q.ref), esc(q.question) + '<br>' + by(q.raisedBy), q.status === 'answered' ? '<span class="badge b-green">Answered</span>' : '<span class="badge b-ochre">Open</span>', esc(q.response || '')])) : '';
@@ -641,9 +695,7 @@ function stepBody(id) {
     const o = pos('B8').owners || {};
     h = table(['Accountability', 'Named'], SC.accountability.filter(a => o[a[0]]).map(a => [esc(a[1]), esc(o[a[0]])]));
   } else if (id === 'B9') {
-    const r = S.resolution || {}, rl = reality(), nb = notBriefed();
-    h = (nb.length ? `<p class="small" style="margin:4px 0 8px"><strong>${tip('Director briefing', 'The B0 pre-read and check of understanding.')} not completed:</strong> ${nb.map(p => esc(p.name)).join(', ')}. The chair decides whether to proceed.</p>` : '') + (r.by ? `<dl class="kv"><dt>Resolution</dt><dd>${esc(r.text || '')}</dd><dt>Recorded by</dt><dd>${esc(pname(r.by))}, ${esc(dl(r.on))} · ${esc(r.minuteRef || '')}</dd><dt>Review</dt><dd>${esc(r.interval || '')}</dd></dl>` : '')
-      + (rl.length ? `<p class="mini" style="margin:12px 0 4px">${tip('Reality note', C.tips.reality)}: inventory lines that already cross a position (each goes on the 90-day action list)</p>` + table(['Line', 'Use', 'Why'], rl.map(([l, why]) => [refTip(l.id), esc(l.use), esc(why)])) : '');
+    h = b9Body();
   }
   return (h || '<p class="small soft">Nothing recorded yet.' + (['B0', 'B9'].includes(id) ? ' The screen for this step is added in development plan task ' + esc((C.steps.find(s => s.id === id) || {}).task || '') + '.' : '') + '</p>') + questions + (id === 'B0' || id === 'B9' ? '' : askBox(id));
 }
@@ -703,6 +755,8 @@ document.addEventListener('change', ev => {
   if (t.dataset.path) setPath(t.dataset.path, t.type === 'checkbox' ? t.checked : t.value);
   else if (t.dataset.pos) setPos(t.dataset.pos, t.dataset.ppath, t.tagName === 'SELECT' ? t.value : t.value.trim());
   else if (t.dataset.cond != null) { const why = posWhy(); if (why) { toast(why); return; } const P = posObj('B5'), i = +t.dataset.cond; P.conditions = P.conditions || []; const from = P.conditions[i], v = t.value.trim(); if (from === v) return; P.conditions[i] = v; log('edit', 'positions.B5.conditions.' + i, from == null ? null : from, v); rerender(); }
+  else if (t.dataset.res) setRes(t.dataset.res, t.value.trim());
+  else if (t.dataset.ce) { const cur = (S.resolution || {}).changeEvents || C.resolution.changeEvents.map(x => x[0]); setRes('changeEvents', C.resolution.changeEvents.map(x => x[0]).filter(id => id === t.dataset.ce ? t.checked : cur.includes(id))); }
   else if (t.dataset.qstep) { UI.qdraft = UI.qdraft || {}; UI.qdraft[t.dataset.qstep] = t.value; }
   else if (t.dataset.ans) { UI.answer = UI.answer || {}; UI.answer[t.dataset.ans] = t.value; }
   else if (t.dataset.inv) setInv(t.dataset.inv, t.dataset.k, t.type === 'checkbox' ? t.checked : (t.tagName === 'SELECT' ? t.value : t.value.trim()));
@@ -761,6 +815,27 @@ document.addEventListener('click', async ev => {
     toast(`Line ${id} removed.` + (q && q.status !== 'answered' ? ` ${q.ref} stays open for counsel to close.` : ''));
   }
   if (act === 'worklistDocx') downloadWorklist();
+  // B9
+  if (act === 'recordResolution') {
+    const why = resWhy(); if (why) { toast(why); return; }
+    S.resolution = S.resolution || {};
+    const R = C.resolution, e = S.engagement, text = (S.resolution.text != null ? S.resolution.text : (e.mode === 'connected' ? R.startingConnected : R.starting)).trim();
+    if (!text) { toast('Write the resolution first.'); return; }
+    if (UI.confirmDel !== 'resolve') { UI.confirmDel = 'resolve'; render(); return; }
+    S.resolution.text = text;
+    if (S.resolution.interval == null) S.resolution.interval = R.interval;
+    if (!S.resolution.changeEvents) S.resolution.changeEvents = R.changeEvents.map(x => x[0]);
+    S.resolution.by = SRV.user.id; S.resolution.on = S.resolution.meetingOn || (e.boardDates || {}).resolution || todayISO();
+    UI.confirmDel = ''; log('resolve', 'resolution', null, S.resolution.minuteRef || 'recorded'); render(); toast('The resolution is recorded. The engagement is now locked.');
+  }
+  if (act === 'nextReview') {
+    if (UI.confirmDel !== 'nextReview') { UI.confirmDel = 'nextReview'; render(); return; }
+    UI.confirmDel = '';
+    if (timer) { clearTimeout(timer); timer = null; await save(); }
+    const r = await api('POST', '/api/next-review', { revision: SRV.rev });
+    if (!r.ok) { toast(r.error); render(); return; }
+    await load(); SRV.briefing = null; loadBriefing(); scrollTo(0, 0); toast('The next review has started. The resolved engagement is kept as ' + r.body.label + '.');
+  }
   // B0
   if (act === 'togglePaste') { UI.paste = !UI.paste; render(); const el = document.getElementById('brief_paste'); if (el) el.focus(); }
   if (act === 'pasteBrief') { const el = document.getElementById('brief_paste'); if (el && el.value.trim()) loadBriefText(el.value); else toast('Paste the brief first.'); }
