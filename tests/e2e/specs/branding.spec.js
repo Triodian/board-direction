@@ -48,7 +48,7 @@ test('the method owner sets the firm and logo; the header and the Word worklist 
     const w = await editAs(U.mo, d => { d.inventory = d.inventory || []; d.inventory.push({ id: 'L90', use: 'Shortlisting applicants', tool: 'Recruitment platform', area: (d.areas[0] || {}).id || '', who: 'Staff', authority: 'A2', info: 'G4', kind: 'K2', adm: true, decisions: 'Who is interviewed', personalInfo: 'CVs', owner: '', source: 'Test' }); });
     expect(w.status).toBe(200);
   }
-  await mo.reload(); await mo.locator('#step-B1 summary').click();
+  await mo.reload(); await mo.locator('#step-B1 > summary').click();
   const dl = mo.waitForEvent('download');
   await mo.click('[data-act="worklistDocx"]');
   const buf = readFileSync(await (await dl).path()), head = unzip(buf, 'word/header1.xml');
