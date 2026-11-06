@@ -26,6 +26,10 @@ window.BDExample = function buildExample() {
           { tier: 'Expected', refs: [['OBL-AU-OAIC-APP1-GUIDE', 'OAIC guidance on ADM privacy policy transparency'], ['OBL-AU-DISR-AI-ADOPTION', 'Six essential practices for responsible AI adoption'], ['OBL-INT-ISO42001', 'AI management system standard']] },
           { tier: 'Anticipated', refs: [] },
         ],
+        questions: [
+          { about: 'OBL-AU-PRIVACY-APP1-7', question: 'Does the Privacy Act 1988 (Cth) reach the client’s arrangements for the selected use cases, and if so, what do its provisions call for?' },
+          { about: 'OBL-INT-ISO42001', question: 'What weight should the client give to ISO/IEC 42001 in its approach to the selected use cases?' },
+        ],
       },
     },
     areas,
@@ -40,6 +44,8 @@ window.BDExample = function buildExample() {
       P('p-ops', 'Dana Whitfield', 'Harrow Valley Foods', ['areaOwner']),
     ],
     scopeAgreed: { gcBy: 'p-gc', gcOn: '2026-11-10', chairBy: 'p-chair', chairOn: '2026-11-11' },
+    // The director briefing: read and completion dates only. Answers are kept apart and are not in the engagement.
+    education: { 'p-chair': { readOn: '2026-11-12', completedOn: '2026-11-12' }, 'p-dir1': { readOn: '2026-11-13', completedOn: '2026-11-13' }, 'p-dir2': { readOn: '2026-11-16', completedOn: '' } },
     inventory: [
       L('L1', 'Drafting emails, summaries and reports', 'Enterprise chat assistant (licensed)', 'A10', 'Staff', 'A1', 'G3', 'K2', false, 'p-ceo', 'IT licence list, 9 Nov'),
       L('L2', 'Meeting transcription and action notes', 'Video-call platform AI notes', 'A10', 'Staff, including board meetings', 'A1', 'G6', 'K3', false, 'p-ceo', 'Interview with the CEO, 10 Nov'),

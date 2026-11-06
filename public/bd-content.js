@@ -541,5 +541,127 @@ window.BD_CONTENT = {
       "H5": "Kind of breach",
       "H6": "Description"
     }
-  }
+  },
+  "briefing": {
+    "title": "Director briefing",
+    "intro": "Every director starts the workshop from the same place. This briefing takes about fifteen minutes: AI in plain terms, the obligations in scope for the company, how directors’ duties bear on AI, and the ways AI commonly fails. It ends with four questions that check understanding. They are not a test, and no one else on the board sees your answers.",
+    "status": "Drafted by Triodian for the board advisor, and settled by the GC before it is issued. It is not legal advice.",
+    "sections": [
+      {
+        "h": "AI in plain terms",
+        "p": [
+          "In this engagement, AI means software that produces text, scores, recommendations, decisions or actions from patterns in data, rather than from rules a person wrote out. It includes tools staff use directly, such as chat assistants and meeting notes, and the AI that providers use in the work they do for the company.",
+          "What matters to the board is less how the technology works than what it is allowed to do. The framework puts that on one scale, from Assists (a person still acts) to Changes systems (the AI holds credentials to change systems unattended). Much of the risk sits in the step from Recommends to Decides: the point at which no person reviews the output before it takes effect.",
+          "AI can be wrong in ways that look right. It can state things that are not true, treat similar people differently, pass on information it was given, or behave differently after its provider updates it. None of these needs a fault in the company’s own systems."
+        ]
+      },
+      {
+        "h": "Directors’ duties and AI",
+        "p": [
+          "The board oversees AI in the way it oversees the rest of the business: by setting direction, knowing what is in use, and expecting to hear when something goes wrong. Directors do not need to understand how a model works. They need to know where AI is used, what it is allowed to do, and who answers for it.",
+          "What directors’ duties require of this board in relation to AI, and whether any obligation in scope calls for a board-level position, are questions for counsel. The GC will brief the board on them before the workshop. Nothing in this briefing says what the law requires."
+        ]
+      },
+      {
+        "h": "Common ways AI fails",
+        "list": [
+          "A customer is given wrong information by a chatbot and relies on it.",
+          "An applicant or customer is screened out by a scoring tool no one reviews.",
+          "A board paper or price-sensitive document is pasted into a public chatbot.",
+          "A provider changes the AI behind a service without telling the company.",
+          "An automated payment or order runs on a wrong figure, again and again, before anyone notices.",
+          "Staff use unapproved AI tools because the approved ones do not meet their needs."
+        ]
+      }
+    ],
+    "obligationsNote": "From the AI Obligations Atlas matter brief. The tiers describe sources, not what applies: Binding is law or a prudential standard in force; Expected is regulator guidance or a recognised standard; Anticipated is made but not yet in force, or under consultation. Counsel decides what applies to the company.",
+    "checksIntro": "A check of understanding, not a test. Choose an answer to see the explanation. Only you and the facilitators (the board advisor and Triodian) see your answers.",
+    "checks": [
+      {
+        "id": "q1",
+        "q": "An AI tool shortlists job applicants and a recruiter decides whom to interview. Which authority level is that?",
+        "options": [
+          [
+            "A1",
+            "A1 Assists"
+          ],
+          [
+            "A2",
+            "A2 Recommends"
+          ],
+          [
+            "A3",
+            "A3 Decides"
+          ]
+        ],
+        "answer": "A2",
+        "why": "The AI ranks and a person decides, so it is Recommends (A2). It would be Decides (A3) if no person reviewed the shortlist before it took effect."
+      },
+      {
+        "id": "q2",
+        "q": "Which posture accepts AI that decides within stated limits, where the board can see what it did?",
+        "options": [
+          [
+            "S1",
+            "Avoid"
+          ],
+          [
+            "S2",
+            "Cautious"
+          ],
+          [
+            "S3",
+            "Open"
+          ],
+          [
+            "S4",
+            "Pursue"
+          ]
+        ],
+        "answer": "S3",
+        "why": "Open (S3). Cautious accepts AI that assists or recommends, with a person deciding. Pursue accepts less oversight, within the red lines and reserved decisions."
+      },
+      {
+        "id": "q3",
+        "q": "In the workshop, who proposes where a position is set?",
+        "options": [
+          [
+            "a",
+            "The board advisor or the GC"
+          ],
+          [
+            "b",
+            "A director, the chair or the CEO"
+          ],
+          [
+            "c",
+            "Triodian"
+          ]
+        ],
+        "answer": "b",
+        "why": "Positions come from the board and management. The board advisor, the GC and Triodian explain, answer questions and record."
+      },
+      {
+        "id": "q4",
+        "q": "A director asks whether the company must tell customers about a decision AI made. What happens in the workshop?",
+        "options": [
+          [
+            "a",
+            "The room settles it and moves on"
+          ],
+          [
+            "b",
+            "It is logged as a question to counsel"
+          ],
+          [
+            "c",
+            "Triodian gives a view"
+          ]
+        ],
+        "answer": "b",
+        "why": "Anything that turns on what the company is obliged to do is logged as a numbered question to counsel, and not settled in the room."
+      }
+    ]
+  },
+  "atlasBriefUrl": "https://obligations-atlas.triodian.com/#/brief"
 };

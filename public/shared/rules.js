@@ -42,7 +42,24 @@ export const PERMISSIONS = [
   { what: 'Questions to counsel', roles: ['advisor', 'gc', 'methodOwner', 'recorder', 'chair', 'director', 'ceo'] },
   { what: 'Answers from counsel', roles: ['gc'] },
   { what: 'Record the resolution (B9)', roles: ['chair'] },
+  { what: 'Load the Atlas matter brief (B0)', roles: ['methodOwner', 'recorder'] },
+  { what: 'Take the director briefing (B0); own answers only', roles: ['chair', 'director'] },
+  { what: 'See every director’s briefing answers', roles: ['advisor', 'methodOwner', 'recorder'] },
 ];
+
+/** The director briefing (B0, plan task 1.12). Directors take it; the board advisor and Triodian facilitate. */
+export const BRIEFING_CHECKS = ['q1', 'q2', 'q3', 'q4'];
+export const takesBriefing = roles => (roles || []).some(x => BOARD.includes(x));
+export const facilitates = user => !!user && (user.isAdmin || (user.roles || []).some(x => x === 'advisor' || TRIODIAN.includes(x)));
+/** Whether viewer may see the briefing answers of person personId: their own, or as a facilitator. */
+export const seesAnswers = (viewer, personId) => !!viewer && (viewer.id === personId || facilitates(viewer));
+/** A director's entry in the education record, from their answers and read confirmation. */
+export function educationEntry(prev, answers, read, today) {
+  const p = prev || {}, a = answers || {};
+  const readOn = read ? (p.readOn || today) : '';
+  const done = !!readOn && BRIEFING_CHECKS.every(q => typeof a[q] === 'string' && a[q]);
+  return { readOn, completedOn: done ? (p.completedOn || today) : '' };
+}
 
 /** Resolved: the chair has recorded the resolution at B9. */
 export const isResolved = S => !!(S && S.resolution && S.resolution.by);
@@ -65,7 +82,14 @@ export function deny(target, user, S) {
       if (modeLocked(S)) return 'The mode is fixed once the AI inventory has a line. A company that becomes regulated starts a connected engagement.';
       return '';
     case 'agreeGC': return r('gc') ? '' : 'Only the GC can record the GC’s agreement to the scope.';
-    case 'agreeChair': return r('chair') ? '' : 'Only the chair can record the chair’s agreement to the scope.';
+    case 'agreeChair': {
+      // Where the GC also acts as counsel, the second agreement comes from a named executive or director (framework 3.1).
+      const e = (S && S.engagement) || {};
+      if (e.gcActsAsCounsel) return !e.secondApproverId ? 'Name the second approver in set-up first: the GC also acts as counsel.' : user.id === e.secondApproverId ? '' : 'The GC also acts as counsel, so the second agreement is recorded by the named second approver.';
+      return r('chair') ? '' : 'Only the chair can record the chair’s agreement to the scope.';
+    }
+    case 'brief': return tri || user.isAdmin ? '' : 'Only Triodian or an administrator loads the matter brief.';
+    case 'briefing': return r('chair') || r('director') ? '' : 'The director briefing is for the chair and directors.';
     case 'inventory': return r('ceo') || tri ? '' : 'Only the CEO or Triodian can change the AI inventory.';
     case 'position':
       if (r('chair') || r('director') || r('ceo') || tri) return '';
