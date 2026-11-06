@@ -52,6 +52,7 @@ function setPath(path, v) {
   const ks = path.split('.'), last = ks.pop(); let o = S; ks.forEach(k => { if (o[k] == null) o[k] = {}; o = o[k]; });
   const from = o[last]; if (from === v) return; o[last] = v;
   log('edit', path, typeof from === 'object' ? null : from, v);
+  if (typeof v === 'boolean') render();
 }
 
 /* The worked example opens by default. Leaving it is remembered for this browser session, so a reload stays out.
@@ -61,7 +62,7 @@ const exampleLeft = () => { try { return sessionStorage.getItem(EX_LEFT) === '1'
 const markExampleLeft = left => { try { if (left) sessionStorage.setItem(EX_LEFT, '1'); else sessionStorage.removeItem(EX_LEFT); } catch (e) {} };
 const openExampleByDefault = () => !exampleLeft() && location.hash !== '#actions';
 /* Opens the worked example: a fictional company, board and advisers, never saved. */
-function openExample() { if (!UI.practice) REAL = { S, rev: SRV.rev, exists: SRV.exists }; S = window.BDExample(); UI.practice = true; UI.drawer = false; UI.open = {}; UI.editLine = ""; UI.confirmDel = ""; render(); }
+function openExample() { if (!UI.practice) REAL = { S, rev: SRV.rev, exists: SRV.exists }; S = window.BDExample(); UI.practice = true; UI.drawer = false; UI.open = {}; UI.editLine = ""; UI.confirmDel = ""; UI.pBrief = null; UI.briefOpen = undefined; render(); }
 /* ---------- saving ---------- */
 function queueSave() { if (UI.practice) return; SRV.state = 'unsaved'; paintSave(); clearTimeout(timer); timer = setTimeout(save, 700); }
 async function save() {
@@ -285,6 +286,7 @@ function actionsPanel() {
       <label class="f" for="ans_${esc(q.ref)}"><span>Counsel’s answer</span><textarea class="in" id="ans_${esc(q.ref)}" data-ans="${esc(q.ref)}" rows="2">${esc(v)}</textarea></label>
       <div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="answerQ" data-ref="${esc(q.ref)}">Record the answer</button></div></div>`);
   });
+  if (RULES.takesBriefing(u.roles) && !RULES.isResolved(S) && !((S.education || {})[u.id] || {}).completedOn) items.push(`<div class="panel2" style="padding:12px 14px"><strong>Director briefing (B0) to complete</strong><p class="small" style="margin:6px 0 0">About fifteen minutes, before the workshop${(S.engagement.boardDates || {}).workshop ? ' on ' + esc(dl(S.engagement.boardDates.workshop)) : ''}. Only you and the facilitators see your answers.</p><div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="goB0">Open the briefing</button></div></div>`);
   if (!RULES.deny('inventory', u, S)) {
     const inc = (S.inventory || []).filter(l => missing(l).length);
     if (inc.length) items.push(`<div class="panel2" style="padding:12px 14px"><strong>AI inventory (B1): ${inc.length} line${inc.length === 1 ? '' : 's'} to complete</strong><p class="small" style="margin:6px 0 0">${inc.map(l => `${esc(l.id)}: ${esc(missing(l).join(', '))}`).join('<br>')}</p><div class="row" style="margin-top:8px"><button class="btn sm" data-act="goB1">Open the inventory</button></div></div>`);
@@ -434,14 +436,186 @@ function askBox(id) {
   return `<details style="margin-top:10px" ${v ? 'open' : ''}><summary class="small" style="cursor:pointer">Log a question to counsel</summary><p class="small soft" style="margin:6px 0">For any point that turns on what the company is obliged to do. It goes to the GC in writing and is not settled in the room.</p><textarea class="in" rows="2" id="q_${id}" data-qstep="${id}" aria-label="Question to counsel at ${id}">${esc(v)}</textarea><div class="row" style="margin-top:6px"><button class="btn sm" data-act="askQ" data-step="${id}">Log the question</button></div></details>`;
 }
 function nextQRef() { const n = (S.questions || []).reduce((m, q) => Math.max(m, +String(q.ref).replace(/\D/g, '') || 0), 0) + 1; return 'QC-' + String(n).padStart(2, '0'); }
+/* ---------- B0: set-up and pre-read (framework section 5.1; plan tasks 1.4 and 1.12) ----------
+   The Atlas matter brief fills the obligations in scope and the questions counsel will need to determine.
+   The GC and the chair (or, where the GC also acts as counsel, a named second approver) agree to the scope in their
+   own names. Each director takes the briefing: the engagement records only when they read and completed it; their
+   answers are kept apart, seen only by them and the facilitators (the board advisor and Triodian). */
+const MB = () => window.BDBrief;
+const NAMES = () => ({ entityTypes: Object.fromEntries(C.entityTypes.concat([['anyOrganization', 'Any organisation']])), jurisdictions: Object.fromEntries(C.jurisdictions) });
+const briefWhy = () => UI.practice ? '' : deny('brief');
+const atlasBriefUrl = () => 'https://obligations-atlas' + (SRV.site ? '-test' : '') + '.triodian.com/#/brief';
+const PRACTICE_DIRECTOR = 'p-dir2';
+const boardPeople = () => (S.people || []).filter(p => p.active !== false && RULES.takesBriefing(p.roles));
+const meId = () => UI.practice ? PRACTICE_DIRECTOR : (SRV.user || {}).id;
+const iTakeBriefing = () => UI.practice || (SRV.user && RULES.takesBriefing(SRV.user.roles));
+const iFacilitate = () => UI.practice || RULES.facilitates(me());
+/* My answers: from the server (real), or from this browser (worked example). */
+function myBriefing() {
+  if (UI.practice) return UI.pBrief || (UI.pBrief = { answers: {}, read: !!((S.education || {})[PRACTICE_DIRECTOR] || {}).readOn });
+  const e = ((SRV.briefing || {}).entries || []).find(x => x.personId === meId());
+  return e ? { answers: e.answers || {}, read: !!e.read } : { answers: {}, read: false };
+}
+async function loadBriefing() {
+  if (UI.practice || !SRV.user || !(iTakeBriefing() || iFacilitate())) return;
+  const r = await api('GET', '/api/briefing');
+  if (r.ok) { SRV.briefing = r.body; if (S) render(); }
+}
+async function saveBriefing(answers, read) {
+  if (UI.practice) {
+    UI.pBrief = { answers, read };
+    S.education = S.education || {};
+    S.education[PRACTICE_DIRECTOR] = RULES.educationEntry(S.education[PRACTICE_DIRECTOR], answers, read, todayISO());
+    rerender(); return;
+  }
+  // Save any open changes first, so the briefing record does not race them.
+  if (timer) { clearTimeout(timer); timer = null; await save(); }
+  const r = await api('PUT', '/api/briefing', { answers, read, today: todayISO() });
+  if (!r.ok) { toast(r.error); return; }
+  const wasDone = !!(((S.education || {})[meId()] || {}).completedOn);
+  S.education = r.body.education; SRV.rev = r.body.revision;
+  SRV.briefing = SRV.briefing || { entries: [] };
+  const list = SRV.briefing.entries, i = list.findIndex(x => x.personId === meId()), row = { personId: meId(), answers, read };
+  if (i >= 0) list[i] = row; else list.push(row);
+  if (r.body.entry.completedOn && !wasDone) toast('Briefing complete. Thank you.');
+  rerender();
+}
+function briefingText() {
+  const B = C.briefing, mb = S.engagement.matterBrief;
+  return B.sections.map(s => `<h3 class="sh" style="font-size:15px;margin:14px 0 6px">${esc(s.h)}</h3>${(s.p || []).map(p => `<p style="margin:0 0 8px">${esc(p)}</p>`).join('')}${s.list ? `<ul style="margin:0 0 8px 18px">${s.list.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}`).join('')
+    + `<h3 class="sh" style="font-size:15px;margin:14px 0 6px">Obligations in scope</h3>` + (mb ? `<p class="small soft" style="margin:0 0 6px">${esc(B.obligationsNote)}</p>` + mb.tiers.map(t => `<p style="margin:6px 0 2px"><strong>${esc(t.tier)}</strong></p>${t.refs.length ? `<ul style="margin:0 0 6px 18px">${t.refs.map(r => `<li>${esc(r[1])}${r[2] ? ` <span class="small soft">(${esc(r[2])})</span>` : ''}</li>`).join('')}</ul>` : '<p class="small soft" style="margin:0">None in scope.</p>'}`).join('') : '<p class="small soft">The matter brief has not been loaded yet. The obligations in scope will appear here.</p>')
+    + `<h3 class="sh" style="font-size:15px;margin:14px 0 6px">The ten steps</h3>` + table(['Step', 'Question to the board'], C.steps.map(s => [`<span class="mono">${s.id}</span> ${esc(s.name)}`, esc(s.question)]))
+    + `<h3 class="sh" style="font-size:15px;margin:14px 0 6px">Two scales you will use</h3>` + table(['Posture', 'Meaning'], SC.posture.map(r => [`<strong>${esc(r[1])}</strong>`, esc(r[2])])) + table(['Authority', 'What the AI does'], SC.authority.map(r => [`<span class="mono">${r[0]}</span> ${esc(r[1])}`, esc(r[2])]));
+}
+function checksBody(mine, editable) {
+  const B = C.briefing;
+  return `<p class="small soft" style="margin:0 0 8px">${esc(B.checksIntro)}</p>` + B.checks.map((q, i) => {
+    const a = mine.answers[q.id];
+    return `<fieldset style="border:1px solid var(--rule, #ddd);border-radius:8px;padding:10px 14px;margin:0 0 8px"><legend class="small" style="padding:0 6px"><strong>Question ${i + 1}</strong></legend><p style="margin:0 0 6px">${esc(q.q)}</p>`
+      + q.options.map(o => `<label style="display:flex;gap:8px;align-items:center;margin:4px 0;cursor:${editable ? 'pointer' : 'default'}"><input type="radio" name="brief_${q.id}" data-brief="${q.id}" value="${esc(o[0])}" ${a === o[0] ? 'checked' : ''} ${editable ? '' : 'disabled'}><span>${esc(o[1])}</span></label>`).join('')
+      + (a ? `<p class="small" style="margin:6px 0 0">${a === q.answer ? '<span class="badge b-green">That’s it</span>' : '<span class="badge b-ochre">Not quite</span>'} ${esc(q.why)}</p>` : '') + '</fieldset>';
+  }).join('');
+}
+function briefingPanel() {
+  const edu = S.education || {}, ppl = boardPeople(), mine = myBriefing(), takes = iTakeBriefing(), resolved = RULES.isResolved(S) && !UI.practice;
+  const rows = ppl.map(p => { const x = edu[p.id] || {}; return [esc(p.name) + (UI.practice && p.id === PRACTICE_DIRECTOR ? ' <span class="small soft">(you, in the worked example)</span>' : ''), esc(p.roles.filter(r => RULES.BOARD.includes(r)).map(roleName).join(', ')), x.readOn ? esc(dl(x.readOn)) : '<span class="soft">Not yet</span>', x.completedOn ? '<span class="badge b-green">' + esc(dl(x.completedOn)) + '</span>' : '<span class="badge b-grey">Not yet</span>']; });
+  let h = sub(tip('Director briefing', 'The pre-read every director takes before the workshop, with four questions that check understanding. Their answers are seen only by them and the facilitators.') + ' · the same starting point for every director')
+    + `<p class="small" style="margin:0 0 6px">${esc(C.briefing.intro)}</p><p class="small soft" style="margin:0 0 8px">${esc(C.briefing.status)}</p>`
+    + (rows.length ? table(['Director', 'Role', 'Read', 'Completed'], rows) : '<p class="small soft">No one has the chair or director role yet. Roles are given in Admin.</p>');
+  if (takes) {
+    const done = !!((edu[meId()] || {}).completedOn), editable = !resolved;
+    h += `<details class="panel2" id="briefing" style="padding:12px 16px;margin:8px 0" ${UI.briefOpen || (!done && !UI.practice && UI.briefOpen !== false) ? 'open' : ''}><summary style="cursor:pointer"><strong>${done ? 'Your briefing · completed' : 'Take the briefing'}</strong></summary><div style="margin-top:8px">${briefingText()}
+      <h3 class="sh" style="font-size:15px;margin:16px 0 6px">Check of understanding</h3>${checksBody(mine, editable)}
+      <label style="display:flex;gap:10px;align-items:flex-start;margin:10px 0 0;cursor:pointer"><input type="checkbox" id="brief_read" data-brief-read="1" ${mine.read ? 'checked' : ''} ${editable ? '' : 'disabled'} style="margin-top:4px;width:16px;height:16px;flex:0 0 auto"><span><strong>I have read the briefing.</strong> <span class="small soft">Your read date is recorded for the board. The briefing is complete when you have read it and answered the four questions.</span></span></label>
+    </div></details>`;
+  }
+  if (iFacilitate()) {
+    const entries = UI.practice ? [{ personId: PRACTICE_DIRECTOR, answers: mine.answers }] : ((SRV.briefing || {}).entries || []);
+    const qs = C.briefing.checks, show = entries.filter(x => Object.keys(x.answers || {}).length);
+    h += `<details style="margin:8px 0"><summary class="small" style="cursor:pointer">Directors’ answers · seen only by each director and the facilitators</summary>`
+      + (show.length ? table(['Director', ...qs.map((q, i) => 'Q' + (i + 1))], show.map(x => [esc(pname(x.personId)), ...qs.map(q => { const a = (x.answers || {})[q.id]; return !a ? '<span class="soft">—</span>' : a === q.answer ? `<span class="badge b-green">${esc(a)}</span>` : `<span class="badge b-ochre">${esc(a)}</span>`; })])) + '<p class="small soft">Green: the expected answer. Use these to see what the board may want explained at the workshop, not to grade anyone.</p>' : '<p class="small soft">No answers yet.</p>') + '</details>';
+  }
+  h += `<div class="row" style="gap:8px;margin:8px 0"><button class="btn sm" data-act="briefingDocx">Download the director briefing (Word)</button><button class="btn sm ghost" data-act="educationDocx">Download the education record (Word)</button></div>`;
+  return h;
+}
+function agreementRow(kind) {
+  const sa = S.scopeAgreed || {}, e = S.engagement, by = sa[kind + 'By'], on = sa[kind + 'On'];
+  const who = kind === 'gc' ? 'General counsel' : e.gcActsAsCounsel ? `Second approver${e.secondApproverId ? ' (' + esc(pname(e.secondApproverId)) + ')' : ''}` : 'Chair';
+  const mine = !UI.practice && SRV.user && by === SRV.user.id, why = UI.practice ? 'In the worked example the scope is already agreed.' : mine && !RULES.isResolved(S) ? '' : deny(kind === 'gc' ? 'agreeGC' : 'agreeChair');
+  const stale = by && e.matterBrief && e.matterBrief.loadedOn && e.matterBrief.loadedOn > on;
+  const ctl = why ? '' : by ? (mine ? `<button class="btn sm ghost" data-act="agree" data-kind="${kind}" data-v="0">Withdraw my agreement</button>` : '') : `<button class="btn sm primary" data-act="agree" data-kind="${kind}" data-v="1">Record my agreement to the scope</button>`;
+  return [esc(who), by ? `<span class="badge b-green">Agreed</span> ${esc(pname(by))}, ${esc(dl(on))}${stale ? '<br><span class="small" style="color:var(--ochre, #8A4B08)">The matter brief was loaded again after this agreement. Agree again once it is checked.</span>' : ''}` : '<span class="badge b-grey">Not yet</span>', ctl];
+}
+function b0Body() {
+  const e = S.engagement, mb = e.matterBrief, bw = briefWhy();
+  let h = `<dl class="kv"><dt>Company</dt><dd>${esc(e.company || '—')} · ${esc(lbl(C.entityTypes, e.entityType) || '—')} · ${esc(lbl(C.jurisdictions, e.jurisdiction))}</dd><dt>Mode</dt><dd>${esc(lbl(C.modes.map(m => [m.id, m.name]), e.mode))}</dd><dt>Privilege marking</dt><dd>${esc(e.privilegeMarking || 'Not set. Counsel directs the marking.')}</dd><dt>Board dates</dt><dd>Workshop ${esc(dl((e.boardDates || {}).workshop) || 'not set')} · resolution ${esc(dl((e.boardDates || {}).resolution) || 'not set')}</dd>${e.gcActsAsCounsel ? `<dt>Counsel</dt><dd>The GC also acts as counsel. Every output records that the GC held both roles.</dd>` : ''}</dl>
+    <p class="small soft" style="margin:4px 0 0">Change these in set-up above.</p>`;
+  // the matter brief
+  h += sub('Obligations in scope · from the AI Obligations Atlas matter brief');
+  if (mb) {
+    const mis = MB() ? MB().briefMismatch(mb, e, NAMES()) : [];
+    h += `<p class="small" style="margin:0 0 6px">${esc(mb.scope)}${mb.loadedOn ? ` · loaded ${esc(dl(mb.loadedOn))}${mb.loadedBy ? ' by ' + esc(mb.loadedBy) : ''}` : ''}${(mb.dataset || {}).generatedAt ? ` · Atlas data of ${esc(dl(String(mb.dataset.generatedAt).slice(0, 10)))}` : ''}${(mb.dataset || {}).preview ? ' · <span class="badge b-ochre">Preview data</span>' : ''}</p>`
+      + mis.map(m => `<p class="small" role="alert" style="color:var(--ochre, #8A4B08);margin:0 0 6px">${esc(m)} Check the brief was built for this company.</p>`).join('')
+      + table(['Tier', 'References'], mb.tiers.map(t => [esc(t.tier), t.refs.length ? t.refs.map(r => `<span class="mono">${esc(r[0])}</span> ${esc(r[1])}${r[3] ? ` <span class="small soft">${esc(r[3])}</span>` : ''}`).join('<br>') : '<span class="soft">None</span>']))
+      + (mb.coverage || []).map(c => `<p class="small soft">${esc(c.jurisdiction)}: ${esc(c.note)}</p>`).join('')
+      + '<p class="small soft">The brief lists what sources say by tier. Counsel decides what applies.</p>';
+    const qs = mb.questions || [];
+    if (qs.length) {
+      const logged = q => (S.questions || []).some(x => x.source === 'atlas' && x.about === q.about && x.question === q.question);
+      const todo = qs.filter(q => !logged(q));
+      h += `<p class="mini" style="margin:12px 0 4px">Questions counsel will need to determine · from the brief</p><ul class="small" style="margin:0 0 6px 18px">${qs.map(q => `<li>${esc(q.question)}${logged(q) ? ' <span class="badge b-green">Logged</span>' : ''}</li>`).join('')}</ul>`
+        + (todo.length && !askWhy() ? `<button class="btn sm" data-act="logBriefQs">Log ${todo.length === qs.length ? 'these' : 'the other ' + todo.length} as questions to counsel</button>` : '');
+    }
+  } else h += '<p class="small soft" style="margin:0 0 6px">No matter brief loaded yet.</p>';
+  if (!bw) h += `<div class="panel2" style="padding:10px 14px;margin:8px 0"><p class="small" style="margin:0 0 6px"><strong>${mb ? 'Load a newer brief' : 'Load the matter brief'}.</strong> Build it in the <a href="${esc(atlasBriefUrl())}" target="_blank" rel="noopener">AI Obligations Atlas</a> for the company’s entity type and jurisdiction, download it as JSON, and load the file here. The matter label is not kept.</p>
+      <div class="row" style="gap:8px;flex-wrap:wrap"><label class="btn sm" for="brief_file" style="cursor:pointer">Choose the brief file…</label><input type="file" id="brief_file" accept=".json,application/json" style="position:absolute;left:-9999px"><button class="btn sm ghost" data-act="togglePaste">${UI.paste ? 'Hide' : 'Or paste the brief'}</button>${mb ? `<button class="btn sm ghost" data-act="removeBrief">${UI.confirmDel === 'brief' ? 'Confirm: remove the brief' : 'Remove the brief'}</button>` : ''}</div>
+      ${UI.paste ? '<textarea class="in" id="brief_paste" rows="5" style="margin-top:8px" placeholder="Paste the JSON the Atlas copied"></textarea><div class="row" style="margin-top:6px"><button class="btn sm" data-act="pasteBrief">Load the pasted brief</button></div>' : ''}</div>`;
+  // agreement to the scope (BP0.6)
+  h += sub('Agreement to the scope');
+  h += table(['Who', 'Agreement', ''], [agreementRow('gc'), agreementRow('chair')]);
+  if (e.gcActsAsCounsel && !e.secondApproverId) h += '<p class="small" style="color:var(--ochre, #8A4B08)">The GC also acts as counsel. Name the second approver in set-up.</p>';
+  // the director briefing (plan task 1.12)
+  h += briefingPanel();
+  return h;
+}
+function loadBriefText(text) {
+  const why = briefWhy(); if (why) { toast(why); return; }
+  const r = MB().readBrief(text, NAMES(), todayISO(), myName());
+  if (r.error) { toast(r.error); UI.briefError = r.error; render(); return; }
+  const had = !!S.engagement.matterBrief;
+  S.engagement.matterBrief = r.brief; UI.paste = false; UI.briefError = '';
+  log(had ? 'replace' : 'add', 'engagement.matterBrief', null, r.brief.scope);
+  const n = r.brief.tiers.reduce((m, t) => m + t.refs.length, 0);
+  toast(`Matter brief loaded: ${n} reference${n === 1 ? '' : 's'}, ${r.brief.questions.length} question${r.brief.questions.length === 1 ? '' : 's'} for counsel.`);
+  render();
+}
+function briefingMarkdown() {
+  const e = S.engagement, B = C.briefing, mb = e.matterBrief, cell = v => String(v == null ? '' : v).replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  const out = [];
+  if (String(e.privilegeMarking || '').trim()) out.push(e.privilegeMarking.trim(), '');
+  out.push(`# ${B.title}`, '', `**${cell(e.company || '[company]')}**${e.reference ? ' · ' + cell(e.reference) : ''} · Draft, ${dl(todayISO())}`, '');
+  if ((e.practitioner || {}).firm) out.push(cell(e.practitioner.line || 'Prepared by ' + e.practitioner.firm), '');
+  out.push(B.intro, '', `*${B.status}*`, '');
+  B.sections.forEach(s => { out.push(`## ${s.h}`, ''); (s.p || []).forEach(p => out.push(p, '')); (s.list || []).forEach(x => out.push('- ' + x)); if (s.list) out.push(''); });
+  out.push('## Obligations in scope', '');
+  if (mb) { out.push(B.obligationsNote, '', `Scope of the brief: ${mb.scope}.`, ''); mb.tiers.forEach(t => { out.push(`### ${t.tier}`, ''); if (!t.refs.length) out.push('None in scope.', ''); else { out.push('| Reference | Title | Instrument |', '| --- | --- | --- |'); t.refs.forEach(r => out.push(`| ${cell(r[0])} | ${cell(r[1])} | ${cell(r[2])} |`)); out.push(''); } }); }
+  else out.push('[The matter brief has not been loaded yet.]', '');
+  out.push('## The ten steps', '', '| Step | Question to the board | Answered as |', '| --- | --- | --- |');
+  C.steps.forEach(s => out.push(`| ${s.id} ${cell(s.name)} | ${cell(s.question)} | ${cell(s.answeredAs)} |`));
+  out.push('', '## Two scales you will use', '', '| Posture | Meaning |', '| --- | --- |'); SC.posture.forEach(r => out.push(`| ${cell(r[1])} | ${cell(r[2])} |`));
+  out.push('', '| Authority | What the AI does |', '| --- | --- |'); SC.authority.forEach(r => out.push(`| ${r[0]} ${cell(r[1])} | ${cell(r[2])} |`));
+  const inv = S.inventory || [];
+  out.push('', '## Where AI is used now', '');
+  if (inv.length) { out.push(`The AI inventory (B1) has ${inv.length} line${inv.length === 1 ? '' : 's'}.`, '', '| Line | Use | Area | Authority |', '| --- | --- | --- | --- |'); inv.forEach(l => out.push(`| ${cell(l.id)} | ${cell(l.use)} | ${cell(l.area ? areaName(l.area) : '')} | ${cell(l.authority ? l.authority + ' ' + lbl(SC.authority, l.authority) : '')} |`)); }
+  else out.push('[The AI inventory (B1) is not yet complete.]');
+  out.push('', '## Check of understanding', '', 'Four short questions follow in the app. They check understanding and are not a test. Only you and the facilitators see your answers.');
+  return out.join('\n');
+}
+function educationMarkdown() {
+  const e = S.engagement, edu = S.education || {}, cell = v => String(v == null ? '' : v).replace(/\|/g, '\\|');
+  const out = [];
+  if (String(e.privilegeMarking || '').trim()) out.push(e.privilegeMarking.trim(), '');
+  out.push('# Director education record', '', `**${cell(e.company || '[company]')}**${e.reference ? ' · ' + cell(e.reference) : ''} · ${dl(todayISO())}`, '',
+    'Each director’s read confirmation and completion of the director briefing (step B0). The answers to the check questions are not in this record: they are seen only by each director and the facilitators.', '',
+    '| Director | Role | Read confirmed | Completed |', '| --- | --- | --- | --- |');
+  boardPeople().forEach(p => { const x = edu[p.id] || {}; out.push(`| ${cell(p.name)} | ${cell(p.roles.filter(r => RULES.BOARD.includes(r)).map(roleName).join(', '))} | ${x.readOn ? dl(x.readOn) : 'Not yet'} | ${x.completedOn ? dl(x.completedOn) : 'Not yet'} |`); });
+  const not = notBriefed();
+  out.push('', not.length ? `Not yet completed: ${not.map(p => p.name).join(', ')}. The chair decides whether to proceed.` : 'Every director has completed the briefing.');
+  return out.join('\n');
+}
+const notBriefed = () => boardPeople().filter(p => !((S.education || {})[p.id] || {}).completedOn);
+function downloadDocx(md, name) {
+  if (!window.RAFExport) { toast('The Word export did not load. Reload the page and try again.'); return; }
+  const e = S.engagement; toast('Preparing the Word document…');
+  window.RAFExport.toDocx(md, { insurer: e.company, reference: e.reference, creator: (e.practitioner || {}).firm || 'Triodian' })
+    .then(blob => { saveBlob(blob, `${name}${e.company ? ' - ' + e.company.replace(/[\\/:*?"<>|]/g, '') : ''}.docx`); toast('Word document downloaded'); }, err => toast('The Word document could not be made: ' + (err && err.message || err)));
+}
 function stepBody(id) {
   const e = S.engagement, qs = (S.questions || []).filter(q => q.step === id);
   const questions = qs.length ? `<p class="mini" style="margin:12px 0 4px">Questions to counsel</p>` + table(['Ref', 'Question', 'Status', 'Counsel’s answer'], qs.map(q => [refTip(q.ref), esc(q.question) + '<br>' + by(q.raisedBy), q.status === 'answered' ? '<span class="badge b-green">Answered</span>' : '<span class="badge b-ochre">Open</span>', esc(q.response || '')])) : '';
   let h = '';
   if (id === 'B0') {
-    const sa = S.scopeAgreed || {}, mb = e.matterBrief;
-    h = `<dl class="kv"><dt>Company</dt><dd>${esc(e.company || '—')} · ${esc(lbl(C.entityTypes, e.entityType) || '—')} · ${esc(lbl(C.jurisdictions, e.jurisdiction))}</dd><dt>Mode</dt><dd>${esc(lbl(C.modes.map(m => [m.id, m.name]), e.mode))}</dd><dt>Scope agreed</dt><dd>${sa.gcBy ? 'GC: ' + esc(pname(sa.gcBy)) + ', ' + esc(dl(sa.gcOn)) : 'GC: not yet'} · ${sa.chairBy ? 'Chair: ' + esc(pname(sa.chairBy)) + ', ' + esc(dl(sa.chairOn)) : 'Chair: not yet'}</dd></dl>`
-      + (mb ? `<p class="mini" style="margin:12px 0 4px">Obligations in scope, from the Atlas matter brief (${esc(mb.scope)})</p>` + table(['Tier', 'References'], mb.tiers.map(t => [esc(t.tier), t.refs.length ? t.refs.map(r => `<span class="mono">${esc(r[0])}</span> ${esc(r[1])}`).join('<br>') : '<span class="soft">None</span>'])) + '<p class="small soft">The brief lists what sources say by tier. Counsel decides what applies.</p>' : '<p class="small soft">No Atlas matter brief imported yet.</p>');
+    h = b0Body();
   } else if (id === 'B1') {
     h = inventoryBody();
   } else if (RULES.POSITION_STEPS.includes(id) && !posWhy()) {
@@ -468,8 +642,8 @@ function stepBody(id) {
     const o = pos('B8').owners || {};
     h = table(['Accountability', 'Named'], SC.accountability.filter(a => o[a[0]]).map(a => [esc(a[1]), esc(o[a[0]])]));
   } else if (id === 'B9') {
-    const r = S.resolution || {}, rl = reality();
-    h = (r.by ? `<dl class="kv"><dt>Resolution</dt><dd>${esc(r.text || '')}</dd><dt>Recorded by</dt><dd>${esc(pname(r.by))}, ${esc(dl(r.on))} · ${esc(r.minuteRef || '')}</dd><dt>Review</dt><dd>${esc(r.interval || '')}</dd></dl>` : '')
+    const r = S.resolution || {}, rl = reality(), nb = notBriefed();
+    h = (nb.length ? `<p class="small" style="margin:4px 0 8px"><strong>${tip('Director briefing', 'The B0 pre-read and check of understanding.')} not completed:</strong> ${nb.map(p => esc(p.name)).join(', ')}. The chair decides whether to proceed.</p>` : '') + (r.by ? `<dl class="kv"><dt>Resolution</dt><dd>${esc(r.text || '')}</dd><dt>Recorded by</dt><dd>${esc(pname(r.by))}, ${esc(dl(r.on))} · ${esc(r.minuteRef || '')}</dd><dt>Review</dt><dd>${esc(r.interval || '')}</dd></dl>` : '')
       + (rl.length ? `<p class="mini" style="margin:12px 0 4px">${tip('Reality note', C.tips.reality)}: inventory lines that already cross a position (each goes on the 90-day action list)</p>` + table(['Line', 'Use', 'Why'], rl.map(([l, why]) => [refTip(l.id), esc(l.use), esc(why)])) : '');
   }
   return (h || '<p class="small soft">Nothing recorded yet.' + (['B0', 'B9'].includes(id) ? ' The screen for this step is added in development plan task ' + esc((C.steps.find(s => s.id === id) || {}).task || '') + '.' : '') + '</p>') + questions + (id === 'B0' || id === 'B9' ? '' : askBox(id));
@@ -501,7 +675,9 @@ function mainScreen() {
     ${fld('Privilege marking (as counsel directs)', 'engagement.privilegeMarking', e.privilegeMarking)}
     ${fld('Workshop date', 'engagement.boardDates.workshop', (e.boardDates || {}).workshop, { type: 'date' })}
     ${fld('Resolution meeting date', 'engagement.boardDates.resolution', (e.boardDates || {}).resolution, { type: 'date' })}
-  </div></section>
+  </div>
+  <div class="fgrid" style="margin-top:8px"><label class="f" for="f_gcac" style="flex-direction:row;display:flex;gap:10px;align-items:flex-start"><input type="checkbox" id="f_gcac" data-path="engagement.gcActsAsCounsel" ${e.gcActsAsCounsel ? 'checked' : ''} ${why ? 'disabled' : ''} style="margin-top:4px;width:16px;height:16px;flex:0 0 auto"><span style="text-transform:none;letter-spacing:0;font-weight:400">The GC also acts as counsel. The second agreement to the scope then comes from a named executive or director.</span></label>
+    ${e.gcActsAsCounsel ? fld('Second approver', 'engagement.secondApproverId', e.secondApproverId, { select: [['', 'Choose…'], ...(S.people || []).filter(p => p.active !== false && p.roles.some(r => ['director', 'chair', 'ceo', 'cro'].includes(r))).map(p => [p.id, p.name])] }) : ''}</div></section>
   <section class="card"><h2 class="sh">2 · Mode</h2>
     <div class="fgrid">${fld('Mode', 'engagement.mode', e.mode, { select: C.modes.map(m => [m.id, m.name]) })}</div>
     <p class="small soft" style="margin:6px 0 0">${esc((C.modes.find(m => m.id === e.mode) || {}).for || '')}${locked ? ' The mode is fixed now the AI inventory has a line.' : ' The mode is fixed once the AI inventory (B1) has a line.'}</p></section>
@@ -521,7 +697,10 @@ function render() {
 /* ---------- events ---------- */
 document.addEventListener('change', ev => {
   const t = ev.target;
-  if (t.dataset.path) setPath(t.dataset.path, t.value);
+  if (t.id === 'brief_file') { const f = t.files && t.files[0]; if (!f) return; if (f.size > 2 * 1024 * 1024) { toast('That file is too large to be a matter brief.'); return; } f.text().then(loadBriefText); t.value = ''; return; }
+  if (t.dataset.brief) { const m = myBriefing(); saveBriefing({ ...m.answers, [t.dataset.brief]: t.value }, m.read); return; }
+  if (t.dataset.briefRead) { const m = myBriefing(); saveBriefing(m.answers, t.checked); return; }
+  if (t.dataset.path) setPath(t.dataset.path, t.type === 'checkbox' ? t.checked : t.value);
   else if (t.dataset.pos) setPos(t.dataset.pos, t.dataset.ppath, t.tagName === 'SELECT' ? t.value : t.value.trim());
   else if (t.dataset.cond != null) { const why = posWhy(); if (why) { toast(why); return; } const P = posObj('B5'), i = +t.dataset.cond; P.conditions = P.conditions || []; const from = P.conditions[i], v = t.value.trim(); if (from === v) return; P.conditions[i] = v; log('edit', 'positions.B5.conditions.' + i, from == null ? null : from, v); rerender(); }
   else if (t.dataset.qstep) { UI.qdraft = UI.qdraft || {}; UI.qdraft[t.dataset.qstep] = t.value; }
@@ -529,7 +708,7 @@ document.addEventListener('change', ev => {
   else if (t.dataset.inv) setInv(t.dataset.inv, t.dataset.k, t.type === 'checkbox' ? t.checked : (t.tagName === 'SELECT' ? t.value : t.value.trim()));
   else if (t.dataset.area != null) { if (deny('setup')) return; const a = S.areas[+t.dataset.area], v = t.value.trim(); if (!a || a.name === v) return; const from = a.name; a.name = v; log('edit', 'areas.' + a.id, from, v); }
 });
-document.addEventListener('toggle', ev => { const d = ev.target; if (d && d.id && d.id.startsWith('step-')) { UI.open = UI.open || {}; UI.open[d.id.slice(5)] = d.open; } }, true);
+document.addEventListener('toggle', ev => { const d = ev.target; if (d && d.id === 'briefing') UI.briefOpen = d.open; if (d && d.id && d.id.startsWith('step-')) { UI.open = UI.open || {}; UI.open[d.id.slice(5)] = d.open; } }, true);
 /* The tip box: one element, placed under the item (or above it near the bottom of the window). */
 let tipFor = null;
 function showTip(el) {
@@ -557,7 +736,7 @@ document.addEventListener('click', async ev => {
   if (act === 'acct') { UI.acct = !UI.acct; UI.drawer = false; render(); }
   if (act === 'drawer') { UI.drawer = !UI.drawer; UI.acct = false; render(); }
   if (act === 'example') { markExampleLeft(false); openExample(); scrollTo(0, 0); }
-  if (act === 'leaveExample') { markExampleLeft(true); UI.practice = false; UI.drawer = false; UI.open = {}; UI.editLine = ""; UI.confirmDel = ""; if (REAL) { S = REAL.S; SRV.rev = REAL.rev; SRV.exists = REAL.exists; } REAL = null; render(); scrollTo(0, 0); }
+  if (act === 'leaveExample') { markExampleLeft(true); UI.practice = false; UI.drawer = false; UI.open = {}; UI.editLine = ""; UI.confirmDel = ""; UI.pBrief = null; UI.briefOpen = undefined; if (REAL) { S = REAL.S; SRV.rev = REAL.rev; SRV.exists = REAL.exists; } REAL = null; render(); scrollTo(0, 0); }
   if (act === 'new') { S = blank(); SRV.rev = 0; render(); await save(); if (SRV.exists) await load(); }
   if (act === 'addArea') { const n = S.areas.reduce((m, a) => Math.max(m, +String(a.id).replace(/\D/g, '') || 0), 0) + 1; S.areas.push({ id: 'A' + n, name: 'New area' }); log('add', 'areas.A' + n, null, 'New area'); render(); }
   if (act === 'addLine') {
@@ -582,6 +761,30 @@ document.addEventListener('click', async ev => {
     toast(`Line ${id} removed.` + (q && q.status !== 'answered' ? ` ${q.ref} stays open for counsel to close.` : ''));
   }
   if (act === 'worklistDocx') downloadWorklist();
+  // B0
+  if (act === 'togglePaste') { UI.paste = !UI.paste; render(); const el = document.getElementById('brief_paste'); if (el) el.focus(); }
+  if (act === 'pasteBrief') { const el = document.getElementById('brief_paste'); if (el && el.value.trim()) loadBriefText(el.value); else toast('Paste the brief first.'); }
+  if (act === 'removeBrief') {
+    if (briefWhy()) { toast(briefWhy()); return; }
+    if (UI.confirmDel !== 'brief') { UI.confirmDel = 'brief'; render(); return; }
+    const from = (S.engagement.matterBrief || {}).scope || ''; delete S.engagement.matterBrief; UI.confirmDel = ''; log('remove', 'engagement.matterBrief', from, null); render();
+  }
+  if (act === 'logBriefQs') {
+    if (askWhy()) { toast(askWhy()); return; }
+    const qs = (S.engagement.matterBrief || {}).questions || []; S.questions = S.questions || []; let n = 0;
+    qs.forEach(q => { if (S.questions.some(x => x.source === 'atlas' && x.about === q.about && x.question === q.question)) return; const ref = nextQRef(); S.questions.push({ ref, step: 'B0', source: 'atlas', about: q.about, question: q.question, status: 'open', response: '', sentOn: todayISO(), raisedBy: myId() }); log('add', 'questions.' + ref, null, 'open'); n++; });
+    render(); toast(`${n} question${n === 1 ? '' : 's'} logged for counsel.`);
+  }
+  if (act === 'agree') {
+    const kind = b.dataset.kind, t = kind === 'gc' ? 'agreeGC' : 'agreeChair', own = b.dataset.v === '0' && (S.scopeAgreed || {})[kind + 'By'] === SRV.user.id, why = own ? '' : deny(t); if (UI.practice || why) { toast(why || 'In the worked example the scope is already agreed.'); return; }
+    S.scopeAgreed = S.scopeAgreed || {}; const on = b.dataset.v === '1';
+    const from = S.scopeAgreed[kind + 'By'] || null;
+    S.scopeAgreed[kind + 'By'] = on ? SRV.user.id : ''; S.scopeAgreed[kind + 'On'] = on ? todayISO() : '';
+    log(on ? 'agree' : 'withdraw', 'scopeAgreed.' + kind, from, on ? SRV.user.id : null); render(); toast(on ? 'Your agreement to the scope is recorded.' : 'Your agreement is withdrawn.');
+  }
+  if (act === 'briefingDocx') downloadDocx(briefingMarkdown(), 'Director briefing');
+  if (act === 'educationDocx') downloadDocx(educationMarkdown(), 'Director education record');
+  if (act === 'goB0') { UI.open = UI.open || {}; UI.open.B0 = true; UI.briefOpen = true; render(); const d = document.getElementById('briefing') || document.getElementById('step-B0'); if (d) d.scrollIntoView({ block: 'start' }); }
   // B2 to B8
   const posAct = ['addGoal', 'usePosture', 'addRedLine', 'addReserved', 'loadStart', 'addMeasure', 'addEvent', 'goalMeasure', 'delRow', 'addCond', 'delCond'];
   if (posAct.includes(act) && posWhy()) { toast(posWhy()); return; }
@@ -645,6 +848,7 @@ document.addEventListener('click', async ev => {
   if (!r.ok) { SRV.reason = r.error; render(); return; }
   SRV.user = r.body.user; SRV.site = r.body.site || '';
   await load();
+  loadBriefing();
   if (openExampleByDefault()) openExample();
   else if (location.hash === '#actions') { const el = document.getElementById('actions'); if (el) el.scrollIntoView({ block: 'start' }); }
 })();

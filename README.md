@@ -6,12 +6,14 @@ Triodian recording. It runs as a Cloudflare Worker: the files in `public/` are s
 `src/worker.js` handles `/api/*`. The server design is the AI Confidentiality Exposure Assessment app's
 (`Triodian/confidentiality-exposure-assessment`), which shares the AI Use Assessment's.
 
-**Status:** development plan tasks 1.1 (the skeleton) and 1.9 (the worked example). Sign-in, admin, profile, set-up, the shared roles and the
-server-side save check are in place. The step screens, checks and outputs come in tasks 1.4 to 1.13.
+**Status:** development plan tasks 1.1 (the skeleton), 1.4 (B0 set-up and the Atlas matter brief), 1.5 (step screens
+B1 to B8), 1.6 and 1.11 (inventory and the automated-decision worklist), 1.9 (the worked example), 1.12 (the director
+briefing) and 1.13 (governance goals). Still to come: the B9 screen, the checks (1.7), outputs (1.8) and the user guide (1.10).
 
 - `public/` – the app
   - `/` – the engagement (`index.html`, `bd.js`, `bd-content.js`, `app.css`) and the worked example (`bd-example.js`: a fictional company, browser only, never saved)
   - `/shared/rules.js` – the roles and per-change permission rules, one copy read by the browser and the server
+  - `/shared/matter-brief.js` – reads an AI Obligations Atlas matter brief (`triodian.matterBrief/1`) for B0; browser and server
   - `/admin/` – users, their roles, access requests and activity (administrators only), from `account.js`
   - `/profile/` – your name, organisation, email address and preferences, from `account.js`
   - `/user-guide/` – the user guide
@@ -30,7 +32,14 @@ server-side save check are in place. The step screens, checks and outputs come i
 ## The engagement document (schema `triodian.bd.v1`)
 `engagement` (company, entity type, jurisdiction, mode, reference, privilege marking, practitioner, board dates),
 `areas`, `scopeAgreed` (B0), `inventory` (B1), `positions` (B2 to B8), `questions` (to counsel), `resolution` (B9),
-`versions`, `previous`, `history`. See the comment at the top of `public/shared/rules.js`.
+`education` (B0: each director's briefing read and completion dates), `versions`, `previous`, `history`. See the comment
+at the top of `public/shared/rules.js`. The matter brief is kept at `engagement.matterBrief` without the lawyer's matter label.
+
+## The director briefing (B0)
+Directors' answers to the check questions are not in the engagement document. They are kept in the `briefing_answers`
+table and served by `GET /api/briefing`: each director receives only their own, the board advisor and Triodian receive
+all. `PUT /api/briefing` (chair and directors only) saves a director's answers and read confirmation and sets their
+dates in `education`; a normal save cannot change `education`.
 
 ## Roles
 Method owner and recorder (Triodian), board advisor, general counsel, chair, director, CEO or accountable executive,

@@ -22,7 +22,8 @@
 <script type="module">
   import { merge3 } from "/shared/merge.js";
   import * as rules from "/shared/rules.js";
-  window.BDMerge = { merge3 }; window.BDRules = rules;
+  import * as brief from "/shared/matter-brief.js";
+  window.BDMerge = { merge3 }; window.BDRules = rules; window.BDBrief = brief;
   window.dispatchEvent(new Event('bd:rules'));
 </script>
 <script>
