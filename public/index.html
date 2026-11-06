@@ -10,7 +10,22 @@
 <link rel="stylesheet" href="/app.css">
 <style>.hdr{border-top-color:var(--aubergine)}.hdr .dot{background:var(--aubergine)}.btn.primary{background:var(--aubergine);border-color:var(--aubergine)}.steplist{display:grid;gap:10px}.steplist .panel2{padding:12px 16px}.stepid{font-family:var(--mono);color:var(--aubergine);margin-right:8px}
 .tip{cursor:help;text-decoration:underline dotted var(--ink-faint);text-underline-offset:3px}.badge.tip{text-decoration:none}.tip:focus-visible{outline:2px solid var(--aubergine);outline-offset:2px;border-radius:3px}
-#tipbox{position:fixed;z-index:400;max-width:320px;background:var(--navy);color:#fff;font:400 13px/1.45 var(--sans);padding:8px 11px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.18);pointer-events:none}#tipbox[hidden]{display:none}</style>
+#tipbox{position:fixed;z-index:400;max-width:320px;background:var(--navy);color:#fff;font:400 13px/1.45 var(--sans);padding:8px 11px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.18);pointer-events:none}#tipbox[hidden]{display:none}
+.pblocks{border:1px solid var(--rule,#e2e2e2);border-radius:10px;margin:8px 0;background:var(--paper,#fff)}
+.pblock{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:6px 16px;padding:12px 16px;border-top:1px solid var(--rule,#e2e2e2)}
+.pblock:first-child{border-top:0}
+.pblock-area{grid-template-columns:180px minmax(0,1fr) auto}
+.pref{padding-top:22px;font-size:14px}.pref .mono,.pref .tip{font-family:var(--mono)}
+.pdel{padding-top:20px}
+.pbody{display:grid;gap:8px;min-width:0}
+.pmain .f,.pfields .f{margin:0}
+.pmain textarea{width:100%;resize:vertical;min-height:40px;overflow:hidden;line-height:1.45}
+.pfields{display:flex;flex-wrap:wrap;gap:8px 12px}
+.pfields .f{flex:1 1 220px;min-width:180px}
+.pfields .f .in{width:100%}
+.pfields textarea{resize:none;overflow:hidden;min-height:38px;line-height:1.45}
+.pf-hint{display:block;margin-top:3px;font-weight:400;text-transform:none;letter-spacing:0}
+@media (max-width:720px){.pblock,.pblock-area{grid-template-columns:1fr}.pref,.pdel{padding-top:0}}</style>
 </head>
 <body>
 <div id="app"></div>

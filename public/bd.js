@@ -332,9 +332,18 @@ function pIn(step, path, v, o) {
   o = o || {};
   const a = `id="p_${step}_${path.replace(/[^A-Za-z0-9]/g, '_')}" data-pos="${step}" data-ppath="${esc(path)}" aria-label="${esc(o.label || '')}"`;
   if (o.select) return `<select class="in" ${a}>${[['', o.blank || '—'], ...keepOpt(o.select, v)].map(x => `<option value="${esc(x[0])}" ${String(v || '') === String(x[0]) ? 'selected' : ''}>${esc(x[1])}</option>`).join('')}</select>`;
-  if (o.rows) return `<textarea class="in" rows="${o.rows}" ${a} placeholder="${esc(o.ph || '')}">${esc(v || '')}</textarea>`;
+  if (o.rows) return `<textarea class="in" rows="${o.rows}" data-grow="1" ${a} placeholder="${esc(o.ph || '')}">${esc(v || '')}</textarea>`;
   return `<input class="in" ${a} value="${esc(v || '')}" placeholder="${esc(o.ph || '')}"${o.list ? ` list="${o.list}"` : ''}>`;
 }
+/* The two-row layout for B2 to B7: each item is a block. Row 1 holds the main wording at full width, in a box that
+   grows with its text; row 2 holds the short fields side by side, wrapping on narrow screens. */
+const pid = (step, path) => `p_${step}_${path.replace(/[^A-Za-z0-9]/g, '_')}`;
+/* A labelled field: label above, the input, and any hint below in small text (so long hints never hide in the box). */
+const pf = (label, step, path, v, o) => { o = o || {}; if (!o.select && !o.list && !o.rows) o = { ...o, rows: 1 }; return `<label class="f" for="${pid(step, path)}"><span>${label}</span>${pIn(step, path, v, o)}${o.hint ? `<span class="small soft pf-hint">${esc(o.hint)}</span>` : ''}</label>`; };
+/* blk({ ref, main: [html], fields: [html], wide: [html], del }) */
+const blk = b => { const main = (b.main || []).map(x => `<div class="pmain">${x}</div>`).join(''), fields = (b.fields || []).length ? `<div class="pfields">${b.fields.join('')}</div>` : '';
+  return `<div class="pblock"><div class="pref">${b.ref || ''}</div><div class="pbody">${b.fieldsFirst ? fields + main : main + fields}</div><div class="pdel">${b.del || ''}</div></div>`; };
+const blocks = (items, empty) => items.length ? `<div class="pblocks">${items.join('')}</div>` : (empty || '');
 const propSel = (step, path, v) => pIn(step, path, v, { select: proposerOpts(), blank: 'Proposed by…', label: 'Proposed by' });
 const dissentIn = (step, path, v) => pIn(step, path, v, { ph: 'Dissent, if any', label: 'Dissent' });
 const delBtn = (step, list, id) => { const k = step + '.' + list + '.' + id, c = UI.confirmDel === k; return `<button class="btn sm ghost" data-act="delRow" data-step="${step}" data-list="${list}" data-id="${esc(id)}" aria-label="Remove ${esc(id)}">${c ? 'Confirm' : 'Remove'}</button>`; };
@@ -367,29 +376,42 @@ function posEditor(id) {
   if (id === 'B2') {
     const goals = P.goals || [];
     h += sub(tip('Governance goals', 'What the board wants AI governance to achieve. Each goal has an owner and a measure, which B7 reports.') + ' · what AI governance should achieve');
-    h += table(['Ref', 'Goal', 'Owner', 'Measure (reported at B7)', 'Proposed by', ''], goals.map(g => [refTip(g.id), pIn(id, `goals.${g.id}.goal`, g.goal, { rows: 3, label: 'Goal ' + g.id }), pIn(id, `goals.${g.id}.owner`, g.owner, { ph: 'Named person', label: 'Owner of ' + g.id }), pIn(id, `goals.${g.id}.measure`, g.measure, { rows: 3, ph: 'How the board will see progress', label: 'Measure for ' + g.id }), propSel(id, `goals.${g.id}.proposedBy`, g.proposedBy), delBtn(id, 'goals', g.id)]));
+    h += blocks(goals.map(g => blk({ ref: refTip(g.id), del: delBtn(id, 'goals', g.id),
+      main: [pf('Goal', id, `goals.${g.id}.goal`, g.goal, { rows: 1, label: 'Goal ' + g.id }), pf('Measure, reported at B7', id, `goals.${g.id}.measure`, g.measure, { rows: 1, ph: 'How the board will see progress', label: 'Measure for ' + g.id })],
+      fields: [pf('Owner', id, `goals.${g.id}.owner`, g.owner, { ph: 'Named person', label: 'Owner of ' + g.id }), pf('Proposed by', id, `goals.${g.id}.proposedBy`, g.proposedBy, { select: proposerOpts(), blank: 'Choose…', label: 'Proposed by' })] })));
     h += `<div class="row" style="gap:8px;margin:6px 0"><button class="btn sm" data-act="addGoal">Add a goal</button>${goals.length ? '' : '<button class="btn sm ghost" data-act="toggleGoalIdeas">Goals boards often set</button>'}</div>`;
     if (UI.goalIdeas && !goals.length) h += `<div class="panel2" style="padding:10px 14px"><p class="small soft" style="margin:0 0 6px">Examples only. The board writes its own goals; including one here is not a recommendation.</p>${C.starting.goals.map((g, i) => `<div class="row between" style="gap:8px;margin:4px 0"><span class="small">${esc(g)}</span><button class="btn sm ghost" data-act="addGoal" data-i="${i}">Start from this</button></div>`).join('')}</div>`;
     h += sub('Posture by area');
     const postures = SC.posture.map(r => [r[0], `${r[0]} ${r[1]}`]).concat([['NS', 'Not set']]);
-    h += table(['Area', { html: tip('Starting position', 'The posture that matches the highest authority the inventory (B1) records in the area. Confirm or change it.') }, 'Posture', 'Condition', 'Proposed by', 'Dissent'], S.areas.map(a => {
+    h += blocks(S.areas.map(a => {
       const x = P[a.id] || {}, st = startingPosture(a.id);
-      const start = st ? `${esc(lbl(SC.posture, st.posture))}<br><span class="small soft">from ${esc(st.line.id)} at ${esc(st.line.authority)}</span>${x.posture !== st.posture ? `<br><button class="lnk small" data-act="usePosture" data-area="${a.id}" data-v="${st.posture}">Use this</button>` : ''}` : '<span class="small soft">No inventory line</span>';
-      const ns = x.posture === 'NS' ? `<div class="stack" style="gap:4px;margin-top:4px">${pIn(id, `${a.id}.notSetOwner`, x.notSetOwner, { ph: 'Who will set it', label: 'Who will set the posture for ' + a.name })}${pIn(id, `${a.id}.notSetBy`, x.notSetBy, { ph: 'By when', label: 'By when' })}</div>` : '';
-      return [esc(a.name), start, pIn(id, `${a.id}.posture`, x.posture, { select: postures, blank: 'Choose…', label: 'Posture for ' + a.name }) + ns, pIn(id, `${a.id}.condition`, x.condition, { ph: 'Any condition', label: 'Condition for ' + a.name }), propSel(id, `${a.id}.proposedBy`, x.proposedBy), dissentIn(id, `${a.id}.dissent`, x.dissent)];
-    }));
+      const start = `<span class="small soft">${tip('Starting position', 'The posture that matches the highest authority the inventory (B1) records in the area. Confirm or change it.')}: </span>` + (st ? `<span class="small">${esc(lbl(SC.posture, st.posture))}, from ${esc(st.line.id)} at ${esc(st.line.authority)}</span>${x.posture !== st.posture ? ` <button class="lnk small" data-act="usePosture" data-area="${a.id}" data-v="${st.posture}">Use this</button>` : ''}` : '<span class="small soft">no inventory line in this area</span>');
+      const ns = x.posture === 'NS' ? [pf('Who will set it', id, `${a.id}.notSetOwner`, x.notSetOwner, { label: 'Who will set the posture for ' + a.name }), pf('By when', id, `${a.id}.notSetBy`, x.notSetBy, { label: 'By when' })] : [];
+      return blk({ fieldsFirst: true, ref: `<strong style="color:var(--ink)">${esc(a.name)}</strong><div style="margin-top:4px">${start}</div>`,
+        fields: [pf('Posture', id, `${a.id}.posture`, x.posture, { select: postures, blank: 'Choose…', label: 'Posture for ' + a.name }), ...ns, pf('Proposed by', id, `${a.id}.proposedBy`, x.proposedBy, { select: proposerOpts(), blank: 'Choose…', label: 'Proposed by' }), pf('Dissent', id, `${a.id}.dissent`, x.dissent, { ph: 'If any', label: 'Dissent' })],
+        main: [pf('Condition', id, `${a.id}.condition`, x.condition, { rows: 1, ph: 'Any condition on this posture', label: 'Condition for ' + a.name })] });
+    }).map(b => b.replace('<div class="pblock">', '<div class="pblock pblock-area">')));
     const over = S.areas.filter(a => { const p = (P[a.id] || {}).posture, st = startingPosture(a.id); return p && p !== 'NS' && st && +String(st.line.authority).slice(1) > POSTURE_MAX[p]; });
     if (over.length) h += `<p class="small" style="margin:4px 0">${tip('Reality note', C.tips.reality)}: the inventory already goes beyond the posture in ${over.map(a => esc(a.name)).join(', ')}. That is not a failure; it becomes an action on the 90-day list.</p>`;
   } else if (id === 'B3') {
+    h += '<p class="small soft" style="margin:0 0 6px">Write each red line so someone reading an inventory line can say whether it crosses it, then record what it was tested against.</p>';
     const lines = P.lines || [], scopes = [['All areas', 'All areas'], ...S.areas.map(a => [a.name, a.name])];
     const applies = ['The company', 'Its providers', 'The company and its providers', 'The company and its advisers', 'The company, its providers and its advisers'].map(x => [x, x]);
-    const tested = [['none', 'No line crosses it now'], ...(S.inventory || []).map(l => [l.id, `${l.id} crosses it: ${String(l.use || '').slice(0, 40)}`])];
-    h += table(['Ref', 'Red line: the use not accepted', 'Scope', 'Applies to', { html: tip('Tested against', 'Each red line is tested against the inventory (B1) before it is recorded: name the line that crosses it, or record that none does now. A line that crosses it goes on the 90-day action list.') }, 'Proposed by', 'Dissent', ''], lines.map(x => [refTip(x.id), pIn(id, `lines.${x.id}.use`, x.use, { rows: 2, ph: 'A use someone reading an inventory line can test', label: 'Red line ' + x.id }), pIn(id, `lines.${x.id}.scope`, x.scope, { select: scopes, blank: 'Choose…', label: 'Scope of ' + x.id }), pIn(id, `lines.${x.id}.appliesTo`, x.appliesTo, { select: applies, blank: 'Choose…', label: x.id + ' applies to' }), pIn(id, `lines.${x.id}.testedAgainst`, x.testedAgainst, { select: tested, blank: 'Not yet tested', label: x.id + ' tested against' }), propSel(id, `lines.${x.id}.proposedBy`, x.proposedBy), dissentIn(id, `lines.${x.id}.dissent`, x.dissent), delBtn(id, 'lines', x.id)]));
-    h += `<p class="small soft" style="margin:4px 0">Each red line must be testable: someone reading an inventory line must be able to say whether it crosses it.</p><div class="row" style="gap:8px;margin:6px 0"><button class="btn sm" data-act="addRedLine">Add a red line</button><button class="btn sm ghost" data-act="toggleCand">${UI.cand ? 'Hide' : 'Show'} the uses boards commonly consider</button></div>`;
+    const short = t => { t = String(t || ''); return t.length > 20 ? t.slice(0, 19).trimEnd() + '…' : t; };
+    const tested = [['none', 'No line crosses it now'], ...(S.inventory || []).map(l => [l.id, `${l.id} crosses it · ${short(l.use)}`])];
+    h += blocks(lines.map(x => blk({ ref: refTip(x.id), del: delBtn(id, 'lines', x.id),
+      main: [pf('Red line: the use not accepted', id, `lines.${x.id}.use`, x.use, { rows: 1, label: 'Red line ' + x.id })],
+      fields: [pf('Scope', id, `lines.${x.id}.scope`, x.scope, { select: scopes, blank: 'Choose…', label: 'Scope of ' + x.id }), pf('Applies to', id, `lines.${x.id}.appliesTo`, x.appliesTo, { select: applies, blank: 'Choose…', label: x.id + ' applies to' }),
+        pf(tip('Tested against', 'Each red line is tested against the inventory (B1) before it is recorded: name the line that crosses it, or record that none does now. A line that crosses it goes on the 90-day action list.'), id, `lines.${x.id}.testedAgainst`, x.testedAgainst, { select: tested, blank: 'Not yet tested', label: x.id + ' tested against' }),
+        pf('Proposed by', id, `lines.${x.id}.proposedBy`, x.proposedBy, { select: proposerOpts(), blank: 'Choose…', label: 'Proposed by' }), pf('Dissent', id, `lines.${x.id}.dissent`, x.dissent, { ph: 'If any', label: 'Dissent' })] })));
+    h += `<div class="row" style="gap:8px;margin:6px 0"><button class="btn sm" data-act="addRedLine">Add a red line</button><button class="btn sm ghost" data-act="toggleCand">${UI.cand ? 'Hide' : 'Show'} the uses boards commonly consider</button></div>`;
     if (UI.cand) h += `<div class="panel2" style="padding:10px 14px"><p class="small soft" style="margin:0 0 6px">Shown because the board asked. The board may adopt none, some or all; inclusion is not a recommendation.</p>${C.starting.redLineCandidates.map((c, i) => { const has = lines.some(l => l.use === c); return `<div class="row between" style="gap:8px;margin:4px 0"><span class="small">${esc(c)}</span>${has ? '<span class="badge b-green">Recorded</span>' : `<button class="btn sm ghost" data-act="addRedLine" data-i="${i}">Record as a red line</button>`}</div>`; }).join('')}</div>`;
   } else if (id === 'B4') {
     const ev = P.events || [];
-    h += table(['Ref', 'Event', 'Board approves before, or is told after', 'Brought by', 'Proposed by', 'Dissent', ''], ev.map(x => [refTip(x.id), pIn(id, `events.${x.id}.event`, x.event, { rows: 2, label: 'Event ' + x.id }), pIn(id, `events.${x.id}.timing`, x.timing, { list: 'dl_timing', ph: 'Before it starts', label: 'Timing of ' + x.id }), pIn(id, `events.${x.id}.by`, x.by, { list: 'dl_roles', ph: 'CEO', label: 'Who brings ' + x.id }), propSel(id, `events.${x.id}.proposedBy`, x.proposedBy), dissentIn(id, `events.${x.id}.dissent`, x.dissent), delBtn(id, 'events', x.id)]));
+    h += blocks(ev.map(x => blk({ ref: refTip(x.id), del: delBtn(id, 'events', x.id),
+      main: [pf('Event reserved to the board', id, `events.${x.id}.event`, x.event, { rows: 1, label: 'Event ' + x.id })],
+      fields: [pf('Board approves before, or is told after', id, `events.${x.id}.timing`, x.timing, { list: 'dl_timing', ph: 'Before it starts', label: 'Timing of ' + x.id }), pf('Brought by', id, `events.${x.id}.by`, x.by, { list: 'dl_roles', ph: 'CEO', label: 'Who brings ' + x.id }),
+        pf('Proposed by', id, `events.${x.id}.proposedBy`, x.proposedBy, { select: proposerOpts(), blank: 'Choose…', label: 'Proposed by' }), pf('Dissent', id, `events.${x.id}.dissent`, x.dissent, { ph: 'If any', label: 'Dissent' })] })));
     h += `<datalist id="dl_timing"><option value="Before it starts"><option value="Before it takes effect"><option value="Told within 24 hours"><option value="Told at the next meeting"></datalist><datalist id="dl_roles"><option value="CEO"><option value="Chair"><option value="CRO"><option value="GC"></datalist>`;
     h += `<div class="row" style="gap:8px;margin:6px 0">${ev.length ? '' : '<button class="btn sm primary" data-act="loadStart" data-step="B4">Start from the six events RV1 to RV6</button>'}<button class="btn sm" data-act="addReserved">Add an event</button></div>`;
   } else if (id === 'B5') {
@@ -403,18 +425,25 @@ function posEditor(id) {
       + `<div class="fgrid" style="margin-top:8px"><label class="f"><span>Proposed by</span>${propSel(id, 'proposedBy', P.proposedBy)}</label><label class="f"><span>Dissent</span>${dissentIn(id, 'dissent', P.dissent)}</label></div>`;
   } else if (id === 'B6') {
     const hs = P.harms || {}, hint = C.starting.thresholdHints;
-    h += table(['Harm to', 'We will not tolerate', 'Threshold', 'Source', 'Proposed by', 'Dissent'], SC.harm.map(x => { const v = hs[x[0]] || {}, k = `harms.${x[0]}`; return [esc(x[1]), pIn(id, k + '.statement', v.statement, { rows: 2, label: 'Not tolerated: ' + x[1] }), pIn(id, k + '.threshold', v.threshold, { ph: hint[x[0]], label: 'Threshold: ' + x[1] }), pIn(id, k + '.source', v.source, { list: 'dl_source', ph: 'Existing threshold, or New', label: 'Source: ' + x[1] }), propSel(id, k + '.proposedBy', v.proposedBy), dissentIn(id, k + '.dissent', v.dissent)]; }));
+    h += blocks(SC.harm.map(x => { const v = hs[x[0]] || {}, k = `harms.${x[0]}`; return blk({ ref: `<span class="mono">${x[0]}</span><div class="small" style="margin-top:2px">${esc(x[1])}</div>`,
+      main: [pf('We will not tolerate', id, k + '.statement', v.statement, { rows: 1, label: 'Not tolerated: ' + x[1] })],
+      fields: [pf('Threshold', id, k + '.threshold', v.threshold, { ph: hint[x[0]], label: 'Threshold: ' + x[1] }), pf('Source', id, k + '.source', v.source, { list: 'dl_source', ph: 'Existing threshold, or New', label: 'Source: ' + x[1] }),
+        pf('Proposed by', id, k + '.proposedBy', v.proposedBy, { select: proposerOpts(), blank: 'Choose…', label: 'Proposed by' }), pf('Dissent', id, k + '.dissent', v.dissent, { ph: 'If any', label: 'Dissent' })] }); }).map(b => b.replace('<div class="pblock">', '<div class="pblock pblock-area">')));
     h += '<datalist id="dl_source"><option value="New"><option value="Risk appetite statement"><option value="Delegations of authority"><option value="Incident thresholds"><option value="Complaints policy"></datalist><p class="small soft">A material AI incident is an AI failure that reaches any threshold above. RV5 (B4) and EV1 (B7) use this definition.</p>';
   } else if (id === 'B7') {
     const ms = P.measures || [], ev = P.events || [], goals = (pos('B2').goals || []);
     h += sub('At each meeting · three to five measures, each countable from the inventory or the action list');
-    h += table(['Ref', 'Measure', 'Limit', 'Owner', ''], ms.map(x => [refTip(x.id) + (x.goal ? `<br><span class="small soft">for ${esc(x.goal)}</span>` : ''), pIn(id, `measures.${x.id}.measure`, x.measure, { rows: 2, label: 'Measure ' + x.id }), pIn(id, `measures.${x.id}.limit`, x.limit, { ph: 'e.g. 0', label: 'Limit for ' + x.id }), pIn(id, `measures.${x.id}.owner`, x.owner, { ph: 'Named person', label: 'Owner of ' + x.id }), delBtn(id, 'measures', x.id)]));
+    h += blocks(ms.map(x => blk({ ref: refTip(x.id) + (x.goal ? `<div class="small soft" style="margin-top:2px">for ${esc(x.goal)}</div>` : ''), del: delBtn(id, 'measures', x.id),
+      main: [pf('Measure', id, `measures.${x.id}.measure`, x.measure, { rows: 1, label: 'Measure ' + x.id })],
+      fields: [pf('Limit', id, `measures.${x.id}.limit`, x.limit, { ph: 'e.g. 0', label: 'Limit for ' + x.id }), pf('Owner', id, `measures.${x.id}.owner`, x.owner, { ph: 'Named person', label: 'Owner of ' + x.id })] })));
     if (ms.length > 5) h += '<p class="small" style="margin:4px 0">More than the five measures the framework suggests. Consider which the board will read.</p>';
     const linked = g => ms.some(m => m.goal === g.id) || ms.some(m => g.measure && new RegExp('^' + m.id + '\\b').test(g.measure));
     const open = goals.filter(g => g.measure && !linked(g));
     if (open.length) h += `<div class="panel2" style="padding:10px 14px;margin:6px 0"><p class="small" style="margin:0 0 6px"><strong>From the governance goals (B2).</strong> Each goal’s measure is reported here.</p>${open.map(g => `<div class="row between" style="gap:8px;margin:4px 0"><span class="small">${refTip(g.id)} ${esc(g.measure)}</span><button class="btn sm ghost" data-act="goalMeasure" data-id="${esc(g.id)}">Add as a measure</button></div>`).join('')}</div>`;
     h += sub('Between meetings');
-    h += table(['Ref', 'Event', 'Reported to', 'Within', ''], ev.map(x => [refTip(x.id), pIn(id, `events.${x.id}.event`, x.event, { rows: 2, label: 'Event ' + x.id }), pIn(id, `events.${x.id}.to`, x.to, { list: 'dl_to', label: x.id + ' reported to' }), pIn(id, `events.${x.id}.within`, x.within, { ph: 'e.g. 24 hours', label: x.id + ' within' }), delBtn(id, 'events', x.id)]));
+    h += blocks(ev.map(x => blk({ ref: refTip(x.id), del: delBtn(id, 'events', x.id),
+      main: [pf('Event', id, `events.${x.id}.event`, x.event, { rows: 1, label: 'Event ' + x.id })],
+      fields: [pf('Reported to', id, `events.${x.id}.to`, x.to, { list: 'dl_to', label: x.id + ' reported to' }), pf('Within', id, `events.${x.id}.within`, x.within, { ph: 'e.g. 24 hours', label: x.id + ' within' })] })));
     h += '<datalist id="dl_to"><option value="Chair"><option value="Chair and GC"><option value="Accountable executive"><option value="Full board"></datalist>';
     h += `<div class="row" style="gap:8px;margin:6px 0">${ms.length || ev.length ? '' : '<button class="btn sm primary" data-act="loadStart" data-step="B7">Start from BM1 to BM5 and EV1 to EV4</button>'}<button class="btn sm" data-act="addMeasure">Add a measure</button><button class="btn sm" data-act="addEvent">Add an event</button></div>`;
     h += `<div class="fgrid" style="margin-top:8px"><label class="f"><span>Proposed by</span>${propSel(id, 'proposedBy', P.proposedBy)}</label><label class="f"><span>Dissent</span>${dissentIn(id, 'dissent', P.dissent)}</label></div>`;
@@ -749,9 +778,15 @@ function checksSection() {
     <p class="small soft">From the framework, section 10.1, run on what is recorded as it changes. A check that fails goes back to the CEO and the chair to resolve; Triodian does not resolve it. The checks never stop the board resolving: they show what is incomplete or inconsistent, so the board decides knowingly.</p>
     <div class="checklist" style="display:grid;gap:10px">${res.map(row).join('')}</div></section>`;
 }
+/* Text boxes grow to show all their text, so nothing is hidden without clicking in. */
+const grow = el => { el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; };
+document.addEventListener('input', ev => { if (ev.target.matches && ev.target.matches('textarea[data-grow]')) grow(ev.target); });
+document.addEventListener('toggle', ev => { if (ev.target.querySelectorAll) ev.target.querySelectorAll('textarea[data-grow]').forEach(grow); }, true);
+addEventListener('resize', () => document.querySelectorAll('textarea[data-grow]').forEach(grow));
 function render() {
   const app = document.getElementById('app');
   app.innerHTML = header() + `<main id="main" tabindex="-1"><div class="wrap">${S ? mainScreen() : entryScreen()}</div></main>` + footer() + drawer();
+  app.querySelectorAll('textarea[data-grow]').forEach(grow);
 }
 
 /* ---------- events ---------- */
