@@ -13,11 +13,31 @@ export function packOf(C, e) {
   const list = packsFor(C, (e && e.mode) || 'standalone'), id = e && e.sectorPack;
   return list.find(p => p.id === id) || list.find(p => p.id === 'general') || list[0] || null;
 }
-/** The pack that fits the entity type and mode: a sector pack where one exists, otherwise the general pack. */
-export function suggestPack(C, entityType, mode) {
+/** The pack that fits the entity type, regulated sector and mode: a pack for the entity type, then one for the sector,
+    otherwise the general pack. */
+export function suggestPack(C, entityType, mode, sector) {
   const list = packsFor(C, mode || 'standalone');
-  return list.find(p => entityType && (p.entityTypes || []).includes(entityType)) || list.find(p => p.id === 'general') || list[0] || null;
+  return list.find(p => entityType && (p.entityTypes || []).includes(entityType))
+    || list.find(p => sector && (p.sectors || []).includes(sector))
+    || list.find(p => p.id === 'general') || list[0] || null;
 }
+
+/* Regulated sectors (Triodian Metamodel reference data, copied into the content by tools/sync-sectors.mjs).
+   A sector belongs to one jurisdiction and narrows the entity types offered at set-up. */
+/** The sectors of a jurisdiction. */
+export function sectorsOf(C, jurisdiction) { return (C.regulatedSectors || []).filter(d => d.jurisdiction === jurisdiction); }
+/** One sector by id, or null. */
+export function sectorById(C, id) { return (C.regulatedSectors || []).find(d => d.id === id) || null; }
+/** The entity types set-up offers: the sector's own, or every type in the jurisdiction's sectors; Other is always offered. */
+export function entityTypesFor(C, jurisdiction, sector) {
+  const d = sectorById(C, sector), doms = d ? [d] : sectorsOf(C, jurisdiction);
+  const want = new Set(doms.flatMap(x => d ? x.entityTypes : x.entityTypes.concat(x.alsoReaches || [])).concat(['other']));
+  return (C.entityTypes || []).filter(t => want.has(t[0]));
+}
+/** The mode a sector usually takes: connected for a financially regulated sector, otherwise standalone. */
+export function modeFor(C, sector) { const d = sectorById(C, sector); return d ? (d.financiallyRegulated ? 'connected' : 'standalone') : ''; }
+/** Entity type ids renamed to the Metamodel's (2.4.0). Engagements saved before then are read with the new ids. */
+export const ENTITY_RENAMED = { criticalInfrastructureAsset: 'criticalInfrastructureAssetOwner', defenceIndustry: 'defenceIndustrySupplier' };
 /** True when an area is already used: a posture at B2 or an inventory line at B1 points at it by id. */
 export function areasInUse(S) {
   const b2 = ((S && S.positions) || {}).B2 || {}, ids = new Set(((S && S.areas) || []).map(a => a.id));

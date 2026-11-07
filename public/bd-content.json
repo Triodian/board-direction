@@ -28,11 +28,11 @@
       "Not-for-profit"
     ],
     [
-      "criticalInfrastructureAsset",
+      "criticalInfrastructureAssetOwner",
       "Critical infrastructure asset owner"
     ],
     [
-      "defenceIndustry",
+      "defenceIndustrySupplier",
       "Defence industry supplier"
     ],
     [
@@ -66,6 +66,22 @@
     [
       "creditLicensee",
       "Credit licensee"
+    ],
+    [
+      "bank",
+      "Bank (Singapore)"
+    ],
+    [
+      "insurer",
+      "Insurer (Singapore)"
+    ],
+    [
+      "capitalMarketsIntermediary",
+      "Capital markets intermediary (Singapore)"
+    ],
+    [
+      "paymentServiceProvider",
+      "Payment service provider"
     ],
     [
       "financialInstitution",
@@ -745,6 +761,9 @@
       "entityTypes": [
         "authorisedDepositTakingInstitution"
       ],
+      "sectors": [
+        "AU-BANKING"
+      ],
       "note": "Drafted for an ADI. The matching pack for the AI Risk Appetite app follows in phase 3 of the development plan.",
       "areas": [
         "Retail lending and credit decisions",
@@ -776,6 +795,12 @@
       "entityTypes": [
         "financialInstitution"
       ],
+      "sectors": [
+        "SG-BANKING",
+        "SG-INSURANCE",
+        "SG-CAPITAL-MARKETS",
+        "SG-PAYMENTS"
+      ],
       "note": "Drafted for a financial institution licensed by MAS, with the single-provider concentration point from the MAS Guidelines on AI Risk Management (October 2026). The matching pack for the AI Risk Appetite app follows in phase 3.",
       "areas": [
         "Retail banking and lending",
@@ -801,5 +826,204 @@
       ]
     }
   ],
-  "sectorPacksNote": "A sector pack gives the starting areas of the business, the failure cases in the director briefing and the uses boards commonly consider at B3. Drafted by Triodian; counsel reviews each pack’s wording."
+  "sectorPacksNote": "A sector pack gives the starting areas of the business, the failure cases in the director briefing and the uses boards commonly consider at B3. Drafted by Triodian; counsel reviews each pack’s wording.",
+  "regulatedSectorsSource": "Triodian Metamodel 2.5.0, reference-data/regulated-sectors.json",
+  "regulatedSectors": [
+    {
+      "id": "AU-BANKING",
+      "jurisdiction": "AU",
+      "name": "Banking",
+      "entityTypes": [
+        "authorisedDepositTakingInstitution"
+      ],
+      "financiallyRegulated": true
+    },
+    {
+      "id": "AU-INSURANCE",
+      "jurisdiction": "AU",
+      "name": "Insurance",
+      "entityTypes": [
+        "generalInsurer",
+        "lifeInsurer",
+        "privateHealthInsurer"
+      ],
+      "financiallyRegulated": true
+    },
+    {
+      "id": "AU-SUPERANNUATION",
+      "jurisdiction": "AU",
+      "name": "Superannuation",
+      "entityTypes": [
+        "superannuationTrustee"
+      ],
+      "financiallyRegulated": true
+    },
+    {
+      "id": "AU-FINANCIAL-SERVICES",
+      "jurisdiction": "AU",
+      "name": "Financial services and markets",
+      "entityTypes": [
+        "financialServicesLicensee"
+      ],
+      "financiallyRegulated": true
+    },
+    {
+      "id": "AU-CREDIT",
+      "jurisdiction": "AU",
+      "name": "Credit",
+      "entityTypes": [
+        "creditLicensee"
+      ],
+      "financiallyRegulated": true
+    },
+    {
+      "id": "AU-PAYMENTS",
+      "jurisdiction": "AU",
+      "name": "Payments",
+      "entityTypes": [
+        "paymentServiceProvider"
+      ],
+      "financiallyRegulated": true
+    },
+    {
+      "id": "AU-LISTED",
+      "jurisdiction": "AU",
+      "name": "Listed companies",
+      "entityTypes": [
+        "listedEntity"
+      ],
+      "financiallyRegulated": false
+    },
+    {
+      "id": "AU-HEALTH",
+      "jurisdiction": "AU",
+      "name": "Health",
+      "entityTypes": [
+        "healthServiceProvider"
+      ],
+      "financiallyRegulated": false
+    },
+    {
+      "id": "AU-CRITICAL-INFRASTRUCTURE",
+      "jurisdiction": "AU",
+      "name": "Critical infrastructure",
+      "entityTypes": [
+        "criticalInfrastructureAssetOwner"
+      ],
+      "financiallyRegulated": false
+    },
+    {
+      "id": "AU-DEFENCE",
+      "jurisdiction": "AU",
+      "name": "Defence industry",
+      "entityTypes": [
+        "defenceIndustrySupplier"
+      ],
+      "financiallyRegulated": false
+    },
+    {
+      "id": "AU-GENERAL",
+      "jurisdiction": "AU",
+      "name": "Not financially regulated",
+      "entityTypes": [
+        "privateCompany",
+        "notForProfit"
+      ],
+      "financiallyRegulated": false
+    },
+    {
+      "id": "SG-BANKING",
+      "jurisdiction": "SG",
+      "name": "Banking",
+      "entityTypes": [
+        "bank"
+      ],
+      "alsoReaches": [
+        "financialInstitution"
+      ],
+      "financiallyRegulated": true
+    },
+    {
+      "id": "SG-INSURANCE",
+      "jurisdiction": "SG",
+      "name": "Insurance",
+      "entityTypes": [
+        "insurer"
+      ],
+      "alsoReaches": [
+        "financialInstitution"
+      ],
+      "financiallyRegulated": true
+    },
+    {
+      "id": "SG-CAPITAL-MARKETS",
+      "jurisdiction": "SG",
+      "name": "Capital markets",
+      "entityTypes": [
+        "capitalMarketsIntermediary"
+      ],
+      "alsoReaches": [
+        "financialInstitution"
+      ],
+      "financiallyRegulated": true
+    },
+    {
+      "id": "SG-PAYMENTS",
+      "jurisdiction": "SG",
+      "name": "Payments",
+      "entityTypes": [
+        "paymentServiceProvider"
+      ],
+      "alsoReaches": [
+        "financialInstitution"
+      ],
+      "financiallyRegulated": true
+    },
+    {
+      "id": "SG-LISTED",
+      "jurisdiction": "SG",
+      "name": "Listed companies",
+      "entityTypes": [
+        "listedEntity"
+      ],
+      "financiallyRegulated": false
+    },
+    {
+      "id": "SG-HEALTH",
+      "jurisdiction": "SG",
+      "name": "Health",
+      "entityTypes": [
+        "healthServiceProvider"
+      ],
+      "financiallyRegulated": false
+    },
+    {
+      "id": "SG-CRITICAL-INFRASTRUCTURE",
+      "jurisdiction": "SG",
+      "name": "Critical infrastructure",
+      "entityTypes": [
+        "criticalInfrastructureAssetOwner"
+      ],
+      "financiallyRegulated": false
+    },
+    {
+      "id": "SG-DEFENCE",
+      "jurisdiction": "SG",
+      "name": "Defence industry",
+      "entityTypes": [
+        "defenceIndustrySupplier"
+      ],
+      "financiallyRegulated": false
+    },
+    {
+      "id": "SG-GENERAL",
+      "jurisdiction": "SG",
+      "name": "Not financially regulated",
+      "entityTypes": [
+        "privateCompany",
+        "notForProfit"
+      ],
+      "financiallyRegulated": false
+    }
+  ]
 }

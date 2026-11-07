@@ -9,7 +9,7 @@
   // run_worker_first: every request reaches src/worker.js first, so pages can require sign-in (lib/identity/session.js).
   "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": true },
 
-  // Only reachable at the custom domain. People sign in at /login; Cloudflare Access guards /auth/email only.
+  // Only reachable at the custom sector. People sign in at /login; Cloudflare Access guards /auth/email only.
   // The default workers.dev address and preview addresses are switched off.
   "workers_dev": false,
   "preview_urls": false,
@@ -34,7 +34,9 @@
   // To hold messages instead of sending, set NOTIFY_SENDING to "off".
   "send_email": [{ "name": "EMAIL" }],
 
-  "vars": { "SUITE_DEMO": "on", "SUITE_COOKIE_DOMAIN": "triodian.com", "SUITE_SESSION_COOKIE": "tri_suite", "NOTIFY_SENDING": "on", "NOTIFY_FROM": "notifications@triodian.com" },
+  // DEFAULT_JURISDICTION (AU or SG) and DEFAULT_SECTOR (a regulated sector id such as AU-INSURANCE, or empty) set
+  // where a new engagement starts. The installer sets them; set-up changes both at any time.
+  "vars": { "SUITE_DEMO": "on", "SUITE_COOKIE_DOMAIN": "triodian.com", "SUITE_SESSION_COOKIE": "tri_suite", "NOTIFY_SENDING": "on", "NOTIFY_FROM": "notifications@triodian.com", "DEFAULT_JURISDICTION": "AU", "DEFAULT_SECTOR": "" },
 
   // Test copy with its own database. Deployed with `npx wrangler deploy --env test` from the `test` branch.
   "env": {
@@ -47,7 +49,7 @@
         { "binding": "DB", "database_name": "board-direction-test-db", "database_id": "fca13599-7382-47ec-8b61-e1c2af45aa22" },
         { "binding": "IDENTITY", "database_name": "triodian-identity-test-db", "database_id": "4d7591a1-bcb7-4514-b726-f0621d7de25a" }
       ],
-      "vars": { "SUITE_DEMO": "on", "SUITE_COOKIE_DOMAIN": "triodian.com", "SUITE_SESSION_COOKIE": "tri_suite_test", "SITE_LABEL": "Test site", "SITE_URL": "https://board-direction-test.triodian.com", "NOTIFY_SENDING": "on", "NOTIFY_FROM": "notifications@triodian.com" },
+      "vars": { "SUITE_DEMO": "on", "SUITE_COOKIE_DOMAIN": "triodian.com", "SUITE_SESSION_COOKIE": "tri_suite_test", "SITE_LABEL": "Test site", "SITE_URL": "https://board-direction-test.triodian.com", "NOTIFY_SENDING": "on", "NOTIFY_FROM": "notifications@triodian.com", "DEFAULT_JURISDICTION": "AU", "DEFAULT_SECTOR": "" },
       "send_email": [{ "name": "EMAIL" }],
       "triggers": { "crons": ["0 21 * * *"] },
       "observability": { "enabled": true }
@@ -67,7 +69,7 @@
       "d1_databases": [
         { "binding": "DB", "database_name": "board-direction-client-db", "database_id": "REPLACE-WITH-THE-CLIENT-DATABASE-ID" }
       ],
-      "vars": { "SUITE_DEMO": "off", "SUITE_COOKIE_DOMAIN": "CLIENT-DOMAIN.example", "SUITE_SESSION_COOKIE": "tri_suite", "DEMO_LOGIN": "", "SITE_URL": "https://board-direction.CLIENT-DOMAIN.example", "NOTIFY_SENDING": "off", "NOTIFY_FROM": "" },
+      "vars": { "SUITE_DEMO": "off", "SUITE_COOKIE_DOMAIN": "CLIENT-DOMAIN.example", "SUITE_SESSION_COOKIE": "tri_suite", "DEMO_LOGIN": "", "SITE_URL": "https://board-direction.CLIENT-DOMAIN.example", "NOTIFY_SENDING": "off", "NOTIFY_FROM": "", "DEFAULT_JURISDICTION": "AU", "DEFAULT_SECTOR": "" },
       "send_email": [{ "name": "EMAIL" }],
       "triggers": { "crons": ["0 21 * * *"] },
       "observability": { "enabled": true }

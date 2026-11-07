@@ -52,9 +52,27 @@ ok('the general pack adds no section', X.briefingSections(C, { mode: 'standalone
 const cands = X.redLineCandidates(C, { mode: 'connected', sectorPack: 'adi' });
 ok('B3 lists the pack’s uses first, then the general list', cands[0] === C.sectorPacks.find(p => p.id === 'adi').redLineCandidates[0] && cands.length === 2 + C.starting.redLineCandidates.length);
 
+// regulated sectors (Metamodel reference data)
+const secIds = (C.regulatedSectors || []).map(d => d.id);
+ok('the content carries the Metamodel regulated sectors', secIds.length >= 20 && /Triodian Metamodel/.test(C.regulatedSectorsSource || ''));
+ok('sector ids are unique and start with their jurisdiction', new Set(secIds).size === secIds.length && C.regulatedSectors.every(d => d.id.startsWith(d.jurisdiction + '-')));
+ok('every sector is in a jurisdiction set-up offers', C.regulatedSectors.every(d => C.jurisdictions.some(j => j[0] === d.jurisdiction)));
+for (const d of C.regulatedSectors) ok(`${d.id}: entity types are known`, d.entityTypes.concat(d.alsoReaches || []).every(t => types.has(t)), d.entityTypes.concat(d.alsoReaches || []).filter(t => !types.has(t)).join());
+ok('pack sectors are known', C.sectorPacks.every(p => (p.sectors || []).every(x => secIds.includes(x))));
+ok('entity type ids match the Metamodel', types.has('criticalInfrastructureAssetOwner') && types.has('defenceIndustrySupplier') && !types.has('criticalInfrastructureAsset') && !types.has('defenceIndustry'));
+ok('old entity ids are renamed', Object.values(X.ENTITY_RENAMED).every(t => types.has(t)));
+ok('a sector narrows the entity types to its own', X.entityTypesFor(C, 'AU', 'AU-INSURANCE').map(t => t[0]).join() === 'generalInsurer,lifeInsurer,privateHealthInsurer,other');
+ok('without a sector, the jurisdiction’s types are offered', X.entityTypesFor(C, 'SG', '').some(t => t[0] === 'financialInstitution') && !X.entityTypesFor(C, 'SG', '').some(t => t[0] === 'authorisedDepositTakingInstitution'));
+ok('a Singapore bank is offered the MAS pack by sector', X.suggestPack(C, 'bank', 'connected', 'SG-BANKING').id === 'masFi');
+ok('an Australian payments provider is not offered the MAS pack', X.suggestPack(C, 'paymentServiceProvider', 'connected', 'AU-PAYMENTS').id === 'general');
+ok('the entity type wins over the sector', X.suggestPack(C, 'generalInsurer', 'connected', 'AU-INSURANCE').id === 'generalInsurer');
+ok('a financially regulated sector takes connected mode', X.modeFor(C, 'AU-SUPERANNUATION') === 'connected' && X.modeFor(C, 'AU-HEALTH') === 'standalone' && X.modeFor(C, '') === '');
+
 // the server refuses a malformed pack id
 const base = { engagement: { mode: 'connected', practitioner: { firm: '', line: '' } }, areas: [], inventory: [], questions: [], history: [], versions: [] };
 ok('the server takes a pack id', structureError({ ...base, engagement: { ...base.engagement, sectorPack: 'adi' } }) === '');
 ok('the server refuses a malformed pack id', /sector pack/.test(structureError({ ...base, engagement: { ...base.engagement, sectorPack: '<script>' } })));
+ok('the server takes a sector id, or none', structureError({ ...base, engagement: { ...base.engagement, sector: 'AU-CRITICAL-INFRASTRUCTURE' } }) === '' && structureError({ ...base, engagement: { ...base.engagement, sector: '' } }) === '');
+ok('the server refuses a malformed sector id', /regulated sector/.test(structureError({ ...base, engagement: { ...base.engagement, sector: '<b>' } })));
 
 console.log(fails ? `\n${fails} failed` : '\nAll passed'); process.exit(fails ? 1 : 0);
