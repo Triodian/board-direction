@@ -54,6 +54,37 @@ test('choosing the entity type and mode brings in the sector pack, its areas and
   await ctx.close();
 });
 
+test('jurisdiction, then regulated domain, then entity type; the domain suggests the mode and the pack', async ({ browser }) => {
+  const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.mo }, viewport: { width: 1280, height: 900 } });
+  await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); sessionStorage.setItem('triodian.example.left', '1'); } catch (e) {} });
+  let rev = 1, last = null;
+  await ctx.route('**/api/engagement', async route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: { exists: true, revision: rev, data: fresh(), people: [] } });
+    last = route.request().postDataJSON().data; rev += 1;
+    return route.fulfill({ json: { revision: rev } });
+  });
+  const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
+  await p.goto('/');
+  const jur = p.locator('#f_engagement_jurisdiction'), dom = p.locator('#f_engagement_domain'), ent = p.locator('#f_engagement_entityType');
+  await expect(dom.locator('option', { hasText: 'Superannuation' })).toHaveCount(1);
+
+  await dom.selectOption('AU-INSURANCE');
+  await expect(ent.locator('option')).toHaveCount(5); // Choose…, three insurers, Other
+  await expect(p.locator('body')).toContainText('Insurance is financially regulated, so Connected mode usually fits');
+
+  await jur.selectOption('SG');
+  await expect(dom).toHaveValue('');
+  await dom.selectOption('SG-BANKING');
+  await expect(ent).toHaveValue('bank');
+  await p.locator('#f_engagement_mode').selectOption('connected');
+  await expect(p.locator('#f_engagement_sectorPack')).toHaveValue('masFi');
+  await expect(p.locator('body')).not.toContainText('Connected mode usually fits');
+
+  await expect.poll(() => last && [last.engagement.jurisdiction, last.engagement.domain, last.engagement.entityType, last.engagement.sectorPack].join()).toBe('SG,SG-BANKING,bank,masFi');
+  expect(errs).toEqual([]);
+  await ctx.close();
+});
+
 test('the worked example names its pack at B0', async ({ browser }) => {
   const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.director } });
   await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); } catch (e) {} });

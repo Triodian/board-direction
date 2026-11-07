@@ -35,15 +35,23 @@ const deny = t => { const p = me(); return p ? RULES.deny(t, p, S) : 'Sign in fi
 const roleName = id => (RULES.ROLES.find(r => r.id === id) || {}).name || id;
 
 /* ---------- the engagement ---------- */
+/* A new engagement starts in the jurisdiction and regulated domain this deployment is set to (DEFAULT_JURISDICTION,
+   DEFAULT_DOMAIN, set at install). Set-up changes either at any time. */
 function blank() {
-  return {
+  const X = SECTOR(), df = SRV.defaults || {}, jur = (C.jurisdictions.some(j => j[0] === df.jurisdiction) ? df.jurisdiction : 'AU');
+  const dom = X.domainById(C, df.domain), domain = dom && dom.jurisdiction === jur ? dom.id : '';
+  const types = domain ? X.domainById(C, domain).entityTypes : [], entityType = types.length === 1 ? types[0] : '', mode = X.modeFor(C, domain) || 'standalone';
+  const pack = X.suggestPack(C, entityType, mode, domain);
+  const S0 = {
     schema: 'triodian.bd.v1',
-    engagement: { id: 'e' + uid(), company: '', entityType: '', jurisdiction: 'AU', mode: 'standalone', reference: '', privilegeMarking: '', practitioner: { firm: '', line: '' }, boardDates: { workshop: '', resolution: '' }, gcActsAsCounsel: false, secondApproverId: '', sectorPack: 'general' },
+    engagement: { id: 'e' + uid(), company: '', entityType, jurisdiction: jur, domain, mode, sectorPack: pack ? pack.id : '', reference: '', privilegeMarking: '', practitioner: { firm: '', line: '' }, boardDates: { workshop: '', resolution: '' }, gcActsAsCounsel: false, secondApproverId: '', sectorPack: 'general' },
     areas: C.startingAreas.map((name, i) => ({ id: 'A' + (i + 1), name })),
     scopeAgreed: { gcBy: '', gcOn: '', chairBy: '', chairOn: '' },
     inventory: [], positions: {}, questions: [], resolution: {}, people: [], versions: [], previous: null,
     history: [{ at: nowISO(), by: '', action: 'create', target: 'engagement', from: null, to: 'started' }],
   };
+  if (pack) S0.areas = X.packAreas(C, pack).map((name, i) => ({ id: 'A' + (i + 1), name }));
+  return S0;
 }
 function log(action, target, from, to) { S.history.push({ at: nowISO(), by: '', action, target, from: from === undefined ? null : from, to: to === undefined ? null : to }); queueSave(); }
 const TARGET = path => path === 'engagement.mode' ? 'mode' : 'setup';
@@ -53,7 +61,17 @@ function setPath(path, v) {
   const from = o[last]; if (from === v) return; o[last] = v;
   log('edit', path, typeof from === 'object' ? null : from, v);
   if (typeof v === 'boolean') render();
-  if (['engagement.sectorPack', 'engagement.mode', 'engagement.entityType'].includes(path)) sectorAfter(path, from);
+  if (path === 'engagement.jurisdiction' || path === 'engagement.domain') placeAfter(path);
+  if (['engagement.sectorPack', 'engagement.mode', 'engagement.entityType', 'engagement.jurisdiction', 'engagement.domain'].includes(path)) sectorAfter(path, from);
+}
+/* Jurisdiction, then regulated domain, then entity type. A domain from another jurisdiction is cleared, and an entity
+   type the domain does not cover is cleared (or set, when the domain has only one). */
+function placeAfter(path) {
+  const X = SECTOR(), e = S.engagement, dom = X.domainById(C, e.domain);
+  if (e.domain && (!dom || dom.jurisdiction !== e.jurisdiction)) { log('edit', 'engagement.domain', e.domain, ''); e.domain = ''; }
+  const d = X.domainById(C, e.domain);
+  if (d && !d.entityTypes.includes(e.entityType)) { const to = d.entityTypes.length === 1 ? d.entityTypes[0] : ''; if (to !== e.entityType) { log('edit', 'engagement.entityType', e.entityType || null, to); e.entityType = to; } }
+  if (!d && e.entityType && !X.entityTypesFor(C, e.jurisdiction, '').some(t => t[0] === e.entityType)) { log('edit', 'engagement.entityType', e.entityType, ''); e.entityType = ''; }
 }
 /* Sector packs (plan task 1.4; public/shared/sector.js). Choosing a pack swaps in its areas while the areas are still the
    previous pack's list and nothing points at them yet. A change of mode or entity type moves to the pack that fits,
@@ -69,16 +87,27 @@ function sectorAfter(path, from) {
     }
     render(); return;
   }
-  const sug = X.suggestPack(C, e.entityType, e.mode), set = packById(e.sectorPack), valid = set && (set.mode === 'both' || set.mode === e.mode);
+  const sug = X.suggestPack(C, e.entityType, e.mode, e.domain), set = packById(e.sectorPack), valid = set && (set.mode === 'both' || set.mode === e.mode);
   if (sug && sug.id !== e.sectorPack && (!valid || (X.areasMatch(C, S, set) && !X.areasInUse(S)))) {
     const old = e.sectorPack; e.sectorPack = sug.id; log('edit', 'engagement.sectorPack', old || null, sug.id); sectorAfter('engagement.sectorPack', old);
   } else render();
 }
+/** Entity types for set-up: the domain's own, or the jurisdiction's; a value set before stays offered. */
+function entityOpts(e) {
+  const list = SECTOR().entityTypesFor(C, e.jurisdiction, e.domain);
+  return e.entityType && !list.some(t => t[0] === e.entityType) ? list.concat(C.entityTypes.filter(t => t[0] === e.entityType)) : list;
+}
+/** A hint under Mode when the domain usually takes the other mode. Choosing the mode stays with the engagement. */
+function modeHint(e) {
+  const want = SECTOR().modeFor(C, e.domain), d = SECTOR().domainById(C, e.domain);
+  if (!want || want === e.mode) return '';
+  return `<p class="small" style="margin:6px 0 0">${esc(d.name)} is ${d.financiallyRegulated ? 'financially regulated, so Connected mode usually fits' : 'outside financial regulation, so Standalone mode usually fits'}.</p>`;
+}
 function sectorPanel(why) {
-  const X = SECTOR(), e = S.engagement, cur = X.packOf(C, e), sug = X.suggestPack(C, e.entityType, e.mode);
+  const X = SECTOR(), e = S.engagement, cur = X.packOf(C, e), sug = X.suggestPack(C, e.entityType, e.mode, e.domain);
   let h = `<div class="fgrid">${fld('Sector pack', 'engagement.sectorPack', cur ? cur.id : '', { select: X.packsFor(C, e.mode).map(p => [p.id, p.name]) })}</div>
     <p class="small soft" style="margin:6px 0 0">${esc(C.sectorPacksNote)} ${esc(cur ? cur.note : '')}</p>`;
-  if (sug && cur && sug.id !== cur.id) h += `<p class="small" style="margin:6px 0 0">Suggested for ${esc(lbl(C.entityTypes, e.entityType))}: <strong>${esc(sug.name)}</strong>.</p>`;
+  if (sug && cur && sug.id !== cur.id) h += `<p class="small" style="margin:6px 0 0">Suggested for ${esc(lbl(C.entityTypes, e.entityType) || (X.domainById(C, e.domain) || {}).name || 'this engagement')}: <strong>${esc(sug.name)}</strong>.</p>`;
   if (cur && !why && !X.areasMatch(C, S, cur)) h += X.areasInUse(S) ? '<p class="small soft" style="margin:6px 0 0">The areas below differ from the pack’s list. They already carry postures or inventory lines, so they are kept.</p>'
     : `<div style="margin:8px 0 0"><button class="btn sm" data-act="usePackAreas">Use the ${esc(cur.name)} areas</button></div>`;
   return h + '<div style="height:10px"></div>';
@@ -115,6 +144,8 @@ async function load() {
   if (!r.ok) { toast('Could not load the engagement: ' + r.error); return; }
   SRV.exists = !!r.body.exists; SRV.rev = r.body.revision || 0; SRV.state = 'saved';
   S = r.body.exists ? r.body.data : null;
+  // Entity type ids renamed to the Metamodel's are read with the new id.
+  if (S && S.engagement && SECTOR().ENTITY_RENAMED[S.engagement.entityType]) S.engagement.entityType = SECTOR().ENTITY_RENAMED[S.engagement.entityType];
   if (S && !S.people) S.people = r.body.people || [];
   render();
 }
@@ -792,8 +823,9 @@ function mainScreen() {
   ${actionsPanel()}
   <section class="card"><h2 class="sh">1 · Engagement</h2>${whyNote}<div class="fgrid">
     ${fld('Company', 'engagement.company', e.company)}
-    ${fld('Entity type', 'engagement.entityType', e.entityType, { select: [['', 'Choose…'], ...C.entityTypes] })}
     ${fld('Jurisdiction', 'engagement.jurisdiction', e.jurisdiction, { select: C.jurisdictions })}
+    ${fld('Regulated domain', 'engagement.domain', e.domain || '', { select: [['', 'Not chosen'], ...SECTOR().domainsOf(C, e.jurisdiction).map(d => [d.id, d.name])] })}
+    ${fld('Entity type', 'engagement.entityType', e.entityType, { select: [['', 'Choose…'], ...entityOpts(e)] })}
     ${fld('Engagement reference', 'engagement.reference', e.reference)}
     ${fld('Privilege marking (as counsel directs)', 'engagement.privilegeMarking', e.privilegeMarking)}
     ${fld('Workshop date', 'engagement.boardDates.workshop', (e.boardDates || {}).workshop, { type: 'date' })}
@@ -802,7 +834,7 @@ function mainScreen() {
   <div class="fgrid" style="margin-top:8px"><label class="f" for="f_gcac" style="flex-direction:row;display:flex;gap:10px;align-items:flex-start"><input type="checkbox" id="f_gcac" data-path="engagement.gcActsAsCounsel" ${e.gcActsAsCounsel ? 'checked' : ''} ${why ? 'disabled' : ''} style="margin-top:4px;width:16px;height:16px;flex:0 0 auto"><span style="text-transform:none;letter-spacing:0;font-weight:400">The GC also acts as counsel. The second agreement to the scope then comes from a named executive or director.</span></label>
     ${e.gcActsAsCounsel ? fld('Second approver', 'engagement.secondApproverId', e.secondApproverId, { select: [['', 'Choose…'], ...(S.people || []).filter(p => p.active !== false && p.roles.some(r => ['director', 'chair', 'ceo', 'cro'].includes(r))).map(p => [p.id, p.name])] }) : ''}</div></section>
   <section class="card"><h2 class="sh">2 · Mode</h2>
-    <div class="fgrid">${fld('Mode', 'engagement.mode', e.mode, { select: C.modes.map(m => [m.id, m.name]) })}</div>
+    <div class="fgrid">${fld('Mode', 'engagement.mode', e.mode, { select: C.modes.map(m => [m.id, m.name]) })}</div>${modeHint(e)}
     <p class="small soft" style="margin:6px 0 0">${esc((C.modes.find(m => m.id === e.mode) || {}).for || '')}${locked ? ' The mode is fixed now the AI inventory has a line.' : ' The mode is fixed once the AI inventory (B1) has a line.'}</p></section>
   <section class="card"><h2 class="sh">3 · Practitioner</h2><p class="small soft" style="margin:0 0 8px">The GC’s or advisory firm’s name, a line under it and a logo. They appear in the header and above the privilege marking on every Word and PDF output.</p><div class="fgrid">
     ${fld('Firm', 'engagement.practitioner.firm', (e.practitioner || {}).firm)}
@@ -1032,7 +1064,7 @@ document.addEventListener('click', async ev => {
   const r = await api('GET', '/api/me');
   SRV.checked = true;
   if (!r.ok) { SRV.reason = r.error; render(); return; }
-  SRV.user = r.body.user; SRV.site = r.body.site || '';
+  SRV.user = r.body.user; SRV.site = r.body.site || ''; SRV.defaults = r.body.defaults || {};
   await load();
   loadBriefing();
   if (openExampleByDefault()) openExample();
