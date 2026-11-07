@@ -694,5 +694,112 @@
         "All steps"
       ]
     ]
-  }
+  },
+  "sectorPacks": [
+    {
+      "id": "general",
+      "name": "General (any organisation)",
+      "mode": "both",
+      "entityTypes": [],
+      "note": "The general list from the framework, Appendix A.1. Change it to the company’s own areas.",
+      "areas": null,
+      "briefingHeading": "",
+      "failures": [],
+      "redLineCandidates": []
+    },
+    {
+      "id": "generalInsurer",
+      "name": "General insurer",
+      "mode": "connected",
+      "entityTypes": [
+        "generalInsurer"
+      ],
+      "note": "The nine functions match the general insurer list in the AI Risk Appetite app, so each direction reads across to the same functions there.",
+      "areas": [
+        "Underwriting and pricing",
+        "Claims",
+        "Fraud and investigations",
+        "Policy administration",
+        "Complaints and disputes",
+        "Customer communications",
+        "Finance and reserving",
+        "Legal and compliance",
+        "Technology operations"
+      ],
+      "briefingHeading": "Common failures in general insurance",
+      "failures": [
+        "A pricing model sets premiums that treat a group of customers unfairly, and no one notices until complaints arrive.",
+        "AI in claims triage delays or declines valid claims, and customers in hardship are not picked up.",
+        "A fraud model flags genuine claimants, who are then investigated without cause.",
+        "A provider’s AI in claims or policy administration behaves differently after an update the insurer did not hear about."
+      ],
+      "redLineCandidates": [
+        "AI declining a claim with no person reviewing the decision",
+        "AI deciding a claimant is fraudulent with no person reviewing it"
+      ]
+    },
+    {
+      "id": "adi",
+      "name": "Authorised deposit-taking institution",
+      "mode": "connected",
+      "entityTypes": [
+        "authorisedDepositTakingInstitution"
+      ],
+      "note": "Drafted for an ADI. The matching pack for the AI Risk Appetite app follows in phase 3 of the development plan.",
+      "areas": [
+        "Retail lending and credit decisions",
+        "Deposits and payments",
+        "Business and institutional banking",
+        "Financial crime (AML/CTF, fraud and scams)",
+        "Collections and financial hardship",
+        "Customer service and complaints",
+        "Treasury, markets and finance",
+        "Risk, legal and compliance",
+        "Technology and operations"
+      ],
+      "briefingHeading": "Common failures in banking",
+      "failures": [
+        "A credit model declines or prices applicants unfairly, and the reasons cannot be explained to them.",
+        "A fraud or scam model blocks legitimate payments, or misses scam payments it should stop.",
+        "A chatbot gives a customer in financial hardship wrong information about their options.",
+        "Transaction monitoring that relies on AI misses reportable activity after a model change."
+      ],
+      "redLineCandidates": [
+        "AI making a final credit decline with no person reviewing it",
+        "AI closing or freezing a customer’s account with no person reviewing it"
+      ]
+    },
+    {
+      "id": "masFi",
+      "name": "Financial institution (Singapore, MAS)",
+      "mode": "connected",
+      "entityTypes": [
+        "financialInstitution"
+      ],
+      "note": "Drafted for a financial institution licensed by MAS, with the single-provider concentration point from the MAS Guidelines on AI Risk Management (October 2026). The matching pack for the AI Risk Appetite app follows in phase 3.",
+      "areas": [
+        "Retail banking and lending",
+        "Wealth management and advisory",
+        "Insurance (where licensed)",
+        "Payments and deposits",
+        "Financial crime (AML/CFT, fraud and scams)",
+        "Customer service and complaints",
+        "Treasury, markets and finance",
+        "Risk, legal and compliance",
+        "Technology and operations"
+      ],
+      "briefingHeading": "Common failures in financial institutions",
+      "failures": [
+        "Several critical services rely on one AI provider, so one outage or change affects them all at once.",
+        "An AI tool recommends investment products that do not suit the customer.",
+        "A provider changes or retrains a model without the institution assessing the change.",
+        "A credit or fraud model treats a group of customers unfairly."
+      ],
+      "redLineCandidates": [
+        "AI giving a customer personalised investment advice with no representative reviewing it",
+        "Critical services depending on a single AI provider with no plan to replace it"
+      ]
+    }
+  ],
+  "sectorPacksNote": "A sector pack gives the starting areas of the business, the failure cases in the director briefing and the uses boards commonly consider at B3. Drafted by Triodian; counsel reviews each pack’s wording."
 }
