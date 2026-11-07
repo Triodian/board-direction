@@ -18,6 +18,13 @@
   "d1_databases": [
     { "binding": "DB", "database_name": "board-direction-db", "database_id": "c4e6c7c8-ba12-48f7-aef9-652822b15d52" }
   ],
+  // IDENTITY (development plan tasks 1B.2 and 1B.3): the suite's shared identity database, one per environment, bound to
+  // all four engagement apps. With it, people are added once, roles are kept per app, and one sign-in covers every app
+  // on SUITE_COOKIE_DOMAIN (the cookie SUITE_SESSION_COOKIE; the test sites use their own name so live and test stay apart).
+  // Each app copies its own users in the first time it starts with the binding. The databases are triodian-identity-db
+  // (live) and triodian-identity-test-db (test). The test sites are bound first; the live binding follows once the test
+  // sites are checked:
+  //   { "binding": "IDENTITY", "database_name": "triodian-identity-db", "database_id": "d2031f39-53b4-438c-aed6-1d480f9526bf" }
   "observability": { "enabled": true },
 
   // Daily at 07:00 Brisbane time: remind the GC about questions open for five days or more (lib/core/notify.js).
@@ -28,7 +35,7 @@
   // To hold messages instead of sending, set NOTIFY_SENDING to "off".
   "send_email": [{ "name": "EMAIL" }],
 
-  "vars": { "SUITE_DEMO": "on", "DEMO_LOGIN": "[{\"username\": \"trio_demo\", \"email\": \"demo@triodian.com\", \"hash\": \"pbkdf2-sha256$100000$ae_ndll6YbjpSddRDhFBLg$HAVf7tKSohiJck-ohKQ1KYft_e1YpCuWF8xcJgmjNqM\", \"anyCharAt\": [3]}]", "NOTIFY_SENDING": "on", "NOTIFY_FROM": "notifications@triodian.com" },
+  "vars": { "SUITE_DEMO": "on", "SUITE_COOKIE_DOMAIN": "triodian.com", "SUITE_SESSION_COOKIE": "tri_suite", "DEMO_LOGIN": "[{\"username\": \"trio_demo\", \"email\": \"demo@triodian.com\", \"hash\": \"pbkdf2-sha256$100000$ae_ndll6YbjpSddRDhFBLg$HAVf7tKSohiJck-ohKQ1KYft_e1YpCuWF8xcJgmjNqM\", \"anyCharAt\": [3]}]", "NOTIFY_SENDING": "on", "NOTIFY_FROM": "notifications@triodian.com" },
 
   // Test copy with its own database. Deployed with `npx wrangler deploy --env test` from the `test` branch.
   "env": {
@@ -38,9 +45,10 @@
       "preview_urls": false,
       "routes": [{ "pattern": "board-direction-test.triodian.com", "custom_domain": true }],
       "d1_databases": [
-        { "binding": "DB", "database_name": "board-direction-test-db", "database_id": "fca13599-7382-47ec-8b61-e1c2af45aa22" }
+        { "binding": "DB", "database_name": "board-direction-test-db", "database_id": "fca13599-7382-47ec-8b61-e1c2af45aa22" },
+        { "binding": "IDENTITY", "database_name": "triodian-identity-test-db", "database_id": "4d7591a1-bcb7-4514-b726-f0621d7de25a" }
       ],
-      "vars": { "SUITE_DEMO": "on", "DEMO_LOGIN": "[{\"username\": \"trio_demo\", \"email\": \"demo@triodian.com\", \"hash\": \"pbkdf2-sha256$100000$ae_ndll6YbjpSddRDhFBLg$HAVf7tKSohiJck-ohKQ1KYft_e1YpCuWF8xcJgmjNqM\", \"anyCharAt\": [3]}]", "SITE_LABEL": "Test site", "SITE_URL": "https://board-direction-test.triodian.com", "NOTIFY_SENDING": "on", "NOTIFY_FROM": "notifications@triodian.com" },
+      "vars": { "SUITE_DEMO": "on", "SUITE_COOKIE_DOMAIN": "triodian.com", "SUITE_SESSION_COOKIE": "tri_suite_test", "DEMO_LOGIN": "[{\"username\": \"trio_demo\", \"email\": \"demo@triodian.com\", \"hash\": \"pbkdf2-sha256$100000$ae_ndll6YbjpSddRDhFBLg$HAVf7tKSohiJck-ohKQ1KYft_e1YpCuWF8xcJgmjNqM\", \"anyCharAt\": [3]}]", "SITE_LABEL": "Test site", "SITE_URL": "https://board-direction-test.triodian.com", "NOTIFY_SENDING": "on", "NOTIFY_FROM": "notifications@triodian.com" },
       "send_email": [{ "name": "EMAIL" }],
       "triggers": { "crons": ["0 21 * * *"] },
       "observability": { "enabled": true }
@@ -60,7 +68,7 @@
       "d1_databases": [
         { "binding": "DB", "database_name": "board-direction-client-db", "database_id": "REPLACE-WITH-THE-CLIENT-DATABASE-ID" }
       ],
-      "vars": { "SUITE_DEMO": "off", "DEMO_LOGIN": "", "SITE_URL": "https://board-direction.CLIENT-DOMAIN.example", "NOTIFY_SENDING": "off", "NOTIFY_FROM": "" },
+      "vars": { "SUITE_DEMO": "off", "SUITE_COOKIE_DOMAIN": "CLIENT-DOMAIN.example", "SUITE_SESSION_COOKIE": "tri_suite", "DEMO_LOGIN": "", "SITE_URL": "https://board-direction.CLIENT-DOMAIN.example", "NOTIFY_SENDING": "off", "NOTIFY_FROM": "" },
       "send_email": [{ "name": "EMAIL" }],
       "triggers": { "crons": ["0 21 * * *"] },
       "observability": { "enabled": true }

@@ -6,6 +6,7 @@
 //   email    → Cloudflare Email Service binding EMAIL, only when NOTIFY_SENDING is "on"
 import { whoIs, handleAuth, gate, markDemo } from '../lib/identity/session.js';
 import { d1Store } from '../lib/store/d1.js';
+import { identityUsers, withIdentity } from '../lib/identity/people.js';
 import { handle } from '../lib/core/api.js';
 import { dueReminders, deliver } from '../lib/core/notify.js';
 
@@ -19,6 +20,11 @@ function emailSender(env) {
   return m => env.EMAIL.send({ to: m.to, from: { email: env.NOTIFY_FROM, name: 'AI Board Direction' }, subject: m.subject, text: m.text });
 }
 const siteUrl = (env, request) => env.SITE_URL || (request ? new URL(request.url).origin : 'https://board-direction.triodian.com');
+
+/** The app's store. With the IDENTITY binding (the suite's shared identity database, plan task 1B.2) its users and their
+ *  roles come from there, so a person is added once for the suite; everything else stays in this app's own database. */
+const APP_ID = 'board-direction';
+const storeFor = env => withIdentity(d1Store(env.DB), env.IDENTITY ? identityUsers(env.IDENTITY, APP_ID, env.DB) : null);
 
 export default {
   async fetch(request, env, ctx) {
@@ -34,8 +40,9 @@ export default {
     try {
       const r = await handle({
         method: request.method, path: url.pathname, email: who.email, text: () => request.text(),
+        firstAdmins: String(env.FIRST_ADMINS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean),
         site: env.SITE_LABEL || '', origin: siteUrl(env, request), sender: emailSender(env), defer: p => ctx.waitUntil(p),
-      }, d1Store(env.DB));
+      }, storeFor(env));
       return json(r.body, r.status);
     } catch (e) {
       console.error(e);
@@ -46,7 +53,7 @@ export default {
   // Daily: remind the GC about questions open for five days or more.
   async scheduled(event, env, ctx) {
     if (!env.DB) return;
-    const store = d1Store(env.DB);
+    const store = storeFor(env);
     ctx.waitUntil((async () => {
       await store.init();
       const e = await store.getEngagement(); if (!e) return;
