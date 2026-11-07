@@ -1,14 +1,48 @@
-# AI Board Direction (Triodian)
+# AI Board Direction
+
+[![Tests](https://github.com/Triodian/board-direction/actions/workflows/tests.yml/badge.svg)](https://github.com/Triodian/board-direction/actions/workflows/tests.yml) [![Licence: Apache 2.0](https://img.shields.io/badge/licence-Apache%202.0-blue.svg)](LICENSE)
+
+AI Board Direction takes a company's board from "what AI do we use?" to a resolved position on AI: where the board
+wants AI used, what it will not accept, what must come back to it, what information may go where, and who is
+accountable. The board works through ten steps, B0 to B9, facilitated by its board advisor and general counsel, and
+resolves the result at a board meeting. The app records the positions, checks them for consistency and produces the
+statement, the board minute, a policy outline and a 90-day action list.
+
+It runs in two modes. **Standalone**, for companies outside prudential regulation, produces the whole appetite.
+**Connected**, for APRA, ASIC or MAS regulated entities, produces board directions that the
+[AI Risk Appetite](https://github.com/Triodian/risk_appetite) engagement must stay within.
+
+> The app records facts and the positions people take. It is not legal advice and does not say what the law requires;
+> counsel decides what applies.
+
+**Try it.** The demo runs at [board-direction.triodian.com](https://board-direction.triodian.com), with a worked example you can open without changing
+anything. Ask Triodian for the demo sign-in.
+
+**Run it yourself.** It runs as a Cloudflare Worker with a D1 database. See [Running locally](#running-locally) and
+[Tests](#tests) below, and the [installer](https://github.com/Triodian/triodian-install) to put it into your own
+Cloudflare account.
+
+## Part of the Triodian AI governance apps
+
+| App | What it is for |
+| --- | --- |
+| [AI Obligations Atlas](https://github.com/Triodian/obligations-atlas) | The AI governance obligations that apply by jurisdiction and use case, tiered by source, with a matter brief for counsel |
+| [AI Board Direction](https://github.com/Triodian/board-direction) | A board sets its direction on AI: where to use it, what to rule out, what comes back to the board |
+| [AI Risk Appetite](https://github.com/Triodian/risk_appetite) | A regulated entity settles its appetite for AI risk, for the board to approve |
+| [AI Use Assessment](https://github.com/Triodian/use-assessment) | The AI in a regulated entity's supply chain, measured against that appetite |
+| [AI Confidentiality Exposure Assessment](https://github.com/Triodian/Confidentiality-Exposure-Assessment) | Where confidential information in one transaction can reach an external AI model |
+| [Installer and suite test](https://github.com/Triodian/triodian-install) | Puts the apps a client needs into a Cloudflare account, and tests them together |
+
+The engagement apps are separate, each with its own repo and database. Deployed together they share one sign-in and
+reach each other through Cloudflare service bindings.
+
+## How it is built
 
 Single-engagement web app: each deployment holds one board engagement for one company. It takes a board through the
 ten steps of the Board AI Appetite Framework, B0 to B9, facilitated by the board advisor and the general counsel, with
 Triodian recording. It runs as a Cloudflare Worker: the files in `public/` are served as static assets, and
 `src/worker.js` handles `/api/*`. The server design is the AI Confidentiality Exposure Assessment app's
 (`Triodian/confidentiality-exposure-assessment`), which shares the AI Use Assessment's.
-
-**Status:** development plan tasks 1.1 (the skeleton), 1.4 (B0 set-up and the Atlas matter brief), 1.5 (step screens
-B0 to B9, with the chair's resolution and the next review), 1.6 and 1.11 (inventory and the automated-decision worklist), 1.9 (the worked example), 1.12 (the director
-briefing) and 1.13 (governance goals). 1.7 (the checks BK1 to BK7), 1.8 (outputs). 1.10 (user guide, versions and notifications). Phase 1 is complete.
 
 - `public/` – the app
   - `/` – the engagement (`index.html`, `bd.js`, `bd-content.js`, `app.css`) and the worked example (`bd-example.js`: a fictional company, browser only, never saved)
@@ -69,6 +103,11 @@ cd tests/e2e && npm ci && npx playwright install chromium && npx playwright test
 npx wrangler dev --local-upstream localhost --var LOCAL_DEV_NO_SIGNIN_EMAIL:you@example.com
 ```
 `LOCAL_DEV_NO_SIGNIN_EMAIL` only works on localhost. Locally, an `X-Dev-User` header picks a different user for testing.
+
+## Contributing
+
+Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md).
+Report security problems privately, as [SECURITY.md](SECURITY.md) describes, not as issues.
 
 ## Licence
 
