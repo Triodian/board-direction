@@ -762,7 +762,7 @@ window.BD_CONTENT = {
       "entityTypes": [
         "authorisedDepositTakingInstitution"
       ],
-      "domains": [
+      "sectors": [
         "AU-BANKING"
       ],
       "note": "Drafted for an ADI. The matching pack for the AI Risk Appetite app follows in phase 3 of the development plan.",
@@ -796,7 +796,7 @@ window.BD_CONTENT = {
       "entityTypes": [
         "financialInstitution"
       ],
-      "domains": [
+      "sectors": [
         "SG-BANKING",
         "SG-INSURANCE",
         "SG-CAPITAL-MARKETS",
@@ -828,8 +828,8 @@ window.BD_CONTENT = {
     }
   ],
   "sectorPacksNote": "A sector pack gives the starting areas of the business, the failure cases in the director briefing and the uses boards commonly consider at B3. Drafted by Triodian; counsel reviews each pack’s wording.",
-  "regulatedDomainsSource": "Triodian Metamodel 2.5.0, reference-data/regulated-domains.json",
-  "regulatedDomains": [
+  "regulatedSectorsSource": "Triodian Metamodel 2.5.0, reference-data/regulated-sectors.json",
+  "regulatedSectors": [
     {
       "id": "AU-BANKING",
       "jurisdiction": "AU",

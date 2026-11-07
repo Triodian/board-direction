@@ -54,7 +54,7 @@ test('choosing the entity type and mode brings in the sector pack, its areas and
   await ctx.close();
 });
 
-test('jurisdiction, then regulated domain, then entity type; the domain suggests the mode and the pack', async ({ browser }) => {
+test('jurisdiction, then regulated sector, then entity type; the sector suggests the mode and the pack', async ({ browser }) => {
   const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.mo }, viewport: { width: 1280, height: 900 } });
   await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); sessionStorage.setItem('triodian.example.left', '1'); } catch (e) {} });
   let rev = 1, last = null;
@@ -65,22 +65,22 @@ test('jurisdiction, then regulated domain, then entity type; the domain suggests
   });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
   await p.goto('/');
-  const jur = p.locator('#f_engagement_jurisdiction'), dom = p.locator('#f_engagement_domain'), ent = p.locator('#f_engagement_entityType');
-  await expect(dom.locator('option', { hasText: 'Superannuation' })).toHaveCount(1);
+  const jur = p.locator('#f_engagement_jurisdiction'), sec = p.locator('#f_engagement_sector'), ent = p.locator('#f_engagement_entityType');
+  await expect(sec.locator('option', { hasText: 'Superannuation' })).toHaveCount(1);
 
-  await dom.selectOption('AU-INSURANCE');
+  await sec.selectOption('AU-INSURANCE');
   await expect(ent.locator('option')).toHaveCount(5); // Choose…, three insurers, Other
   await expect(p.locator('body')).toContainText('Insurance is financially regulated, so Connected mode usually fits');
 
   await jur.selectOption('SG');
-  await expect(dom).toHaveValue('');
-  await dom.selectOption('SG-BANKING');
+  await expect(sec).toHaveValue('');
+  await sec.selectOption('SG-BANKING');
   await expect(ent).toHaveValue('bank');
   await p.locator('#f_engagement_mode').selectOption('connected');
   await expect(p.locator('#f_engagement_sectorPack')).toHaveValue('masFi');
   await expect(p.locator('body')).not.toContainText('Connected mode usually fits');
 
-  await expect.poll(() => last && [last.engagement.jurisdiction, last.engagement.domain, last.engagement.entityType, last.engagement.sectorPack].join()).toBe('SG,SG-BANKING,bank,masFi');
+  await expect.poll(() => last && [last.engagement.jurisdiction, last.engagement.sector, last.engagement.entityType, last.engagement.sectorPack].join()).toBe('SG,SG-BANKING,bank,masFi');
   expect(errs).toEqual([]);
   await ctx.close();
 });
