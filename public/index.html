@@ -42,7 +42,8 @@
   import * as brief from "/shared/matter-brief.js";
   import * as checks from "/shared/checks.js";
   import * as versions from "/shared/versions.js";
-  window.BDMerge = { merge3 }; window.BDRules = rules; window.BDBrief = brief; window.BDChecks = checks; window.BDVersions = versions;
+  import * as sector from "/shared/sector.js";
+  window.BDMerge = { merge3 }; window.BDRules = rules; window.BDBrief = brief; window.BDChecks = checks; window.BDVersions = versions; window.BDSector = sector;
   window.dispatchEvent(new Event('bd:rules'));
 </script>
 <script>

@@ -38,7 +38,7 @@ const roleName = id => (RULES.ROLES.find(r => r.id === id) || {}).name || id;
 function blank() {
   return {
     schema: 'triodian.bd.v1',
-    engagement: { id: 'e' + uid(), company: '', entityType: '', jurisdiction: 'AU', mode: 'standalone', reference: '', privilegeMarking: '', practitioner: { firm: '', line: '' }, boardDates: { workshop: '', resolution: '' }, gcActsAsCounsel: false, secondApproverId: '' },
+    engagement: { id: 'e' + uid(), company: '', entityType: '', jurisdiction: 'AU', mode: 'standalone', reference: '', privilegeMarking: '', practitioner: { firm: '', line: '' }, boardDates: { workshop: '', resolution: '' }, gcActsAsCounsel: false, secondApproverId: '', sectorPack: 'general' },
     areas: C.startingAreas.map((name, i) => ({ id: 'A' + (i + 1), name })),
     scopeAgreed: { gcBy: '', gcOn: '', chairBy: '', chairOn: '' },
     inventory: [], positions: {}, questions: [], resolution: {}, people: [], versions: [], previous: null,
@@ -53,6 +53,35 @@ function setPath(path, v) {
   const from = o[last]; if (from === v) return; o[last] = v;
   log('edit', path, typeof from === 'object' ? null : from, v);
   if (typeof v === 'boolean') render();
+  if (['engagement.sectorPack', 'engagement.mode', 'engagement.entityType'].includes(path)) sectorAfter(path, from);
+}
+/* Sector packs (plan task 1.4; public/shared/sector.js). Choosing a pack swaps in its areas while the areas are still the
+   previous pack's list and nothing points at them yet. A change of mode or entity type moves to the pack that fits,
+   on the same terms, or whenever the pack set no longer suits the mode. */
+const SECTOR = () => window.BDSector;
+const packById = id => (C.sectorPacks || []).find(p => p.id === id);
+function sectorAfter(path, from) {
+  const X = SECTOR(), e = S.engagement;
+  if (path === 'engagement.sectorPack') {
+    const was = packById(from) || X.packOf(C, { mode: e.mode }), now = X.packOf(C, e);
+    if (was && now && was.id !== now.id && X.areasMatch(C, S, was) && !X.areasInUse(S) && !X.areasMatch(C, S, now)) {
+      X.useAreas(C, S, now); log('edit', 'areas', was.name, now.name); toast(`The areas are now the ${now.name} list.`);
+    }
+    render(); return;
+  }
+  const sug = X.suggestPack(C, e.entityType, e.mode), set = packById(e.sectorPack), valid = set && (set.mode === 'both' || set.mode === e.mode);
+  if (sug && sug.id !== e.sectorPack && (!valid || (X.areasMatch(C, S, set) && !X.areasInUse(S)))) {
+    const old = e.sectorPack; e.sectorPack = sug.id; log('edit', 'engagement.sectorPack', old || null, sug.id); sectorAfter('engagement.sectorPack', old);
+  } else render();
+}
+function sectorPanel(why) {
+  const X = SECTOR(), e = S.engagement, cur = X.packOf(C, e), sug = X.suggestPack(C, e.entityType, e.mode);
+  let h = `<div class="fgrid">${fld('Sector pack', 'engagement.sectorPack', cur ? cur.id : '', { select: X.packsFor(C, e.mode).map(p => [p.id, p.name]) })}</div>
+    <p class="small soft" style="margin:6px 0 0">${esc(C.sectorPacksNote)} ${esc(cur ? cur.note : '')}</p>`;
+  if (sug && cur && sug.id !== cur.id) h += `<p class="small" style="margin:6px 0 0">Suggested for ${esc(lbl(C.entityTypes, e.entityType))}: <strong>${esc(sug.name)}</strong>.</p>`;
+  if (cur && !why && !X.areasMatch(C, S, cur)) h += X.areasInUse(S) ? '<p class="small soft" style="margin:6px 0 0">The areas below differ from the pack’s list. They already carry postures or inventory lines, so they are kept.</p>'
+    : `<div style="margin:8px 0 0"><button class="btn sm" data-act="usePackAreas">Use the ${esc(cur.name)} areas</button></div>`;
+  return h + '<div style="height:10px"></div>';
 }
 
 /* The worked example opens by default. Leaving it is remembered for this browser session, so a reload stays out.
@@ -405,7 +434,7 @@ function posEditor(id) {
         pf(tip('Tested against', 'Each red line is tested against the inventory (B1) before it is recorded: name the line that crosses it, or record that none does now. A line that crosses it goes on the 90-day action list.'), id, `lines.${x.id}.testedAgainst`, x.testedAgainst, { select: tested, blank: 'Not yet tested', label: x.id + ' tested against' }),
         pf('Proposed by', id, `lines.${x.id}.proposedBy`, x.proposedBy, { select: proposerOpts(), blank: 'Choose…', label: 'Proposed by' }), pf('Dissent', id, `lines.${x.id}.dissent`, x.dissent, { ph: 'If any', label: 'Dissent' })] })));
     h += `<div class="row" style="gap:8px;margin:6px 0"><button class="btn sm" data-act="addRedLine">Add a red line</button><button class="btn sm ghost" data-act="toggleCand">${UI.cand ? 'Hide' : 'Show'} the uses boards commonly consider</button></div>`;
-    if (UI.cand) h += `<div class="panel2" style="padding:10px 14px"><p class="small soft" style="margin:0 0 6px">Shown because the board asked. The board may adopt none, some or all; inclusion is not a recommendation.</p>${C.starting.redLineCandidates.map((c, i) => { const has = lines.some(l => l.use === c); return `<div class="row between" style="gap:8px;margin:4px 0"><span class="small">${esc(c)}</span>${has ? '<span class="badge b-green">Recorded</span>' : `<button class="btn sm ghost" data-act="addRedLine" data-i="${i}">Record as a red line</button>`}</div>`; }).join('')}</div>`;
+    if (UI.cand) h += `<div class="panel2" style="padding:10px 14px"><p class="small soft" style="margin:0 0 6px">Shown because the board asked. The board may adopt none, some or all; inclusion is not a recommendation.</p>${SECTOR().redLineCandidates(C, S.engagement).map((c, i) => { const has = lines.some(l => l.use === c); return `<div class="row between" style="gap:8px;margin:4px 0"><span class="small">${esc(c)}</span>${has ? '<span class="badge b-green">Recorded</span>' : `<button class="btn sm ghost" data-act="addRedLine" data-i="${i}">Record as a red line</button>`}</div>`; }).join('')}</div>`;
   } else if (id === 'B4') {
     const ev = P.events || [];
     h += blocks(ev.map(x => blk({ ref: refTip(x.id), del: delBtn(id, 'events', x.id),
@@ -507,7 +536,7 @@ async function saveBriefing(answers, read) {
 }
 function briefingText() {
   const B = C.briefing, mb = S.engagement.matterBrief;
-  return B.sections.map(s => `<h3 class="sh" style="font-size:15px;margin:14px 0 6px">${esc(s.h)}</h3>${(s.p || []).map(p => `<p style="margin:0 0 8px">${esc(p)}</p>`).join('')}${s.list ? `<ul style="margin:0 0 8px 18px">${s.list.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}`).join('')
+  return SECTOR().briefingSections(C, S.engagement).map(s => `<h3 class="sh" style="font-size:15px;margin:14px 0 6px">${esc(s.h)}</h3>${(s.p || []).map(p => `<p style="margin:0 0 8px">${esc(p)}</p>`).join('')}${s.list ? `<ul style="margin:0 0 8px 18px">${s.list.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}`).join('')
     + `<h3 class="sh" style="font-size:15px;margin:14px 0 6px">Obligations in scope</h3>` + (mb ? `<p class="small soft" style="margin:0 0 6px">${esc(B.obligationsNote)}</p>` + mb.tiers.map(t => `<p style="margin:6px 0 2px"><strong>${esc(t.tier)}</strong></p>${t.refs.length ? `<ul style="margin:0 0 6px 18px">${t.refs.map(r => `<li>${esc(r[1])}${r[2] ? ` <span class="small soft">(${esc(r[2])})</span>` : ''}</li>`).join('')}</ul>` : '<p class="small soft" style="margin:0">None in scope.</p>'}`).join('') : '<p class="small soft">The matter brief has not been loaded yet. The obligations in scope will appear here.</p>')
     + `<h3 class="sh" style="font-size:15px;margin:14px 0 6px">The ten steps</h3>` + table(['Step', 'Question to the board'], C.steps.map(s => [`<span class="mono">${s.id}</span> ${esc(s.name)}`, esc(s.question)]))
     + `<h3 class="sh" style="font-size:15px;margin:14px 0 6px">Two scales you will use</h3>` + table(['Posture', 'Meaning'], SC.posture.map(r => [`<strong>${esc(r[1])}</strong>`, esc(r[2])])) + table(['Authority', 'What the AI does'], SC.authority.map(r => [`<span class="mono">${r[0]}</span> ${esc(r[1])}`, esc(r[2])]));
@@ -553,7 +582,7 @@ function agreementRow(kind) {
 }
 function b0Body() {
   const e = S.engagement, mb = e.matterBrief, bw = briefWhy();
-  let h = `<dl class="kv"><dt>Company</dt><dd>${esc(e.company || '—')} · ${esc(lbl(C.entityTypes, e.entityType) || '—')} · ${esc(lbl(C.jurisdictions, e.jurisdiction))}</dd><dt>Mode</dt><dd>${esc(lbl(C.modes.map(m => [m.id, m.name]), e.mode))}</dd><dt>Privilege marking</dt><dd>${esc(e.privilegeMarking || 'Not set. Counsel directs the marking.')}</dd><dt>Board dates</dt><dd>Workshop ${esc(dl((e.boardDates || {}).workshop) || 'not set')} · resolution ${esc(dl((e.boardDates || {}).resolution) || 'not set')}</dd>${e.gcActsAsCounsel ? `<dt>Counsel</dt><dd>The GC also acts as counsel. Every output records that the GC held both roles.</dd>` : ''}</dl>
+  let h = `<dl class="kv"><dt>Company</dt><dd>${esc(e.company || '—')} · ${esc(lbl(C.entityTypes, e.entityType) || '—')} · ${esc(lbl(C.jurisdictions, e.jurisdiction))}</dd><dt>Mode</dt><dd>${esc(lbl(C.modes.map(m => [m.id, m.name]), e.mode))}</dd><dt>Sector pack</dt><dd>${esc((SECTOR().packOf(C, e) || {}).name || '—')}</dd><dt>Privilege marking</dt><dd>${esc(e.privilegeMarking || 'Not set. Counsel directs the marking.')}</dd><dt>Board dates</dt><dd>Workshop ${esc(dl((e.boardDates || {}).workshop) || 'not set')} · resolution ${esc(dl((e.boardDates || {}).resolution) || 'not set')}</dd>${e.gcActsAsCounsel ? `<dt>Counsel</dt><dd>The GC also acts as counsel. Every output records that the GC held both roles.</dd>` : ''}</dl>
     <p class="small soft" style="margin:4px 0 0">Change these in set-up above.</p>`;
   // the matter brief
   h += sub('Obligations in scope · from the AI Obligations Atlas matter brief');
@@ -601,7 +630,7 @@ function briefingMarkdown() {
   out.push(`# ${B.title}`, '', `**${cell(e.company || '[company]')}**${e.reference ? ' · ' + cell(e.reference) : ''} · Draft, ${dl(todayISO())}`, '');
   if ((e.practitioner || {}).firm) out.push(cell(e.practitioner.line || 'Prepared by ' + e.practitioner.firm), '');
   out.push(B.intro, '', `*${B.status}*`, '');
-  B.sections.forEach(s => { out.push(`## ${s.h}`, ''); (s.p || []).forEach(p => out.push(p, '')); (s.list || []).forEach(x => out.push('- ' + x)); if (s.list) out.push(''); });
+  SECTOR().briefingSections(C, e).forEach(s => { out.push(`## ${s.h}`, ''); (s.p || []).forEach(p => out.push(p, '')); (s.list || []).forEach(x => out.push('- ' + x)); if (s.list) out.push(''); });
   out.push('## Obligations in scope', '');
   if (mb) { out.push(B.obligationsNote, '', `Scope of the brief: ${mb.scope}.`, ''); mb.tiers.forEach(t => { out.push(`### ${t.tier}`, ''); if (!t.refs.length) out.push('None in scope.', ''); else { out.push('| Reference | Title | Instrument |', '| --- | --- | --- |'); t.refs.forEach(r => out.push(`| ${cell(r[0])} | ${cell(r[1])} | ${cell(r[2])} |`)); out.push(''); } }); }
   else out.push('[The matter brief has not been loaded yet.]', '');
@@ -779,7 +808,7 @@ function mainScreen() {
     ${fld('Firm', 'engagement.practitioner.firm', (e.practitioner || {}).firm)}
     ${fld('Line under the name', 'engagement.practitioner.line', (e.practitioner || {}).line, { ph: 'Prepared by [firm] using the Triodian method' })}
   </div><div style="margin-top:14px">${TriodianBrand.logoControl(e.practitioner, deny('setup') ? 'disabled' : '')}</div></section>
-  <section class="card"><div class="row between"><h2 class="sh" style="margin:0">4 · Areas of the business</h2>${why ? '' : '<button class="btn sm" data-act="addArea">Add an area</button>'}</div><p class="small soft">The board sets a posture for each area at B2. Change these to the company's own list.</p><div class="stack" style="gap:8px">${areas}</div></section>
+  <section class="card"><div class="row between"><h2 class="sh" style="margin:0">4 · Areas of the business</h2>${why ? '' : '<button class="btn sm" data-act="addArea">Add an area</button>'}</div>${sectorPanel(why)}<p class="small soft">The board sets a posture for each area at B2. Change these to the company's own list.</p><div class="stack" style="gap:8px">${areas}</div></section>
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">5 · People</h2>${SRV.user && SRV.user.isAdmin ? '<a class="btn sm" href="/admin/">Manage in Admin</a>' : ''}</div><p class="small soft">Everyone with a role in this engagement. Roles are given in Admin.</p><div class="stack" style="gap:8px">${people}</div></section>
   <section class="card"><h2 class="sh">6 · The ten steps</h2><p class="small soft">From the Board AI Appetite Framework, section 4.1. Open a step to see what is recorded.${UI.practice ? ' In the worked example you can try the inventory (B1) and the positions (B2 to B8). Nothing is saved.' : ''}</p><div class="steplist">${steps}</div></section>
   ${checksSection()}
@@ -869,6 +898,7 @@ document.addEventListener('click', async ev => {
   if (act === 'example') { markExampleLeft(false); openExample(); scrollTo(0, 0); }
   if (act === 'leaveExample') { markExampleLeft(true); UI.practice = false; UI.drawer = false; UI.open = {}; UI.editLine = ""; UI.confirmDel = ""; UI.pBrief = null; UI.briefOpen = undefined; if (REAL) { S = REAL.S; SRV.rev = REAL.rev; SRV.exists = REAL.exists; } REAL = null; render(); scrollTo(0, 0); }
   if (act === 'new') { S = blank(); SRV.rev = 0; render(); await save(); if (SRV.exists) await load(); }
+  if (act === 'usePackAreas') { if (deny('setup')) return; const X = SECTOR(), p = X.packOf(C, S.engagement), r = X.useAreas(C, S, p); if (r.error) { toast(r.error); return; } log('edit', 'areas', null, p.name); render(); return; }
   if (act === 'addArea') { const n = S.areas.reduce((m, a) => Math.max(m, +String(a.id).replace(/\D/g, '') || 0), 0) + 1; S.areas.push({ id: 'A' + n, name: 'New area' }); log('add', 'areas.A' + n, null, 'New area'); render(); }
   if (act === 'addLine') {
     const why = invWhy(); if (why) { toast(why); return; }
@@ -949,7 +979,7 @@ document.addEventListener('click', async ev => {
   if (act === 'toggleCand') { UI.cand = !UI.cand; render(); }
   if (act === 'addGoal') { const g = addRow('B2', 'goals', 'GL', { goal: b.dataset.i != null ? C.starting.goals[+b.dataset.i] : '', owner: '', measure: '', proposedBy: '' }); UI.goalIdeas = false; focusNew(`#p_B2_goals_${g.id}_goal`); }
   if (act === 'usePosture') setPos('B2', b.dataset.area + '.posture', b.dataset.v);
-  if (act === 'addRedLine') { const r = addRow('B3', 'lines', 'RL', { use: b.dataset.i != null ? C.starting.redLineCandidates[+b.dataset.i] : '', scope: 'All areas', appliesTo: '', proposedBy: '' }); focusNew(b.dataset.i != null ? `#p_B3_lines_${r.id}_appliesTo` : `#p_B3_lines_${r.id}_use`); }
+  if (act === 'addRedLine') { const r = addRow('B3', 'lines', 'RL', { use: b.dataset.i != null ? SECTOR().redLineCandidates(C, S.engagement)[+b.dataset.i] : '', scope: 'All areas', appliesTo: '', proposedBy: '' }); focusNew(b.dataset.i != null ? `#p_B3_lines_${r.id}_appliesTo` : `#p_B3_lines_${r.id}_use`); }
   if (act === 'addReserved') { const r = addRow('B4', 'events', 'RV', { event: '', timing: '', by: '', proposedBy: '' }); focusNew(`#p_B4_events_${r.id}_event`); }
   if (act === 'loadStart') {
     const st = b.dataset.step, P = posObj(st);
