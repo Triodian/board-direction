@@ -121,16 +121,45 @@ const markExampleLeft = left => { try { if (left) sessionStorage.setItem(EX_LEFT
 const openExampleByDefault = () => !exampleLeft() && location.hash !== '#actions';
 /* Opens the worked example: a fictional company, board and advisers, never saved. */
 function openExample() { if (!UI.practice) REAL = { S, rev: SRV.rev, exists: SRV.exists }; S = window.BDExample(); UI.practice = true; UI.drawer = false; UI.open = {}; UI.editLine = ""; UI.confirmDel = ""; UI.pBrief = null; UI.briefOpen = undefined; render(); }
+/* ---------- board directions (connected mode, task 3.4) ----------
+   The chair records the directions BD1 to BD7 once B2 to B8 are settled; the server keeps that version and serves it to
+   the AI Risk Appetite app. A change to B2 to B8 afterwards withdraws the record (the server does the same), so the
+   directions are recorded again; until then the app keeps reading the version recorded before. */
+const stableJ = v => Array.isArray(v) ? '[' + v.map(stableJ).join(',') + ']' : v && typeof v === 'object' ? '{' + Object.keys(v).filter(k => v[k] !== undefined && v[k] !== '').sort().map(k => k + ':' + stableJ(v[k])).join(',') + '}' : JSON.stringify(v === undefined ? null : v);
+let DIR_POS = null;
+const notePositions = () => { DIR_POS = S && S.directions && S.directions.by ? stableJ(S.positions || {}) : null; };
+function withdrawIfChanged() {
+  if (!S || !S.directions || !S.directions.by || DIR_POS == null || stableJ(S.positions || {}) === DIR_POS) return;
+  S.directions = {}; DIR_POS = null; log('edit', 'directions', 'recorded', 'withdrawn');
+  toast('The positions changed after the board directions were recorded. The chair records them again to issue the change.');
+}
+const DIR_LABEL = 'Board directions recorded';
+const recordedDirections = () => ((S && S.versions) || []).filter(v => v.label === DIR_LABEL).pop() || null;
+const dirWhy = () => UI.practice ? 'The worked example is standalone, so it records no directions.' : deny('directions');
+function directionsCard() {
+  if (!S || S.engagement.mode !== 'connected') return '';
+  const d = S.directions || {}, v = recordedDirections(), why = dirWhy();
+  let h = sub('Board directions · read by the AI risk appetite engagement');
+  if (d.by) h += `<p class="small" style="margin:0 0 6px">Recorded by ${esc(pname(d.by))} on ${esc(dl(d.on))}${v ? ` (version ${esc(v.id)})` : ''}. The AI Risk Appetite app reads this version and shows the relevant direction on each of its decisions.</p>`;
+  else {
+    if (v) h += `<p class="small" style="margin:0 0 6px"><strong>Being revised.</strong> The positions have changed since the directions were recorded (version ${esc(v.id)}). The AI Risk Appetite app still reads that version until the chair records them again.</p>`;
+    h += why ? `<p class="small soft" style="margin:0 0 6px">${v ? '' : 'Not recorded yet. '}${esc(why)}</p>`
+      : `<p class="small soft" style="margin:0 0 6px">Record them once B2 to B8 are settled. Recording keeps a version and issues it to the AI Risk Appetite app; the engagement stays open for the resolution at the end.</p><div class="row" style="gap:8px"><button class="btn primary" data-act="recordDirections">${UI.confirmDel === 'directions' ? 'Confirm: record the board directions' : 'Record the board directions'}</button>${UI.confirmDel === 'directions' ? '<button class="btn ghost" data-act="keepLine">Not yet</button>' : ''}</div>`;
+  }
+  return h;
+}
+
 /* ---------- saving ---------- */
 function queueSave() { if (UI.practice) return; SRV.state = 'unsaved'; paintSave(); clearTimeout(timer); timer = setTimeout(save, 700); }
 async function save() {
   if (saving) { pending = true; return; }
+  withdrawIfChanged();
   saving = true; SRV.state = 'saving'; paintSave();
   const r = await api('PUT', '/api/engagement', { revision: SRV.rev, data: S });
   saving = false;
   if (r.ok) {
     SRV.rev = r.body.revision; SRV.exists = true; SRV.state = 'saved';
-    if (r.body.merged && r.body.data) { S = r.body.data; render(); toast('Merged with changes saved by ' + r.body.mergedWith + '.'); }
+    if (r.body.merged && r.body.data) { S = r.body.data; notePositions(); render(); toast('Merged with changes saved by ' + r.body.mergedWith + '.'); }
     else if (r.body.versions) S.versions = r.body.versions;
   } else {
     SRV.state = 'error'; SRV.err = r.error; toast(r.error);
@@ -147,6 +176,7 @@ async function load() {
   // Entity type ids renamed to the Metamodel's are read with the new id.
   if (S && S.engagement && SECTOR().ENTITY_RENAMED[S.engagement.entityType]) S.engagement.entityType = SECTOR().ENTITY_RENAMED[S.engagement.entityType];
   if (S && !S.people) S.people = r.body.people || [];
+  notePositions();
   render();
 }
 const SAVE = { saved: ['b-green', 'Saved'], unsaved: ['b-grey', 'Unsaved'], saving: ['b-grey', 'Saving…'], error: ['b-red', 'Not saved'] };
@@ -752,7 +782,7 @@ function b9Body() {
     h += `<p class="small soft">Not yet resolved. ${esc(why)}</p>`;
   }
   if (rl.length) h += `<p class="mini" style="margin:12px 0 4px">${tip('Reality note', C.tips.reality)}: inventory lines that already cross a position (each goes on the 90-day action list)</p>` + table(['Line', 'Use', 'Why'], rl.map(([l, w]) => [refTip(l.id), esc(l.use), esc(w)]));
-  return h + versionsPanel();
+  return directionsCard() + h + versionsPanel();
 }
 /* Versions (framework 9.4): the server issues one at each sign-off (the scope agreed, the resolution). Each can be
    compared with the engagement now, to see what has changed since. */
@@ -959,6 +989,12 @@ document.addEventListener('click', async ev => {
   if (act === 'goStep') { const st = b.dataset.step; UI.open = UI.open || {}; UI.open[st] = true; render(); const d = document.getElementById('step-' + st); if (d) d.scrollIntoView({ block: 'start' }); }
   if (act === 'goChecks') { const d = document.getElementById('checks'); if (d) d.scrollIntoView({ block: 'start' }); }
   // B9
+  if (act === 'recordDirections') {
+    const why = dirWhy(); if (why) { toast(why); return; }
+    if (UI.confirmDel !== 'directions') { UI.confirmDel = 'directions'; render(); return; }
+    S.directions = { by: SRV.user.id, on: todayISO() }; notePositions();
+    UI.confirmDel = ''; log('directions', 'directions', null, 'recorded'); render(); toast('The board directions are recorded. The AI Risk Appetite app reads them from now on.');
+  }
   if (act === 'recordResolution') {
     const why = resWhy(); if (why) { toast(why); return; }
     S.resolution = S.resolution || {};
