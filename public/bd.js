@@ -379,6 +379,7 @@ function worklistMarkdown() {
   if (String(e.privilegeMarking || '').trim()) out.push(e.privilegeMarking.trim(), '');
   out.push('# Automated-decision worklist', '',
     `**${cell(e.company || '[company]')}**${e.reference ? ' · ' + cell(e.reference) : ''} · ${resolved ? 'As resolved' : 'Draft'}, ${dl(todayISO())}`, '');
+  if (evTags('worklist')) out.push(`Evidence for: ${evTags('worklist')}.`, '');
   out.push('Every line of the AI inventory (B1) recorded as making, or substantially contributing to, a decision about an individual using their personal information. It is a list of facts for counsel’s review of the privacy policy against APPs 1.7 to 1.9, which apply from 10 December 2026. It states no conclusion on what the policy must say.', '',
     '| Line | Use | Area | Kinds of decision | Personal information used | Owner | Question to counsel |', '| --- | --- | --- | --- | --- | --- | --- |');
   admLines().forEach(l => { const q = lineQuestion(l); out.push(`| ${cell(l.id)} | ${cell(l.use)} | ${cell(l.area ? areaName(l.area) : '')} | ${cell(l.decisions || 'Not recorded')} | ${cell(l.personalInfo || 'Not recorded')} | ${cell(pname(l.owner))} | ${q ? cell(q.ref + ', ' + (q.status === 'answered' ? 'answered' : 'open')) : 'None yet'} |`); });
@@ -775,7 +776,7 @@ function educationMarkdown() {
   const e = S.engagement, edu = S.education || {}, cell = v => String(v == null ? '' : v).replace(/\|/g, '\\|');
   const out = [];
   if (String(e.privilegeMarking || '').trim()) out.push(e.privilegeMarking.trim(), '');
-  out.push('# Director education record', '', `**${cell(e.company || '[company]')}**${e.reference ? ' · ' + cell(e.reference) : ''} · ${dl(todayISO())}`, '',
+  out.push('# Director education record', '', `**${cell(e.company || '[company]')}**${e.reference ? ' · ' + cell(e.reference) : ''} · ${dl(todayISO())}`, '', ...(evTags('education') ? [`Evidence for: ${evTags('education')}.`, ''] : []),
     'Each director’s read confirmation and completion of the director briefing (step B0). The answers to the check questions are not in this record: they are seen only by each director and the facilitators.', '',
     '| Director | Role | Read confirmed | Completed |', '| --- | --- | --- | --- |');
   boardPeople().forEach(p => { const x = edu[p.id] || {}; out.push(`| ${cell(p.name)} | ${cell(p.roles.filter(r => RULES.BOARD.includes(r)).map(roleName).join(', '))} | ${x.readOn ? dl(x.readOn) : 'Not yet'} | ${x.completedOn ? dl(x.completedOn) : 'Not yet'} |`); });
@@ -925,6 +926,7 @@ function mainScreen() {
     ${fld('Privilege marking (as counsel directs)', 'engagement.privilegeMarking', e.privilegeMarking)}
     ${fld('Workshop date', 'engagement.boardDates.workshop', (e.boardDates || {}).workshop, { type: 'date' })}
     ${fld('Resolution meeting date', 'engagement.boardDates.resolution', (e.boardDates || {}).resolution, { type: 'date' })}
+    ${fld('Next AI management review (ISO/IEC 42001 clause 9.3)', 'engagement.managementReview', e.managementReview, { type: 'date' })}
   </div>
   <div class="fgrid" style="margin-top:8px"><label class="f" for="f_gcac" style="flex-direction:row;display:flex;gap:10px;align-items:flex-start"><input type="checkbox" id="f_gcac" data-path="engagement.gcActsAsCounsel" ${e.gcActsAsCounsel ? 'checked' : ''} ${why ? 'disabled' : ''} style="margin-top:4px;width:16px;height:16px;flex:0 0 auto"><span style="text-transform:none;letter-spacing:0;font-weight:400">The GC also acts as counsel. The second agreement to the scope then comes from a named executive or director.</span></label>
     ${e.gcActsAsCounsel ? fld('Second approver', 'engagement.secondApproverId', e.secondApproverId, { select: [['', 'Choose…'], ...(S.people || []).filter(p => p.active !== false && p.roles.some(r => ['director', 'chair', 'ceo', 'cro'].includes(r))).map(p => [p.id, p.name])] }) : ''}</div></section>
@@ -945,16 +947,43 @@ function mainScreen() {
 function outputsSection() {
   const mode = S.engagement.mode || 'standalone', list = window.BDOutputs.LIST.filter(o => o.mode === 'both' || o.mode === mode);
   const O = outputsFor(), res = runChecks(), n = res.filter(c => c.ok).length, resolved = RULES.isResolved(S);
-  const rows = list.map(o => [o.ref ? `<span class="mono">${o.ref}</span>` : '', `<strong>${esc(o.name)}</strong>`, esc(o.for), `<button class="btn sm" data-act="output" data-id="${o.id}">${o.kind === 'json' ? 'Download (JSON)' : 'Download (Word)'}</button>`]);
+  const rows = list.map(o => [o.ref ? `<span class="mono">${o.ref}</span>` : '', `<strong>${esc(o.name)}</strong>${evTags(o.id) ? `<div class="mini">${esc(evTags(o.id))}</div>` : ''}`, esc(o.for), `<button class="btn sm" data-act="output" data-id="${o.id}">${o.kind === 'json' ? 'Download (JSON)' : 'Download (Word)'}</button>`]);
   return `<section class="card" id="outputs"><div class="row between"><h2 class="sh" style="margin:0">8 · Outputs</h2><span class="badge ${resolved ? 'b-green' : 'b-grey'}">${esc(O.status)}</span></div>
     <p class="small soft">Every output carries the privilege marking on its first line and its status on every page. Each is marked draft until the chair records the resolution at B9.${n < res.length ? ` ${res.length - n} of the ${res.length} checks do not pass yet; the outputs say what is not set.` : ''} They state what was recorded and who proposed it, never what the law requires.</p>
-    ${table(['', 'Output', 'For', ''], rows)}</section>`;
+    ${table(['', 'Output', 'For', ''], rows)}${mode === 'connected' ? evidenceCard() : ''}</section>`;
+}
+/* ---------- the APRA letter evidence index (task R.2; public/shared/evidence.js), connected mode only ----------
+   AI Board Direction's own artefacts, with those gathered from AI Risk Appetite and, through it, AI Use Assessment over
+   the service bindings. The gathered list is kept for this visit only: the index is made again from the apps each time. */
+const EV = () => window.BDEvidence || null;
+const evTags = id => (EV() ? EV().tagLine('BD', id) : '');
+const evArtefacts = () => EV() ? EV().boardArtefacts(S).concat((UI.evidence && UI.evidence.artefacts) || []) : [];
+function evidenceMarkdown() {
+  const e = S.engagement, g = UI.evidence, out = [];
+  if (String(e.privilegeMarking || '').trim()) out.push(e.privilegeMarking.trim(), '');
+  out.push('# APRA letter evidence index', '', `**${e.company || '[company]'}**${e.reference ? ' · ' + e.reference : ''} · ${outputsFor().status}`, '');
+  if (evTags('evidence')) out.push(`Evidence for: ${evTags('evidence')}.`, '');
+  const notes = g ? (g.notes || []) : ['AI Risk Appetite and AI Use Assessment have not been gathered yet. Use “Gather the evidence” under the outputs.'];
+  return out.join('\n') + '\n' + EV().indexMarkdown({ artefacts: evArtefacts(), by: UI.evBy, review: e.managementReview, company: e.company, gatheredOn: dl(g ? g.gatheredOn : todayISO()), notes });
+}
+function evidenceCard() {
+  if (!EV()) return '';
+  const A = evArtefacts().filter(a => a.status !== 'none'), cv = EV().coverage(A), g = UI.evidence, by = UI.evBy === 'iso' ? 'iso' : 'letter';
+  const groups = by === 'iso' ? EV().ISO.map(([id, name]) => [id, name, A.filter(a => (a.iso || []).includes(id))]) : EV().LETTER.map(b => [b.id, b.text, A.filter(a => (a.letter || []).includes(b.id))]);
+  const cellOf = ([id, name, hits]) => `<div class="panel2" data-ev="${esc(id)}" style="padding:8px 12px"><div class="row between"><span><span class="mono">${esc(id)}</span> <span class="small">${esc(name)}</span></span>${hits.length ? `<span class="badge b-green">${hits.length}</span>` : '<span class="badge b-grey">none yet</span>'}</div>${hits.length ? `<div class="mini" style="margin-top:4px">${hits.map(a => esc(a.name) + (a.status === 'draft' ? ' (draft)' : '')).join(' · ')}</div>` : ''}</div>`;
+  return `<div id="evidence" style="margin-top:18px"><div class="row between"><h3 class="sh" style="margin:0">APRA letter evidence index (BO7)</h3><div class="row">
+      <label class="f" style="min-width:200px" for="ev-by"><span>View</span><select class="in" id="ev-by" data-evby="1"><option value="letter" ${by === 'letter' ? 'selected' : ''}>By letter bullet</option><option value="iso" ${by === 'iso' ? 'selected' : ''}>By ISO/IEC 42001 control</option></select></label>
+      <button class="btn sm" data-act="gatherEvidence">Gather the evidence</button></div></div>
+    <p class="small soft">${g ? `Gathered from AI Risk Appetite and AI Use Assessment ${esc(dl(g.gatheredOn))}.` : 'Shows this engagement’s own artefacts until the evidence is gathered from AI Risk Appetite and AI Use Assessment.'} ${cv.bullets} of the ${cv.of} letter bullets have evidence: ${cv.recorded} artefact${cv.recorded === 1 ? '' : 's'} recorded and ${cv.draft} in draft.${S.engagement.managementReview ? ` Review dates follow the AI management review on ${esc(dl(S.engagement.managementReview))}.` : ' Set the next AI management review on set-up to give every artefact a review date.'}</p>
+    ${g && (g.notes || []).length ? `<p class="small" style="color:var(--red)">${g.notes.map(esc).join(' ')}</p>` : ''}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px">${groups.map(cellOf).join('')}</div></div>`;
 }
 function downloadOutput(id) {
   const O = outputsFor(), e = S.engagement, safe = e.company ? ' - ' + e.company.replace(/[\\/:*?"<>|]/g, '') : '';
   const meta = window.BDOutputs.LIST.find(x => x.id === id); if (!meta) return;
   if (id === 'worklist') return downloadWorklist();
   if (id === 'education') return downloadDocx(educationMarkdown(), 'Director education record');
+  if (id === 'evidence') return downloadDocx(evidenceMarkdown(), meta.name, { wide: true });
   if (id === 'confidentiality') { saveBlob(new Blob([JSON.stringify(O.confidentiality(), null, 2)], { type: 'application/json' }), `Confidentiality position${safe}.json`); toast('Confidentiality position file downloaded'); return; }
   downloadDocx(O[id](), meta.name, { wide: id === 'statement' || id === 'directions' || id === 'actionList' || id === 'plan' });
 }
@@ -984,6 +1013,7 @@ document.addEventListener('change', ev => {
   const t = ev.target;
   if (t.id === 'inventoryIn') { const f = t.files && t.files[0]; t.value = ''; if (!f) return; if (f.size > 4 * 1024 * 1024) { toast('That file is too large to be a provider register.'); return; } f.text().then(x => importInventory(x, f.name)); return; }
   if (t.id === 'brief_file') { const f = t.files && t.files[0]; if (!f) return; if (f.size > 2 * 1024 * 1024) { toast('That file is too large to be a matter brief.'); return; } f.text().then(loadBriefText); t.value = ''; return; }
+  if (t.dataset.evby) { UI.evBy = t.value; render(); return; }
   if (t.dataset.brief) { const m = myBriefing(); saveBriefing({ ...m.answers, [t.dataset.brief]: t.value }, m.read); return; }
   if (t.dataset.briefRead) { const m = myBriefing(); saveBriefing(m.answers, t.checked); return; }
   if (t.dataset.path) setPath(t.dataset.path, t.type === 'checkbox' ? t.checked : t.value);
@@ -1063,6 +1093,14 @@ document.addEventListener('click', async ev => {
       if (!r.ok) { toast(r.code === 'not_linked' ? r.error : 'Could not take the board view: ' + r.error); return; }
       S.boardViews = (S.boardViews || []).concat([{ id: 'BV' + ((S.boardViews || []).length + 1), meeting, takenOn: todayISO(), by: (SRV.user && SRV.user.name) || '', view: r.body }]);
       log('boardView', 'boardViews', null, meeting); render(); toast('The board view for ' + dl(meeting) + ' is kept with the engagement.');
+    });
+    return;
+  }
+  if (act === 'gatherEvidence') {
+    toast('Gathering the evidence from AI Risk Appetite and AI Use Assessment…');
+    api('GET', '/api/evidence-from-appetite').then(r => {
+      if (!r.ok) { toast(r.code === 'not_linked' ? r.error : 'Could not gather the evidence: ' + r.error); return; }
+      UI.evidence = { ...r.body, gatheredOn: todayISO() }; render(); toast('The evidence index is up to date.');
     });
     return;
   }
@@ -1186,5 +1224,5 @@ document.addEventListener('click', async ev => {
   if (openExampleByDefault()) openExample();
   else if (location.hash === '#actions') { const el = document.getElementById('actions'); if (el) el.scrollIntoView({ block: 'start' }); }
 })();
-window.BDApp = { state: () => S, render, practice: () => UI.practice, inventoryCsv: () => inventoryForImport() };
+window.BDApp = { state: () => S, render, practice: () => UI.practice, inventoryCsv: () => inventoryForImport(), evidenceMarkdown: by => { const was = UI.evBy; UI.evBy = by || was; try { return evidenceMarkdown(); } finally { UI.evBy = was; } } };
 })();

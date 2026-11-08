@@ -35,13 +35,15 @@
     const tableMd = (head, rows) => rows.length ? ['| ' + head.map(cell).join(' | ') + ' |', '| ' + head.map(() => '---').join(' | ') + ' |', ...rows.map(x => '| ' + x.map(cell).join(' | ') + ' |')].join('\n') : '';
 
     /* The opening every output shares: marking, title, company line, status, preparer, and the GC note. */
-    function head(title, lead) {
+    function head(title, lead, id) {
       const out = [];
       if (String(e.privilegeMarking || '').trim()) out.push(e.privilegeMarking.trim(), '');
       out.push(`# ${title}`, '', `**${cell(company)}**${e.reference ? ' · ' + cell(e.reference) : ''} · ${status}`, '');
       // the practitioner's name and line are in the page header of every page, so they are not repeated here
       if (e.gcActsAsCounsel) out.push('The general counsel also acted as counsel in this engagement.', '');
       if (lead) out.push(lead, '');
+      const tags = id && root.BDEvidence ? root.BDEvidence.tagLine('BD', id) : ''; // task R.2
+      if (tags) out.push(`Evidence for: ${tags}.`, '');
       return out;
     }
 
@@ -63,7 +65,7 @@
 
     /* ---------- BO1: AI risk appetite statement (standalone) ---------- */
     function statement() {
-      const out = head('AI risk appetite statement', 'Settled by the general counsel.');
+      const out = head('AI risk appetite statement', 'Settled by the general counsel.', 'statement');
       const b2 = pos('B2'), lines = pos('B3').lines || [], rv = pos('B4').events || [], b5 = pos('B5'), harms = pos('B6').harms || {}, b7 = pos('B7'), owners = pos('B8').owners || {};
       out.push('## 1. Purpose and scope', '', `This statement sets out the board’s position on artificial intelligence used by ${company}, by its providers for it, and by its people on its behalf. It sits beside the company’s risk appetite or risk register.`, '');
       if (goals().length) { out.push('The board wants its governance of AI to achieve the following.', ''); goals().forEach(g => out.push(`- **${cell(g.goal)}** Owner: ${cell(g.owner || 'not named')}. Measured by: ${cell(g.measure || 'not set')}.`)); out.push(''); }
@@ -99,7 +101,7 @@
 
     /* ---------- BO6: board directions paper (connected) ---------- */
     function directions() {
-      const out = head('Board directions on AI', 'The board’s directions BD1 to BD7, each read on the decision of the AI risk appetite engagement shown. Positions there that go past a direction cannot form part of the working appetite until a reason is recorded and the board revisits the direction.');
+      const out = head('Board directions on AI', 'The board’s directions BD1 to BD7, each read on the decision of the AI risk appetite engagement shown. Positions there that go past a direction cannot form part of the working appetite until a reason is recorded and the board revisits the direction.', 'directions');
       const lines = pos('B3').lines || [], rv = pos('B4').events || [], cells = pos('B5').cells || {}, harms = pos('B6').harms || {}, b7 = pos('B7'), owners = pos('B8').owners || {};
       out.push('## BD1 Posture by area · read on decision 1, authority', '', tableMd(['Area', 'Posture', 'Condition'], postureRows()), '');
       if (goals().length) { out.push('Governance goals, for the board paper and board view (not read by the risk appetite engagement):', ''); goals().forEach(g => out.push(`- ${cell(g.goal)} (owner ${cell(g.owner || 'not named')}; measure ${cell(g.measure || 'not set')})`)); out.push(''); }
@@ -115,7 +117,7 @@
 
     /* ---------- BO2: acceptable-use policy outline ---------- */
     function aupOutline() {
-      const out = head('Acceptable-use policy outline', 'The headings a staff policy needs to give effect to the board’s positions, each filled with the positions it draws on. The general counsel drafts the policy from it. This outline is not a policy.');
+      const out = head('Acceptable-use policy outline', 'The headings a staff policy needs to give effect to the board’s positions, each filled with the positions it draws on. The general counsel drafts the policy from it. This outline is not a policy.', 'aupOutline');
       const cells = pos('B5').cells || {}, conds = (pos('B5').conditions || []).filter(Boolean), lines = pos('B3').lines || [], rv = pos('B4').events || [], b7 = pos('B7'), owners = pos('B8').owners || {};
       out.push('## 1. Permitted tools', '', 'From the confidential-information positions (B5): the kinds of AI tool the board permits for at least some information.', '');
       KINDS.forEach(k => { const ok = CLASSES.filter(g => cells[g + ':' + k] && cells[g + ':' + k] !== 'N'); out.push(`- **${lbl(SC.toolKind, k)}**: ${ok.length ? 'permitted for ' + ok.map(g => lc(lbl(SC.infoClass, g)) + (cells[g + ':' + k] === 'C' ? ' (with conditions)' : '')).join(', ') : 'not permitted for any information'}.`); });
@@ -140,7 +142,7 @@
 
     /* ---------- BO3: board minute ---------- */
     function minute() {
-      const out = head('Board minute: AI risk appetite');
+      const out = head('Board minute: AI risk appetite', '', 'minute');
       const docName = connected ? 'the board directions paper' : 'the AI risk appetite statement';
       out.push(`**Meeting:** ${r.meetingOn ? dl(r.meetingOn) : (e.boardDates || {}).resolution ? dl(e.boardDates.resolution) : '[date]'} · **Minute:** ${r.minuteRef || '[reference]'}`, '');
       out.push('## Resolution', '', resolved ? cell(r.text) : '[The resolution has not been recorded. The chair records it at the meeting.]', '');
@@ -166,7 +168,7 @@
     function actionList() {
       const start = resolved ? r.on : today, due = new Date(start + 'T12:00:00Z'); due.setUTCDate(due.getUTCDate() + 90);
       const dueOn = dl(due.toISOString().slice(0, 10));
-      const out = head('90-day action list', `Every gap between the AI inventory (B1) and the board’s positions, as an action with an owner and a date. For the CEO. Counted at each meeting${pos('B7').measures && pos('B7').measures.some(m => m.id === 'BM5') ? ' in BM5' : ''}.`);
+      const out = head('90-day action list', `Every gap between the AI inventory (B1) and the board’s positions, as an action with an owner and a date. For the CEO. Counted at each meeting${pos('B7').measures && pos('B7').measures.some(m => m.id === 'BM5') ? ' in BM5' : ''}.`, 'actionList');
       const rows = [];
       reality().forEach(x => rows.push([x.line.id, x.line.use, x.why.replace(/^\w/, c => c.toUpperCase()), x.action, pname(x.line.owner) || 'CEO', dueOn]));
       (S.areas || []).forEach(a => { const x = pos('B2')[a.id] || {}; if (x.posture === 'NS') rows.push(['B2', a.name, 'Posture not set', `Set the posture for ${a.name}.`, x.notSetOwner || 'Chair', x.notSetBy || dueOn]); });
@@ -180,7 +182,7 @@
 
     /* ---------- the engagement plan (framework 7.2 and 7.3), with where each step stands ---------- */
     function plan() {
-      const out = head('Engagement plan', connected ? 'Connected mode: the board gives directions before the AI risk appetite engagement and approves its statement after.' : 'Standalone mode: two to four weeks, one workshop of about three hours, resolved at the next board meeting.');
+      const out = head('Engagement plan', connected ? 'Connected mode: the board gives directions before the AI risk appetite engagement and approves its statement after.' : 'Standalone mode: two to four weeks, one workshop of about three hours, resolved at the next board meeting.', 'plan');
       const role = rs => (S.people || []).filter(p => (p.roles || []).some(x => rs.includes(x))).map(p => p.name).join(', ');
       const sa = S.scopeAgreed || {}, inv = S.inventory || [], dirs = (S.people || []).filter(p => (p.roles || []).some(x => x === 'chair' || x === 'director'));
       const briefed = dirs.filter(p => ((S.education || {})[p.id] || {}).completedOn).length;
@@ -229,6 +231,7 @@
     { id: 'plan', ref: '', name: 'Engagement plan', for: 'Everyone in the engagement', mode: 'both', kind: 'docx' },
     { id: 'education', ref: '', name: 'Director education record', for: 'The chair and the company secretary', mode: 'both', kind: 'docx' },
     { id: 'confidentiality', ref: '', name: 'Confidentiality position file', for: 'A later confidential-matter assessment', mode: 'standalone', kind: 'json' },
+    { id: 'evidence', ref: 'BO7', name: 'APRA letter evidence index', for: 'The CRO and the board: the response to APRA and the AI management review', mode: 'connected', kind: 'docx' },
   ];
 
   root.BDOutputs = { make, LIST };
