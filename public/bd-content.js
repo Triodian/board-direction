@@ -799,7 +799,7 @@ window.BD_CONTENT = {
       "sectors": [
         "AU-BANKING"
       ],
-      "note": "Drafted for an ADI. The matching pack for the AI Risk Appetite app follows in task 3.3 of the development plan.",
+      "note": "Drafted for an ADI. The nine areas match the ADI functions in the AI Risk Appetite app, so each direction reads across to the same functions there.",
       "areas": [
         "Retail lending and credit decisions",
         "Deposits and payments",
@@ -836,7 +836,7 @@ window.BD_CONTENT = {
         "SG-CAPITAL-MARKETS",
         "SG-PAYMENTS"
       ],
-      "note": "Drafted for a financial institution licensed by MAS, with the single-provider concentration point from the MAS Guidelines on AI Risk Management (October 2026). The matching pack for the AI Risk Appetite app follows in phase 3.",
+      "note": "Drafted for a financial institution regulated by MAS. The nine areas match the MAS pack's functions in the AI Risk Appetite app, so each direction reads across to the same functions there.",
       "areas": [
         "Retail banking and lending",
         "Wealth management and advisory",
