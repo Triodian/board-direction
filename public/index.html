@@ -30,6 +30,7 @@
 <body>
 <div id="app"></div>
 <div id="toast" class="hidden" aria-live="polite"></div>
+<input type="file" id="inventoryIn" accept=".csv,text/csv" style="position:absolute;left:-9999px" tabindex="-1" aria-hidden="true">
 <script src="/bd-content.js"></script>
 <script src="/bd-example.js"></script>
 <script src="/bd-outputs.js"></script>
@@ -43,7 +44,8 @@
   import * as checks from "/shared/checks.js";
   import * as versions from "/shared/versions.js";
   import * as sector from "/shared/sector.js";
-  window.BDMerge = { merge3 }; window.BDRules = rules; window.BDBrief = brief; window.BDChecks = checks; window.BDVersions = versions; window.BDSector = sector;
+  import * as imp from "/shared/import.js";
+  window.BDMerge = { merge3 }; window.BDRules = rules; window.BDBrief = brief; window.BDChecks = checks; window.BDVersions = versions; window.BDSector = sector; window.BDImport = imp;
   window.dispatchEvent(new Event('bd:rules'));
 </script>
 <script>

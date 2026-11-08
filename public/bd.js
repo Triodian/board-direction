@@ -347,7 +347,7 @@ function inventoryBody() {
   const intro = !inv.length ? `<p class="small" style="margin:4px 0 8px">One line per AI use, 10 to 20 lines, supplied by the CEO or the people they nominate. Start with:</p><ul class="small" style="margin:0 0 8px 18px"><li>Which AI tools have we licensed, and which do staff use without a licence?</li><li>Which of our providers use AI in the work they do for us?</li></ul>${!UI.practice && !RULES.modeLocked(S) ? `<p class="small soft">The mode (${esc(lbl(C.modes.map(m => [m.id, m.name]), S.engagement.mode))}) is fixed once the first line is added.</p>` : ''}` : '';
   const n = inv.length, count = n ? `<p class="small soft" style="margin:4px 0">${n} line${n === 1 ? '' : 's'}${n < 10 ? ' · the framework expects 10 to 20' : n > 20 ? ' · more than the 20 the framework expects; consider grouping similar uses' : ''}</p>` : '';
   return intro + count + table(can ? head.concat(['']) : head, rows) + (editing ? invForm(editing) : '')
-    + (can ? `<div class="row" style="gap:8px;margin:8px 0"><button class="btn sm" data-act="addLine">Add a line</button>${inv.length ? '<button class="btn sm ghost" data-act="inventoryCsv">Download as CSV</button>' : ''}${UI.practice ? '<span class="small soft">Worked example: try it. Nothing is saved.</span>' : ''}</div>` : (inv.length ? '<div class="row" style="margin:8px 0"><button class="btn sm ghost" data-act="inventoryCsv">Download as CSV</button></div>' : (!why ? '' : `<p class="small soft">${esc(why)}</p>`)))
+    + (can ? `<div class="row" style="gap:8px;margin:8px 0"><button class="btn sm" data-act="addLine">Add a line</button><button class="btn sm ghost" data-act="importInventory">Import the provider register (CSV)</button>${inv.length ? '<button class="btn sm ghost" data-act="inventoryCsv">Download as CSV</button><button class="btn sm ghost" data-act="inventoryImportCsv">Download in the import format</button>' : ''}${UI.practice ? '<span class="small soft">Worked example: try it. Nothing is saved.</span>' : ''}</div>` + importReportHtml() : (inv.length ? '<div class="row" style="margin:8px 0"><button class="btn sm ghost" data-act="inventoryCsv">Download as CSV</button></div>' : (!why ? '' : `<p class="small soft">${esc(why)}</p>`)))
     + worklist();
 }
 /* A question to counsel for a line marked yes in field 8, once per line. Returns its ref, or '' if one exists. */
@@ -390,10 +390,41 @@ function worklistMarkdown() {
 }
 function saveBlob(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
 /* The inventory as CSV: one row per line, codes and their names, for the CEO's working list or a spreadsheet. */
+/* ---------- importing the client's provider register (task R.1) ----------
+   The same CSV as AI Use Assessment's (public/shared/import.js): each row becomes a B1 line, keeping the client's
+   provider register id and system id, with its area matched by name. Malformed rows are refused with the reason. */
+function importInventory(text, file) {
+  const r = window.BDImport.readArrangements(text); if (r.error) { toast(r.error); return; }
+  S.inventory = S.inventory || [];
+  const first = !S.inventory.length; let n = S.inventory.reduce((m, l) => Math.max(m, +String(l.id).replace(/\D/g, '') || 0), 0), added = 0, skipped = 0;
+  const areaOf = name => { const k = String(name || '').toLowerCase().trim(); return k ? ((S.areas || []).find(a => a.name.toLowerCase() === k) || {}).id || '' : ''; };
+  const unmatched = new Set();
+  r.rows.forEach(row => {
+    if (S.inventory.some(l => (row.systemId && l.externalId === row.systemId) || (!row.systemId && l.providerId === row.providerId && l.use === row.system))) { skipped++; return; }
+    n++; const area = areaOf(row.function); if (row.function && !area) unmatched.add(row.function);
+    S.inventory.push({ id: 'L' + n, use: row.system, tool: row.provider + (row.platform && !/not known/i.test(row.platform) ? ' · on ' + row.platform : ''), area, who: row.users, authority: row.authority, info: row.information, kind: row.kind,
+      adm: row.adm, owner: row.owner, source: `${file || 'Provider register'}, row ${row.line} (${row.providerId}${row.systemId ? ' · ' + row.systemId : ''})`, decisions: '', personalInfo: '', providerId: row.providerId, externalId: row.systemId });
+    added++;
+  });
+  UI.importReport = { file: file || '', added, skipped, unmatched: [...unmatched], refused: r.refused };
+  log('importInventory', 'inventory', null, `${added} lines${r.refused.length ? ', ' + r.refused.length + ' rows refused' : ''}`);
+  UI.open = UI.open || {}; UI.open.B1 = true; render();
+  toast(`${added} inventory line${added === 1 ? '' : 's'} imported${skipped ? `; ${skipped} already in the inventory` : ''}${r.refused.length ? `; ${r.refused.length} row${r.refused.length === 1 ? '' : 's'} refused` : ''}.` + (first && added && !UI.practice ? ` The mode is now fixed as ${lbl(C.modes.map(m => [m.id, m.name]), S.engagement.mode).toLowerCase()}.` : ''));
+}
+function importReportHtml() {
+  const r = UI.importReport; if (!r) return '';
+  return `<div class="panel2" style="padding:10px 14px;margin:8px 0" role="status"><p class="small" style="margin:0 0 4px"><strong>Imported${r.file ? ' from ' + esc(r.file) : ''}:</strong> ${r.added} lines${r.skipped ? `, ${r.skipped} already in the inventory` : ''}.${r.unmatched.length ? ` No area matched ${esc(r.unmatched.join(', '))}; choose the area on those lines.` : ''}</p>${r.refused.length ? `<p class="small" style="margin:6px 0 2px">${r.refused.length} row${r.refused.length === 1 ? '' : 's'} refused, and not loaded:</p><ul class="small" style="margin:0 0 0 18px">${r.refused.slice(0, 50).map(x => `<li>Line ${x.line}: ${esc(x.reason)}</li>`).join('')}</ul>` : ''}<button class="lnk small" data-act="closeImport">Close</button></div>`;
+}
+/* The inventory in the import format, with the client's ids, so the provider register round-trips. */
+function inventoryForImport() {
+  return window.BDImport.writeArrangements((S.inventory || []).map(l => { const [prov, plat] = String(l.tool || '').split(' · on ');
+    return { providerId: l.providerId || '', systemId: l.externalId || l.id, provider: prov || '', system: l.use || '', arrangement: '', function: l.area ? areaName(l.area) : '', criticalOperation: '', boundary: '', where: '', platform: plat || '', location: '', whatItDoes: '', human: '', credentials: '', onInventory: '',
+      users: l.who || '', authority: l.authority || '', consequence: '', information: l.info || '', kind: l.kind || '', adm: !!l.adm, owner: l.owner || '' }; }));
+}
 function downloadInventoryCsv() {
   const q = v => { const t = String(v == null ? '' : v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
-  const head = ['Line', 'Use', 'Tool and provider', 'Area', 'Who uses it', 'Authority', 'Information it sees', 'Tool kind', 'Decisions about individuals', 'Kinds of decision', 'Personal information used', 'Owner', 'Source', 'Question to counsel'];
-  const rows = (S.inventory || []).map(l => { const qq = lineQuestion(l); return [l.id, l.use, l.tool, l.area ? areaName(l.area) : '', l.who, l.authority ? l.authority + ' ' + lbl(SC.authority, l.authority) : '', l.info ? l.info + ' ' + lbl(SC.infoClass, l.info) : '', l.kind ? l.kind + ' ' + lbl(SC.toolKind, l.kind) : '', l.adm ? 'Yes' : 'No', l.adm ? l.decisions : '', l.adm ? l.personalInfo : '', pname(l.owner), l.source, qq ? qq.ref + ' (' + qq.status + ')' : '']; });
+  const head = ['Line', 'Use', 'Tool and provider', 'Area', 'Who uses it', 'Authority', 'Information it sees', 'Tool kind', 'Decisions about individuals', 'Kinds of decision', 'Personal information used', 'Owner', 'Source', 'Question to counsel', 'Provider register id', 'System id'];
+  const rows = (S.inventory || []).map(l => { const qq = lineQuestion(l); return [l.id, l.use, l.tool, l.area ? areaName(l.area) : '', l.who, l.authority ? l.authority + ' ' + lbl(SC.authority, l.authority) : '', l.info ? l.info + ' ' + lbl(SC.infoClass, l.info) : '', l.kind ? l.kind + ' ' + lbl(SC.toolKind, l.kind) : '', l.adm ? 'Yes' : 'No', l.adm ? l.decisions : '', l.adm ? l.personalInfo : '', pname(l.owner), l.source, qq ? qq.ref + ' (' + qq.status + ')' : '', l.providerId || '', l.externalId || '']; });
   const e = S.engagement, lines = [];
   if (String(e.privilegeMarking || '').trim()) lines.push(q(e.privilegeMarking.trim()));
   lines.push(head.map(q).join(','), ...rows.map(r => r.map(q).join(',')));
@@ -951,6 +982,7 @@ function render() {
 TriodianBrand.bind(v => { setPath('engagement.practitioner.logo', v); render(); }, toast);
 document.addEventListener('change', ev => {
   const t = ev.target;
+  if (t.id === 'inventoryIn') { const f = t.files && t.files[0]; t.value = ''; if (!f) return; if (f.size > 4 * 1024 * 1024) { toast('That file is too large to be a provider register.'); return; } f.text().then(x => importInventory(x, f.name)); return; }
   if (t.id === 'brief_file') { const f = t.files && t.files[0]; if (!f) return; if (f.size > 2 * 1024 * 1024) { toast('That file is too large to be a matter brief.'); return; } f.text().then(loadBriefText); t.value = ''; return; }
   if (t.dataset.brief) { const m = myBriefing(); saveBriefing({ ...m.answers, [t.dataset.brief]: t.value }, m.read); return; }
   if (t.dataset.briefRead) { const m = myBriefing(); saveBriefing(m.answers, t.checked); return; }
@@ -1126,6 +1158,9 @@ document.addEventListener('click', async ev => {
     render(); toast(`${ref} logged for counsel.`);
   }
   if (act === 'inventoryCsv') downloadInventoryCsv();
+  if (act === 'importInventory') { const why = invWhy(); if (why) { toast(why); return; } document.getElementById('inventoryIn').click(); }
+  if (act === 'inventoryImportCsv') { saveBlob(new Blob([inventoryForImport()], { type: 'text/csv;charset=utf-8' }), `Provider register${S.engagement.company ? ' - ' + S.engagement.company.replace(/[\\/:*?"<>|]/g, '') : ''}.csv`); toast('CSV downloaded'); }
+  if (act === 'closeImport') { UI.importReport = null; render(); }
   if (act === 'goB1') { UI.open = UI.open || {}; UI.open.B1 = true; render(); const d = document.getElementById('step-B1'); if (d) d.scrollIntoView({ block: 'start' }); }
   if (act === 'answerQ') {
     const ref = b.dataset.ref, why = deny('answer'); if (why) { toast(why); return; }
@@ -1151,5 +1186,5 @@ document.addEventListener('click', async ev => {
   if (openExampleByDefault()) openExample();
   else if (location.hash === '#actions') { const el = document.getElementById('actions'); if (el) el.scrollIntoView({ block: 'start' }); }
 })();
-window.BDApp = { state: () => S, render, practice: () => UI.practice };
+window.BDApp = { state: () => S, render, practice: () => UI.practice, inventoryCsv: () => inventoryForImport() };
 })();
