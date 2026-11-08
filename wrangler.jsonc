@@ -19,6 +19,9 @@
     { "binding": "DB", "database_name": "board-direction-db", "database_id": "c4e6c7c8-ba12-48f7-aef9-652822b15d52" },
     { "binding": "IDENTITY", "database_name": "triodian-identity-db", "database_id": "d2031f39-53b4-438c-aed6-1d480f9526bf" }
   ],
+  // The board view (development plan task 3.6) comes from the AI Risk Appetite app's AppetiteService entrypoint over this
+  // service binding: no URL and no secret. Without it, B9 explains that the link is not set up.
+  "services": [{ "binding": "APPETITE", "service": "risk-appetite", "entrypoint": "AppetiteService" }],
   // IDENTITY (development plan tasks 1B.2 and 1B.3): the suite's shared identity database, one per environment, bound to
   // all four engagement apps. With it, people are added once, roles are kept per app, and one sign-in covers every app
   // on SUITE_COOKIE_DOMAIN (the cookie SUITE_SESSION_COOKIE; the test sites use their own name so live and test stay apart).
@@ -49,6 +52,7 @@
         { "binding": "DB", "database_name": "board-direction-test-db", "database_id": "fca13599-7382-47ec-8b61-e1c2af45aa22" },
         { "binding": "IDENTITY", "database_name": "triodian-identity-test-db", "database_id": "4d7591a1-bcb7-4514-b726-f0621d7de25a" }
       ],
+      "services": [{ "binding": "APPETITE", "service": "risk-appetite-test", "entrypoint": "AppetiteService" }],
       "vars": { "SUITE_DEMO": "on", "SUITE_COOKIE_DOMAIN": "triodian.com", "SUITE_SESSION_COOKIE": "tri_suite_test", "SITE_LABEL": "Test site", "SITE_URL": "https://board-direction-test.triodian.com", "NOTIFY_SENDING": "on", "NOTIFY_FROM": "notifications@triodian.com", "DEFAULT_JURISDICTION": "AU", "DEFAULT_SECTOR": "" },
       "send_email": [{ "name": "EMAIL" }],
       "triggers": { "crons": ["0 21 * * *"] },
@@ -69,6 +73,7 @@
       "d1_databases": [
         { "binding": "DB", "database_name": "board-direction-client-db", "database_id": "REPLACE-WITH-THE-CLIENT-DATABASE-ID" }
       ],
+      "services": [{ "binding": "APPETITE", "service": "risk-appetite-client", "entrypoint": "AppetiteService" }],
       "vars": { "SUITE_DEMO": "off", "SUITE_COOKIE_DOMAIN": "CLIENT-DOMAIN.example", "SUITE_SESSION_COOKIE": "tri_suite", "DEMO_LOGIN": "", "SITE_URL": "https://board-direction.CLIENT-DOMAIN.example", "NOTIFY_SENDING": "off", "NOTIFY_FROM": "", "DEFAULT_JURISDICTION": "AU", "DEFAULT_SECTOR": "" },
       "send_email": [{ "name": "EMAIL" }],
       "triggers": { "crons": ["0 21 * * *"] },

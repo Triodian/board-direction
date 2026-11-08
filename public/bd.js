@@ -149,6 +149,40 @@ function directionsCard() {
   return h;
 }
 
+/* ---------- the board view (task 3.6) ----------
+   For each board meeting, the board view is taken from the AI Risk Appetite app: the positions the board approved
+   (the calibration set as issued), where the appetite stands now, and the latest in-use measures from AI Use
+   Assessment. Each view is kept as taken, so the papers for a meeting show what the board saw. */
+const bvWhy = () => UI.practice ? 'The worked example is standalone, so it has no board view.' : deny('boardView');
+const STATUS_WORDS = { default: 'not yet agreed', working: 'working, agreed by the CRO', approved: 'approved by the board' };
+function boardViewBody(v) {
+  const a = v.appetite || {}, ap = v.approved, iu = v.inUse;
+  let h = `<p class="small" style="margin:0 0 6px"><strong>${esc(v.company || '')}</strong> · the AI risk appetite is ${esc(STATUS_WORDS[a.status] || a.status || '')}${a.version ? ', version ' + esc(String(a.version)) : ''}${a.approvedOn ? ' · last approved ' + esc(dl(a.approvedOn)) + (a.minuteRef ? ' (' + esc(a.minuteRef) + ')' : '') : ''}.</p>`;
+  if (ap && ap.calibrationSet) {
+    const P1 = ap.calibrationSet.P1 || {}, locs = [...new Set(Object.values(P1).flatMap(x => Object.keys(x || {})))];
+    h += `<p class="mini" style="margin:8px 0 4px">Approved positions · version ${esc(String(ap.version))}, ${esc(ap.status)}${ap.laterVersion ? ` · version ${esc(String(ap.laterVersion.version))} is ${esc(ap.laterVersion.status)}, not yet approved` : ''}</p>`
+      + table(['Function', ...locs.map(l => esc({ own: 'Own staff', provider: 'Inside a provider', platform: 'Platform behind a provider' }[l] || l))], Object.entries(P1).map(([fn, x]) => [esc(fn), ...locs.map(l => x && x[l] ? esc(x[l].tier + (x[l].condition ? ' · ' + x[l].condition : '')) : '—')]))
+      + (ap.calibrationSet.P9 != null ? `<p class="small" style="margin:4px 0">Concentration limit: ${esc(String(ap.calibrationSet.P9))}% of critical operations on one platform or AI provider.</p>` : '');
+  } else h += `<p class="small soft">${esc(v.approvedNote || 'No approved positions yet.')}</p>`;
+  if (iu && iu.measures) {
+    const g = iu.gapsByPriority || {};
+    h += `<p class="mini" style="margin:10px 0 4px">In use now · counted from the AI Use Assessment register, ${esc(dl(iu.on))}. Gaps by priority: ${['High', 'Medium', 'Low'].map(k => k + ' ' + (g[k] || 0)).join(' · ')}${(iu.overdue || []).length ? ' · overdue ' + iu.overdue.length : ''}</p>`
+      + table(['Ref', 'Measure', 'Limit', 'In use now'], iu.measures.map(m => [esc(m.ref), esc(m.measure || ''), esc(m.limit || '—'), m.value == null ? `<span class="soft">Not counted · ${esc(m.basis || '')}</span>` : esc(String(m.value) + (m.ref === 'M6' ? '%' : ''))]));
+  } else h += `<p class="small soft" style="margin-top:8px">${esc(v.inUseNote || 'No in-use measures yet.')}</p>`;
+  return h;
+}
+function boardViewCard() {
+  if (!S || S.engagement.mode !== 'connected') return '';
+  const list = S.boardViews || [], why = bvWhy(), last = list[list.length - 1];
+  let h = sub('Board view · for each board meeting, from the AI risk appetite engagement');
+  h += why ? `<p class="small soft" style="margin:0 0 6px">${esc(why)}</p>`
+    : `<div class="row" style="gap:8px;align-items:flex-end;margin:0 0 8px"><label class="f" for="bv_meeting" style="max-width:220px"><span>Board meeting</span><input class="in" type="date" id="bv_meeting" value="${esc(UI.bvMeeting || (S.engagement.boardDates || {}).resolution || todayISO())}"></label><button class="btn" data-act="takeBoardView">Take the board view for this meeting</button></div>`;
+  if (!list.length) return h + '<p class="small soft">No board view taken yet.</p>';
+  h += `<div class="panel2" style="padding:10px 14px;margin:0 0 8px"><p class="small" style="margin:0 0 6px"><strong>Board meeting ${esc(dl(last.meeting))}</strong> · taken ${esc(dl(last.takenOn))} by ${esc(last.by || '')}</p>${boardViewBody(last.view)}</div>`;
+  if (list.length > 1) h += `<p class="mini" style="margin:6px 0 2px">Earlier meetings</p>` + list.slice(0, -1).reverse().map(b => `<details class="pr"><summary>Board meeting ${esc(dl(b.meeting))} · taken ${esc(dl(b.takenOn))}</summary><div style="padding:6px 12px">${boardViewBody(b.view)}</div></details>`).join('');
+  return h;
+}
+
 /* ---------- saving ---------- */
 function queueSave() { if (UI.practice) return; SRV.state = 'unsaved'; paintSave(); clearTimeout(timer); timer = setTimeout(save, 700); }
 async function save() {
@@ -782,7 +816,7 @@ function b9Body() {
     h += `<p class="small soft">Not yet resolved. ${esc(why)}</p>`;
   }
   if (rl.length) h += `<p class="mini" style="margin:12px 0 4px">${tip('Reality note', C.tips.reality)}: inventory lines that already cross a position (each goes on the 90-day action list)</p>` + table(['Line', 'Use', 'Why'], rl.map(([l, w]) => [refTip(l.id), esc(l.use), esc(w)]));
-  return directionsCard() + h + versionsPanel();
+  return directionsCard() + boardViewCard() + h + versionsPanel();
 }
 /* Versions (framework 9.4): the server issues one at each sign-off (the scope agreed, the resolution). Each can be
    compared with the engagement now, to see what has changed since. */
@@ -989,6 +1023,17 @@ document.addEventListener('click', async ev => {
   if (act === 'goStep') { const st = b.dataset.step; UI.open = UI.open || {}; UI.open[st] = true; render(); const d = document.getElementById('step-' + st); if (d) d.scrollIntoView({ block: 'start' }); }
   if (act === 'goChecks') { const d = document.getElementById('checks'); if (d) d.scrollIntoView({ block: 'start' }); }
   // B9
+  if (act === 'takeBoardView') {
+    const why = bvWhy(); if (why) { toast(why); return; }
+    const meeting = (document.getElementById('bv_meeting') || {}).value || todayISO(); UI.bvMeeting = meeting;
+    toast('Reading the board view from AI Risk Appetite…');
+    api('GET', '/api/board-view-from-appetite').then(r => {
+      if (!r.ok) { toast(r.code === 'not_linked' ? r.error : 'Could not take the board view: ' + r.error); return; }
+      S.boardViews = (S.boardViews || []).concat([{ id: 'BV' + ((S.boardViews || []).length + 1), meeting, takenOn: todayISO(), by: (SRV.user && SRV.user.name) || '', view: r.body }]);
+      log('boardView', 'boardViews', null, meeting); render(); toast('The board view for ' + dl(meeting) + ' is kept with the engagement.');
+    });
+    return;
+  }
   if (act === 'recordDirections') {
     const why = dirWhy(); if (why) { toast(why); return; }
     if (UI.confirmDel !== 'directions') { UI.confirmDel = 'directions'; render(); return; }
