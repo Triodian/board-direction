@@ -836,7 +836,7 @@ window.BD_CONTENT = {
         "SG-CAPITAL-MARKETS",
         "SG-PAYMENTS"
       ],
-      "note": "Drafted for a financial institution regulated by MAS. The nine areas match the MAS pack's functions in the AI Risk Appetite app, so each direction reads across to the same functions there.",
+      "note": "Drafted for a financial institution licensed by MAS, with the single-provider concentration point from the MAS Guidelines on AI Risk Management (October 2026). The nine areas match the MAS pack's functions in the AI Risk Appetite app, where the concentration point is measure M10.",
       "areas": [
         "Retail banking and lending",
         "Wealth management and advisory",
