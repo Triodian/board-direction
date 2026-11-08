@@ -1,0 +1,87 @@
+{
+  "format": "triodian.raf.boardview.v1",
+  "company": "Acme Bank",
+  "sectorPack": "adi",
+  "appetite": {
+    "status": "working",
+    "version": 3,
+    "agreedOn": "2026-11-20",
+    "approvedOn": "2026-10-17",
+    "minuteRef": "Board minute 2026/10-03"
+  },
+  "approved": {
+    "version": 2,
+    "status": "approved",
+    "issuedOn": "2026-10-17",
+    "issuedBy": "Board",
+    "minuteRef": "Board minute 2026/10-03",
+    "calibrationSet": {
+      "schema": "triodian.calibration.v1",
+      "P1": {
+        "Retail lending and credit decisions": {
+          "own": {
+            "tier": "A2",
+            "condition": null
+          },
+          "provider": {
+            "tier": "A2",
+            "condition": "A person reviews every decline"
+          },
+          "platform": null
+        },
+        "Deposits and payments": {
+          "own": {
+            "tier": "A3",
+            "condition": null
+          },
+          "provider": {
+            "tier": "A2",
+            "condition": null
+          },
+          "platform": null
+        }
+      },
+      "P9": 40
+    },
+    "laterVersion": {
+      "version": 3,
+      "status": "working",
+      "on": "2026-11-20"
+    }
+  },
+  "approvedNote": "",
+  "inUse": {
+    "on": "2026-11-21",
+    "generated": "2026-11-21T01:00:00.000Z",
+    "measures": [
+      {
+        "ref": "M1",
+        "measure": "Register entries above the authority ceiling without an approved exception",
+        "limit": "0",
+        "value": 1,
+        "basis": "x"
+      },
+      {
+        "ref": "M6",
+        "measure": "Share of critical operations that depend on a single platform or AI model provider",
+        "limit": "[ ]%",
+        "value": 40,
+        "basis": "x"
+      },
+      {
+        "ref": "M8",
+        "measure": "Triggers reported later than the time limit",
+        "limit": "0",
+        "value": null,
+        "basis": "The trigger log is kept outside the register"
+      }
+    ],
+    "gapsByPriority": {
+      "High": 1,
+      "Medium": 2,
+      "Low": 0
+    },
+    "overdue": []
+  },
+  "inUseNote": "Counted from the AI Use Assessment register when its in-use feed was issued."
+}

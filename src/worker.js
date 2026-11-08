@@ -34,6 +34,18 @@ export async function directionsForService(env) {
   catch (e) { console.error(e); return { status: 500, body: { error: 'The Board Direction app hit an error reading the board directions.' } }; }
 }
 
+/** Reads the board view from the AI Risk Appetite app (task 3.6), through the APPETITE service binding to its
+ *  AppetiteService entrypoint. Null when this site has no binding: B9 then says the link is not set up. */
+function boardViewReader(env) {
+  if (!env.APPETITE || typeof env.APPETITE.boardView !== 'function') return null;
+  return async () => {
+    let r;
+    try { r = await env.APPETITE.boardView(); }
+    catch (e) { console.error(e); return { status: 503, error: 'The Risk Appetite app could not be reached through the APPETITE service binding. Check that the binding names the Risk Appetite Worker deployed in this account.' }; }
+    return r && r.status === 200 ? r.body : { status: (r && r.status) || 502, error: (r && r.body && r.body.error) || 'The Risk Appetite app gave no answer.' };
+  };
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -49,7 +61,7 @@ export default {
       const r = await handle({
         method: request.method, path: url.pathname, email: who.email, text: () => request.text(),
         firstAdmins: String(env.FIRST_ADMINS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean),
-        site: env.SITE_LABEL || '', defaults: { jurisdiction: String(env.DEFAULT_JURISDICTION || 'AU').toUpperCase(), sector: env.DEFAULT_SECTOR || '' }, origin: siteUrl(env, request), sender: emailSender(env), defer: p => ctx.waitUntil(p),
+        site: env.SITE_LABEL || '', defaults: { jurisdiction: String(env.DEFAULT_JURISDICTION || 'AU').toUpperCase(), sector: env.DEFAULT_SECTOR || '' }, origin: siteUrl(env, request), sender: emailSender(env), defer: p => ctx.waitUntil(p), readBoardView: boardViewReader(env),
       }, storeFor(env));
       return json(r.body, r.status);
     } catch (e) {

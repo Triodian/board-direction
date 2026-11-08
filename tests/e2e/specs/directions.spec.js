@@ -36,3 +36,39 @@ test('in connected mode the chair records the board directions at B9', async ({ 
   expect(errs).toEqual([]);
   await ctx.close();
 });
+
+// The board view (task 3.6): the chair takes it from AI Risk Appetite for a meeting, and B9 shows it.
+test('the chair takes the board view for a meeting, and B9 shows the approved positions and the measures', async ({ browser }) => {
+  const V = JSON.parse(readFileSync(new URL('../fixtures/board-view.json', import.meta.url), 'utf8'));
+  const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.chair }, viewport: { width: 1280, height: 900 } });
+  await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); sessionStorage.setItem('triodian.example.left', '1'); } catch (e) {} });
+  const data = { schema: 'triodian.bd.v1', engagement: { id: 'ebv', company: 'Acme Bank', entityType: 'authorisedDepositTakingInstitution', jurisdiction: 'AU', sector: 'AU-BANKING', mode: 'connected', sectorPack: 'adi', reference: '', privilegeMarking: '', practitioner: { firm: '', line: '' }, boardDates: { workshop: '', resolution: '2026-12-02' }, gcActsAsCounsel: false, secondApproverId: '' },
+    areas: [{ id: 'A1', name: 'Retail lending and credit decisions' }], scopeAgreed: {}, inventory: [], positions: {}, questions: [], resolution: {}, people: [], versions: [], previous: null, history: [] };
+  let rev = 1, last = null;
+  await ctx.route('**/api/engagement', async route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: { exists: true, revision: rev, data, people: [] } });
+    last = route.request().postDataJSON().data; rev += 1;
+    return route.fulfill({ json: { revision: rev } });
+  });
+  await ctx.route('**/api/board-view-from-appetite', route => route.fulfill({ json: V }));
+  const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
+  await p.goto('/'); await p.locator('#step-B9 > summary').click();
+  await expect(p.locator('#step-B9')).toContainText('No board view taken yet.');
+  await p.click('[data-act="takeBoardView"]');
+  await expect(p.locator('#step-B9')).toContainText('Board meeting 2 December 2026');
+  await expect(p.locator('#step-B9')).toContainText('the AI risk appetite is working, agreed by the CRO, version 3');
+  await expect(p.locator('#step-B9')).toContainText('A2 · A person reviews every decline');
+  await expect(p.locator('#step-B9')).toContainText('version 3 is working, not yet approved');
+  await expect(p.locator('#step-B9')).toContainText('Gaps by priority: High 1 · Medium 2 · Low 0');
+  await expect(p.locator('#step-B9')).toContainText('Not counted · The trigger log is kept outside the register');
+  await expect.poll(() => last && (last.boardViews || []).length).toBe(1);
+  expect(last.boardViews[0].meeting).toBe('2026-12-02');
+  expect(errs).toEqual([]);
+  await ctx.close();
+});
+
+test('the link to AI Risk Appetite answers with the reason when it is not reached', async () => {
+  const r = await api('GET', '/api/board-view-from-appetite');
+  expect([502, 503]).toContain(r.status);
+  expect(r.body.error).toMatch(/Risk Appetite app/);
+});

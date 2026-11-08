@@ -65,7 +65,7 @@ export function educationEntry(prev, answers, read, today) {
 export const isResolved = S => !!(S && S.resolution && S.resolution.by);
 /** The mode is fixed once the inventory has a line (framework section 2.1). */
 export const modeLocked = S => !!(S && Array.isArray(S.inventory) && S.inventory.length);
-const OPEN_WHEN_RESOLVED = new Set(['resolve', 'answer']);
+const OPEN_WHEN_RESOLVED = new Set(['resolve', 'answer', 'boardView']);
 
 /**
  * The app's rules. user: { id, roles[], isAdmin }. S: the stored engagement.
@@ -99,6 +99,7 @@ export function deny(target, user, S) {
     case 'answer': return r('gc') ? '' : 'Only the GC answers questions to counsel.';
     case 'resolve': return r('chair') ? '' : 'Only the chair records the board’s resolution.';
     case 'directions': return r('chair') ? '' : 'Only the chair records the board directions.';
+    case 'boardView': return tri || r('chair') || r('ceo') ? '' : 'Only Triodian, the chair or the CEO takes the board view for a meeting.';
   }
   return 'This change is not allowed.';
 }
