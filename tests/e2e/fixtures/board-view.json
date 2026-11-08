@@ -16,32 +16,37 @@
     "issuedBy": "Board",
     "minuteRef": "Board minute 2026/10-03",
     "calibrationSet": {
-      "schema": "triodian.calibration.v1",
-      "P1": {
-        "Retail lending and credit decisions": {
-          "own": {
-            "tier": "A2",
-            "condition": null
+      "privilegeMarking": null,
+      "schema": "triodian.raf.calibration.v1",
+      "status": "approved",
+      "version": 2,
+      "parameters": {
+        "P1": {
+          "Retail lending and credit decisions": {
+            "own": {
+              "tier": "A2",
+              "condition": null
+            },
+            "provider": {
+              "tier": "A2",
+              "condition": "A person reviews every decline"
+            },
+            "platform": null
           },
-          "provider": {
-            "tier": "A2",
-            "condition": "A person reviews every decline"
-          },
-          "platform": null
+          "Deposits and payments": {
+            "own": {
+              "tier": "A3",
+              "condition": null
+            },
+            "provider": {
+              "tier": "A2",
+              "condition": null
+            },
+            "platform": null
+          }
         },
-        "Deposits and payments": {
-          "own": {
-            "tier": "A3",
-            "condition": null
-          },
-          "provider": {
-            "tier": "A2",
-            "condition": null
-          },
-          "platform": null
-        }
-      },
-      "P9": 40
+        "P9": 40
+      }
     },
     "laterVersion": {
       "version": 3,

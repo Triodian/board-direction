@@ -159,10 +159,10 @@ function boardViewBody(v) {
   const a = v.appetite || {}, ap = v.approved, iu = v.inUse;
   let h = `<p class="small" style="margin:0 0 6px"><strong>${esc(v.company || '')}</strong> · the AI risk appetite is ${esc(STATUS_WORDS[a.status] || a.status || '')}${a.version ? ', version ' + esc(String(a.version)) : ''}${a.approvedOn ? ' · last approved ' + esc(dl(a.approvedOn)) + (a.minuteRef ? ' (' + esc(a.minuteRef) + ')' : '') : ''}.</p>`;
   if (ap && ap.calibrationSet) {
-    const P1 = ap.calibrationSet.P1 || {}, locs = [...new Set(Object.values(P1).flatMap(x => Object.keys(x || {})))];
+    const Q = ap.calibrationSet.parameters || {}, P1 = Q.P1 || {}, locs = [...new Set(Object.values(P1).flatMap(x => Object.keys(x || {})))];
     h += `<p class="mini" style="margin:8px 0 4px">Approved positions · version ${esc(String(ap.version))}, ${esc(ap.status)}${ap.laterVersion ? ` · version ${esc(String(ap.laterVersion.version))} is ${esc(ap.laterVersion.status)}, not yet approved` : ''}</p>`
       + table(['Function', ...locs.map(l => esc({ own: 'Own staff', provider: 'Inside a provider', platform: 'Platform behind a provider' }[l] || l))], Object.entries(P1).map(([fn, x]) => [esc(fn), ...locs.map(l => x && x[l] ? esc(x[l].tier + (x[l].condition ? ' · ' + x[l].condition : '')) : '—')]))
-      + (ap.calibrationSet.P9 != null ? `<p class="small" style="margin:4px 0">Concentration limit: ${esc(String(ap.calibrationSet.P9))}% of critical operations on one platform or AI provider.</p>` : '');
+      + (Q.P9 != null ? `<p class="small" style="margin:4px 0">Concentration limit: ${esc(String(Q.P9))}% of critical operations on one platform or AI provider.</p>` : '');
   } else h += `<p class="small soft">${esc(v.approvedNote || 'No approved positions yet.')}</p>`;
   if (iu && iu.measures) {
     const g = iu.gapsByPriority || {};
