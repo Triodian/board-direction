@@ -1,11 +1,14 @@
 // Versions of the engagement (framework 9.4: a new version is issued at each sign-off). Shared by the server, which
 // adds them (lib/core/versions.js), and the browser, which lists them and compares one with the engagement now.
 
-/** What a version keeps: the areas, the positions B2 to B8, the inventory, and the resolution if recorded. */
+/** What a version keeps: the areas, the positions B2 to B8, the inventory, and the resolution if recorded. The area ids
+    and the engagement's details let the board directions be built from the version (lib/core/directions.js). */
 export function snapshotOf(d) {
-  const r = (d && d.resolution) || {};
+  const r = (d && d.resolution) || {}, e = (d && d.engagement) || {};
   return {
     areas: ((d && d.areas) || []).map(a => a.name || a.id),
+    areaIds: ((d && d.areas) || []).map(a => a.id),
+    engagement: { id: e.id || '', company: e.company || '', jurisdiction: e.jurisdiction || '', sector: e.sector || '', entityType: e.entityType || '', sectorPack: e.sectorPack || '', mode: e.mode || '' },
     positions: JSON.parse(JSON.stringify((d && d.positions) || {})),
     inventoryLines: ((d && d.inventory) || []).length,
     inventory: ((d && d.inventory) || []).map(l => l.id),

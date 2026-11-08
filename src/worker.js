@@ -7,7 +7,7 @@
 import { whoIs, handleAuth, gate, markDemo } from '../lib/identity/session.js';
 import { d1Store } from '../lib/store/d1.js';
 import { identityUsers, withIdentity } from '../lib/identity/people.js';
-import { handle } from '../lib/core/api.js';
+import { handle, boardDirections } from '../lib/core/api.js';
 import { dueReminders, deliver } from '../lib/core/notify.js';
 
 const json = (obj, status = 200) => new Response(JSON.stringify(obj), {
@@ -25,6 +25,14 @@ const siteUrl = (env, request) => env.SITE_URL || (request ? new URL(request.url
  *  roles come from there, so a person is added once for the suite; everything else stays in this app's own database. */
 const APP_ID = 'board-direction';
 const storeFor = env => withIdentity(d1Store(env.DB), env.IDENTITY ? identityUsers(env.IDENTITY, APP_ID, env.DB) : null);
+
+/** The recorded board directions for another Triodian app over a service binding (src/service.js; plan task 3.4).
+ *  Read from this app's own database only: the directions are engagement data, not identity. */
+export async function directionsForService(env) {
+  if (!env.DB) return { status: 503, body: { error: 'The database is not connected to the Board Direction app yet.' } };
+  try { return await boardDirections(d1Store(env.DB)); }
+  catch (e) { console.error(e); return { status: 500, body: { error: 'The Board Direction app hit an error reading the board directions.' } }; }
+}
 
 export default {
   async fetch(request, env, ctx) {

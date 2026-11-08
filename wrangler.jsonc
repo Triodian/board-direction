@@ -4,7 +4,7 @@
 // Worker secrets, not values in this file; see docs/demo-sign-in.md. There are no demo administrators.
 {
   "name": "board-direction",
-  "main": "src/worker.js",
+  "main": "src/index.js",
   "compatibility_date": "2026-10-01",
   // run_worker_first: every request reaches src/worker.js first, so pages can require sign-in (lib/identity/session.js).
   "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": true },

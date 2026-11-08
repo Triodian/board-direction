@@ -98,6 +98,7 @@ export function deny(target, user, S) {
     case 'ask': return ['advisor', 'gc', 'chair', 'director', 'ceo'].some(r) || tri ? '' : 'Only the board, the CEO, the board advisor, the GC or Triodian can raise a question to counsel.';
     case 'answer': return r('gc') ? '' : 'Only the GC answers questions to counsel.';
     case 'resolve': return r('chair') ? '' : 'Only the chair records the board’s resolution.';
+    case 'directions': return r('chair') ? '' : 'Only the chair records the board directions.';
   }
   return 'This change is not allowed.';
 }
