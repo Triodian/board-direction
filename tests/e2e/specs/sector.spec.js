@@ -85,6 +85,29 @@ test('jurisdiction, then regulated sector, then entity type; the sector suggests
   await ctx.close();
 });
 
+test('a superannuation trustee in connected mode gets the super pack, with the Risk Appetite functions as areas', async ({ browser }) => {
+  const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.mo }, viewport: { width: 1280, height: 900 } });
+  await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); sessionStorage.setItem('triodian.example.left', '1'); } catch (e) {} });
+  let rev = 1, last = null;
+  await ctx.route('**/api/engagement', async route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: { exists: true, revision: rev, data: fresh(), people: [] } });
+    last = route.request().postDataJSON().data; rev += 1;
+    return route.fulfill({ json: { revision: rev } });
+  });
+  const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
+  await p.goto('/');
+  await p.locator('#f_engagement_sector').selectOption('AU-SUPERANNUATION');
+  await expect(p.locator('#f_engagement_entityType')).toHaveValue('superannuationTrustee');
+  await p.locator('#f_engagement_mode').selectOption('connected');
+  await expect(p.locator('#f_engagement_sectorPack')).toHaveValue('superTrustee');
+  await expect(p.locator('[data-area="0"]')).toHaveValue('Member services and communications');
+  await p.locator('#step-B0 > summary').click();
+  await expect(p.locator('#step-B0')).toContainText('Sector packSuperannuation trustee');
+  await expect.poll(() => last && last.areas.map(a => a.name).join('|')).toBe(C.sectorPacks.find(x => x.id === 'superTrustee').areas.join('|'));
+  expect(errs).toEqual([]);
+  await ctx.close();
+});
+
 test('the worked example names its pack at B0', async ({ browser }) => {
   const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.director } });
   await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); } catch (e) {} });

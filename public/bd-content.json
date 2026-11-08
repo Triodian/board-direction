@@ -755,6 +755,40 @@
       ]
     },
     {
+      "id": "superTrustee",
+      "name": "Superannuation trustee",
+      "mode": "connected",
+      "entityTypes": [
+        "superannuationTrustee"
+      ],
+      "sectors": [
+        "AU-SUPERANNUATION"
+      ],
+      "note": "Drafted for an RSE licensee, first for an ART engagement. The nine areas match the superannuation trustee list in the AI Risk Appetite app, so each direction reads across to the same functions there.",
+      "areas": [
+        "Member services and communications",
+        "Claims and group insurance",
+        "Advice",
+        "Investments",
+        "Administration and payments",
+        "Complaints and disputes",
+        "Finance and reporting",
+        "Legal and compliance",
+        "Technology operations"
+      ],
+      "briefingHeading": "Common failures in superannuation",
+      "failures": [
+        "AI in claims triage delays or declines a valid death or disablement claim, and a member in hardship waits without being picked up.",
+        "A chatbot or digital adviser gives a member general information that reads as personal advice, or wrong information about their options.",
+        "AI in benefit payments or rollovers pays the wrong amount or the wrong person, or releases money to a scammer.",
+        "The administrator’s or the group insurer’s AI behaves differently after an update the trustee did not hear about."
+      ],
+      "redLineCandidates": [
+        "AI declining a death or disablement claim with no person reviewing it",
+        "AI deciding a member’s severe financial hardship release with no person reviewing it"
+      ]
+    },
+    {
       "id": "adi",
       "name": "Authorised deposit-taking institution",
       "mode": "connected",
@@ -764,7 +798,7 @@
       "sectors": [
         "AU-BANKING"
       ],
-      "note": "Drafted for an ADI. The matching pack for the AI Risk Appetite app follows in phase 3 of the development plan.",
+      "note": "Drafted for an ADI. The matching pack for the AI Risk Appetite app follows in task 3.3 of the development plan.",
       "areas": [
         "Retail lending and credit decisions",
         "Deposits and payments",
