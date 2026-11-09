@@ -46,6 +46,18 @@ function boardViewReader(env) {
   };
 }
 
+/** Reads the artefacts for the APRA letter evidence index (task R.2) through the APPETITE binding: the AI Risk Appetite
+ *  app answers with its own and, over its ASSESSMENT binding, the AI Use Assessment's. Null when there is no binding. */
+function evidenceReader(env) {
+  if (!env.APPETITE) return null;
+  return async () => {
+    let r;
+    try { r = await env.APPETITE.evidence(); }
+    catch (e) { console.error(e); return { status: 503, error: 'The Risk Appetite app could not be reached through the APPETITE service binding, or its version does not list artefacts yet.' }; }
+    return r && r.status === 200 ? r.body : { status: (r && r.status) || 502, error: (r && r.body && r.body.error) || 'The Risk Appetite app gave no answer.' };
+  };
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -61,7 +73,7 @@ export default {
       const r = await handle({
         method: request.method, path: url.pathname, email: who.email, text: () => request.text(),
         firstAdmins: String(env.FIRST_ADMINS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean),
-        site: env.SITE_LABEL || '', defaults: { jurisdiction: String(env.DEFAULT_JURISDICTION || 'AU').toUpperCase(), sector: env.DEFAULT_SECTOR || '' }, origin: siteUrl(env, request), sender: emailSender(env), defer: p => ctx.waitUntil(p), readBoardView: boardViewReader(env),
+        site: env.SITE_LABEL || '', defaults: { jurisdiction: String(env.DEFAULT_JURISDICTION || 'AU').toUpperCase(), sector: env.DEFAULT_SECTOR || '' }, origin: siteUrl(env, request), sender: emailSender(env), defer: p => ctx.waitUntil(p), readBoardView: boardViewReader(env), readEvidence: evidenceReader(env),
       }, storeFor(env));
       return json(r.body, r.status);
     } catch (e) {
