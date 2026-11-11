@@ -13,7 +13,7 @@ test('writes: the board directions and the confidentiality position, from the wo
   const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': ADMIN } });
   await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); } catch (e) {} });
   const p = await ctx.newPage(); await p.goto('/');
-  await expect(p.locator('.examplebar', { hasText: 'Worked example' })).toBeVisible({ timeout: 15_000 });
+  await expect(p.locator('.examplenote', { hasText: 'Worked example' })).toBeVisible({ timeout: 15_000 });
   const { S, conf } = await p.evaluate(() => { const S = JSON.parse(JSON.stringify(window.BDExample())); return { S, conf: window.BDOutputs.make(S, window.BD_CONTENT, { today: '2026-12-02' }).confidentiality() }; });
   expect(exchangeErrors('confidentiality-position-v1.schema.json', conf)).toEqual([]);
   // the worked example as a connected engagement whose chair recorded the directions

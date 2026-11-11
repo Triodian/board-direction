@@ -105,7 +105,7 @@ test('the worked example lets anyone try the inventory and saves nothing', async
   const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.director } });
   await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); } catch (e) {} });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
-  await p.goto('/'); await expect(p.locator('.examplebar')).toContainText('Worked example');
+  await p.goto('/'); await expect(p.locator('.examplenote')).toContainText('Worked example');
   await openB1(p);
   await expect(p.locator('#step-B1')).toContainText('Automated-decision worklist');
   await expect(p.locator('#step-B1')).toContainText('CVs, work history');

@@ -99,7 +99,7 @@ test('the worked example lets anyone try the positions and saves nothing', async
   const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.advisor } });
   await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); } catch (e) {} });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
-  await p.goto('/'); await expect(p.locator('.examplebar')).toContainText('Worked example');
+  await p.goto('/'); await expect(p.locator('.examplenote')).toContainText('Worked example');
   await open(p, 'B2');
   await expect(p.locator('#p_B2_goals_GL1_goal')).toHaveValue(/routine work/);
   const rev = (await api('GET', '/api/engagement', undefined, U.advisor)).body.revision;
