@@ -66,7 +66,7 @@ test('the worked example shows the recorded resolution and its change events', a
   const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.chair } });
   await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); } catch (e) {} });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
-  await p.goto('/'); await expect(p.locator('.examplebar')).toContainText('Worked example');
+  await p.goto('/'); await expect(p.locator('.examplenote')).toContainText('Worked example');
   await openB9(p);
   await expect(p.locator('#step-B9')).toContainText('Board minute 2026/12-04');
   await expect(p.locator('#step-B9')).toContainText('A material AI incident');

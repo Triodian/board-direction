@@ -112,7 +112,7 @@ test('the worked example names its pack at B0', async ({ browser }) => {
   const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.director } });
   await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); } catch (e) {} });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
-  await p.goto('/'); await expect(p.locator('.examplebar')).toContainText('Worked example');
+  await p.goto('/'); await expect(p.locator('.examplenote')).toContainText('Worked example');
   await p.locator('#step-B0 > summary').click();
   await expect(p.locator('#step-B0')).toContainText('General (any organisation)');
   expect(errs).toEqual([]);

@@ -218,6 +218,14 @@ const saveChip = () => S && !UI.practice ? `<span class="badge ${SAVE[SRV.state]
 function paintSave() { const el = document.getElementById('savechip'); if (el) el.outerHTML = saveChip(); }
 
 /* ---------- shell ---------- */
+/* The demo band (public/suite.js, on the demo and test sites) carries the worked example's note, so the app shows no
+   band of its own for it there. A client site has no demo band and keeps the app's band. */
+const suiteBand = () => (document.documentElement.getAttribute('data-suite-demo') || 'on') !== 'off';
+const EXAMPLE_NOTE = 'Worked example: a fictional company, board and advisers, for practice only. Nothing is saved.';
+function suiteNote() {
+  const h = UI.practice && suiteBand() ? `<span class="examplenote"><span class="tsu-long">${EXAMPLE_NOTE}</span><span class="tsu-short">Worked example, fictional. Nothing is saved.</span><button data-act="leaveExample">Leave<span class="tsu-long"> the worked example</span></button></span>` : '';
+  if (window.TriodianSuiteNote !== h) { window.TriodianSuiteNote = h; window.dispatchEvent(new Event('triodian:note')); }
+}
 function header() {
   const u = SRV.user, roles = u ? (u.roles || []).map(roleName).join(', ') : '';
   const e = S ? S.engagement : null;
@@ -228,9 +236,9 @@ function header() {
     <div class="hdr-r">${saveChip()}${u ? `<span class="acct"><button class="avatar-link" data-act="acct" aria-haspopup="menu" aria-expanded="${UI.acct}" aria-label="Account: ${esc(u.name || u.email)}"><span class="avatar" aria-hidden="true">${esc(initials(u.name || u.email))}</span></button>${UI.acct ? `<div class="acct-menu" role="menu">
       <div class="acct-who"><span class="avatar" aria-hidden="true">${esc(initials(u.name || u.email))}</span><div><strong>${esc(u.name || u.email)}</strong><div class="small soft">${esc(roles || 'No role in this engagement')}${u.isAdmin ? ' · administrator' : ''}</div></div></div>
       <a role="menuitem" class="item" href="/profile/">Your profile</a>${u.isAdmin ? '<a role="menuitem" class="item" href="/admin/">Admin · users and activity</a>' : ''}<a role="menuitem" class="item" href="/user-guide/">User guide</a><a role="menuitem" class="item signout" href="/auth/logout">Sign out</a></div>` : ''}</span>` : ''}<button class="iconbtn" data-act="drawer" aria-label="Menu" aria-expanded="${UI.drawer}">☰</button></div>
-  </div>${e ? `<div class="docband"><div class="docband-in"><span style="display:inline-flex;align-items:center;gap:14px;flex-wrap:wrap">${priv}${TriodianBrand.chip(e.practitioner)}</span><span class="stat"><strong>${esc(e.company || '[company not set]')}</strong> · ${esc((C.modes.find(m => m.id === e.mode) || {}).name || '')} mode</span></div></div>` : ''}</header>
+  </div>${e ? `<div class="docband"><div class="docband-in"><span class="docband-l">${TriodianBrand.chip(e.practitioner)}${priv}</span><span class="stat"><strong>${esc(e.company || '[company not set]')}</strong> · ${esc((C.modes.find(m => m.id === e.mode) || {}).name || '')} mode</span></div></div>` : ''}</header>
   ${SRV.site ? `<div class="examplebar" style="background:#FDF0E1;color:#8A4B08;border-color:#F0D2AE">${esc(SRV.site)}: a test site for trying things out, not the live engagement</div>` : ''}
-  ${UI.practice ? '<div class="examplebar">Worked example: a fictional company, board and advisers, for practice only. Nothing is saved. <button class="lnk" data-act="leaveExample">Leave the worked example</button></div>' : ''}`;
+  ${UI.practice && !suiteBand() ? `<div class="examplebar examplenote">${EXAMPLE_NOTE} <button class="lnk" data-act="leaveExample">Leave the worked example</button></div>` : ''}`;
 }
 /* The menu: account links and the five Triodian apps, in the order of the suite. */
 const appUrl = h => 'https://' + h + (SRV.site ? '-test' : '') + '.triodian.com/?suite=1';
@@ -1002,6 +1010,7 @@ document.addEventListener('input', ev => { if (ev.target.matches && ev.target.ma
 document.addEventListener('toggle', ev => { if (ev.target.querySelectorAll) ev.target.querySelectorAll('textarea[data-grow]').forEach(grow); }, true);
 addEventListener('resize', () => document.querySelectorAll('textarea[data-grow]').forEach(grow));
 function render() {
+  suiteNote();
   const app = document.getElementById('app');
   app.innerHTML = header() + `<main id="main" tabindex="-1"><div class="wrap">${S ? mainScreen() : entryScreen()}</div></main>` + footer() + drawer();
   app.querySelectorAll('textarea[data-grow]').forEach(grow);

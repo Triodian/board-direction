@@ -64,7 +64,7 @@ test('the worked example opens, every step shows its record, and nothing is save
   const before = (await api('GET', '/api/engagement', undefined, U.director)).body.revision;
   await p.click('header [data-act="drawer"]');
   await p.click('.drawer [data-act="example"]');
-  await expect(p.locator('.examplebar')).toContainText('Worked example');
+  await expect(p.locator('.examplenote')).toContainText('Worked example');
   await expect(p.locator('h1')).toHaveText('Harrow Valley Foods Pty Ltd');
   for (const id of ['B0', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9']) {
     await p.click(`#step-${id} > summary`);
@@ -72,8 +72,8 @@ test('the worked example opens, every step shows its record, and nothing is save
   }
   await expect(p.locator('#step-B1 table').first().locator('tbody tr')).toHaveCount(8);
   expect(await p.locator('#step-B9 tbody tr').count()).toBeGreaterThan(0); // the reality note
-  await p.click('.examplebar [data-act="leaveExample"]');
-  await expect(p.locator('.examplebar')).toHaveCount(0);
+  await p.click('.examplenote [data-act="leaveExample"]');
+  await expect(p.locator('.examplenote')).toHaveCount(0);
   expect((await api('GET', '/api/engagement', undefined, U.director)).body.revision).toBe(before);
   expect(p._errors).toEqual([]);
 });

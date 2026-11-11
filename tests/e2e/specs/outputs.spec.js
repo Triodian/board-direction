@@ -25,7 +25,7 @@ test('the worked example: every output downloads, opens as Word, and carries the
   const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.gc }, acceptDownloads: true });
   await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); } catch (e) {} });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
-  await p.goto('/'); await expect(p.locator('.examplebar')).toContainText('Worked example');
+  await p.goto('/'); await expect(p.locator('.examplenote')).toContainText('Worked example');
   await expect(p.locator('#outputs')).toContainText('Resolved by the board');
   const want = { statement: '1. Purpose and scope', aupOutline: 'This outline is not a policy', minute: 'Board minute 2026/12-04', actionList: 'Crosses red line RL2', worklist: 'Automated-decision worklist', plan: 'Where it stands', education: 'Director education record' };
   for (const [id, phrase] of Object.entries(want)) {

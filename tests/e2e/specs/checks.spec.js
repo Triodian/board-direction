@@ -35,7 +35,7 @@ test('the worked example passes all seven checks, and B9 shows the red line its 
   const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.gc } });
   await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); } catch (e) {} });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
-  await p.goto('/'); await expect(p.locator('.examplebar')).toContainText('Worked example');
+  await p.goto('/'); await expect(p.locator('.examplenote')).toContainText('Worked example');
   await expect(p.locator('#checks')).toContainText('7 of 7 pass');
   await p.locator('#step-B9 > summary').click();
   await expect(p.locator('#step-B9')).toContainText('crosses red line RL2');

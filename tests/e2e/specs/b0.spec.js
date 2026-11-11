@@ -128,7 +128,7 @@ test('the worked example: take the briefing as a director; B9 lists directors wh
   const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.gc } });
   await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); } catch (e) {} });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
-  await p.goto('/'); await expect(p.locator('.examplebar')).toContainText('Worked example');
+  await p.goto('/'); await expect(p.locator('.examplenote')).toContainText('Worked example');
   await p.locator('#step-B9 > summary').click();
   await expect(p.locator('#step-B9')).toContainText('not completed: Priya Raman');
   await p.locator('#step-B0 > summary').click();
