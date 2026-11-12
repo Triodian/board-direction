@@ -42,8 +42,13 @@ window.BDExample = function buildExample() {
       P('p-adv', 'Alex Morgan', 'Kestrel Board Advisory', ['advisor']),
       P('p-rec', 'Lee Chan', 'Triodian', ['methodOwner', 'recorder']),
       P('p-ops', 'Dana Whitfield', 'Harrow Valley Foods', ['areaOwner']),
+      P('p-cio', 'Nikhil Rao', 'Harrow Valley Foods (head of technology)', ['technologyOwner']),
+      P('p-aig1', 'Elena Petrova', 'Harrow Valley Foods (AI governance)', ['aiGovernance']),
+      P('p-aig2', 'Marcus Bell', 'Harrow Valley Foods (AI governance)', ['aiGovernance']),
     ],
     scopeAgreed: { gcBy: 'p-gc', gcOn: '2026-11-10', chairBy: 'p-chair', chairOn: '2026-11-11' },
+    // The management briefing (plan task 7.3): held before anything went to directors, and read by management.
+    managementBriefing: { heldOn: '2026-11-06', attended: 'Alex Morgan, Jess Carter and Lee Chan with Nikhil Rao and the AI governance team', recordedBy: 'p-adv', notNeeded: '', confirmed: { 'p-cio': '2026-11-06', 'p-aig1': '2026-11-07', 'p-aig2': '2026-11-09' } },
     // The director briefing: read and completion dates only. Answers are kept apart and are not in the engagement.
     education: { 'p-chair': { readOn: '2026-11-12', completedOn: '2026-11-12' }, 'p-dir1': { readOn: '2026-11-13', completedOn: '2026-11-13' }, 'p-dir2': { readOn: '2026-11-16', completedOn: '' } },
     inventory: [
@@ -55,7 +60,7 @@ window.BDExample = function buildExample() {
       L('L6', 'Spotting defects on the packing line', 'Inspection camera AI, line 2', 'A5', 'Staff', 'A3', 'G2', 'K2', false, 'p-ops', 'Plant engineering register'),
       L('L7', 'Demand forecasting for raw ingredients', 'Supplier’s forecasting service', 'A7', 'A provider for us', 'A2', 'G3', 'K7', false, 'p-ops', 'Supply agreement, clause 14'),
       L('L8', 'Staff using consumer chatbots on their phones', 'Not known: any consumer tool', 'A10', 'Staff', 'A1', 'G6', 'K5', false, 'p-ceo', 'Not known: CEO to survey by 30 Nov'),
-    ],
+    ].map((l, i) => ({ ...l, suppliedBy: i % 2 ? 'p-aig2' : 'p-aig1', ...(l.id === 'L8' ? {} : { confirmedBy: 'p-cio', confirmedOn: '2026-11-11' }) })),  // supplied by the AI governance team; L8 is not yet confirmed
     positions: {
       B2: {
         goals: [
@@ -112,11 +117,11 @@ window.BDExample = function buildExample() {
       } },
       B7: {
         measures: [
-          { id: 'BM1', measure: 'AI uses in the inventory, and how many are new since the last report', limit: 'n/a', owner: 'CEO' },
-          { id: 'BM2', measure: 'Uses that cross a red line or exceed their area’s posture without board approval', limit: '0', owner: 'CEO' },
-          { id: 'BM3', measure: 'Material AI incidents', limit: '0', owner: 'CEO' },
-          { id: 'BM4', measure: 'Known uses of information marked N in B5', limit: '0', owner: 'CEO' },
-          { id: 'BM5', measure: 'Actions on the 90-day list overdue', limit: '2', owner: 'CEO' },
+          { id: 'BM1', measure: 'AI uses in the inventory, and how many are new since the last report', limit: 'n/a', owner: 'CEO', draftedBy: 'p-aig1', confirmedBy: 'p-cio', confirmedOn: '2026-11-20' },
+          { id: 'BM2', measure: 'Uses that cross a red line or exceed their area’s posture without board approval', limit: '0', owner: 'CEO', draftedBy: 'p-aig1', confirmedBy: 'p-cio', confirmedOn: '2026-11-20' },
+          { id: 'BM3', measure: 'Material AI incidents', limit: '0', owner: 'CEO', draftedBy: 'p-aig1', confirmedBy: 'p-cio', confirmedOn: '2026-11-20' },
+          { id: 'BM4', measure: 'Known uses of information marked N in B5', limit: '0', owner: 'CEO', draftedBy: 'p-aig1', confirmedBy: 'p-cio', confirmedOn: '2026-11-20' },
+          { id: 'BM5', measure: 'Actions on the 90-day list overdue', limit: '2', owner: 'CEO', draftedBy: 'p-aig1', confirmedBy: 'p-cio', confirmedOn: '2026-11-20' },
         ],
         events: [
           { id: 'EV1', event: 'A material AI incident', to: 'Chair', within: '24 hours' },

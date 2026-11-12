@@ -85,6 +85,14 @@ the CEO or Triodian, and must name as proposer a director, the chair, the CEO or
 board advisor and the GC do not propose positions. Only the GC answers questions to counsel; only the chair records
 the resolution. The mode is fixed once the inventory has a line.
 
+**Management's roles (development plan phase 7).** The technology owner (one person, usually the CIO) and the AI
+governance team (several) are optional. The team enters the inventory lines and drafts the B7 measures; the
+technology owner confirms each. The server records who supplied or drafted each item and who confirmed it
+(`suppliedBy`, `draftedBy`, `confirmedBy`, `confirmedOn`), whatever the browser sends, and a change to a confirmed
+item by someone else withdraws the confirmation. Neither role can propose or record a position. The management
+briefing (`managementBriefing`: held on, who met, or not needed with the reason, and each read confirmation) is
+recorded at B0 before the director briefing goes out. Admin refuses a second active technology owner.
+
 ## Setting up a deployment
 Done for `board-direction`: databases created, Access application created and its AUD tag in `lib/config.js`.
 Connect the repository to Cloudflare Workers Builds (`main` → live, `test` → test site with `--env test`). The first

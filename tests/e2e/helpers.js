@@ -5,8 +5,9 @@ export const ADMIN = 'damian.hickey@triodian.com';
 export const U = {
   mo: 'mo@bd.test', recorder: 'recorder@bd.test', advisor: 'advisor@bd.test', gc: 'gc@bd.test', chair: 'chair@bd.test',
   director: 'director@bd.test', ceo: 'ceo@bd.test', cro: 'cro@bd.test', areaOwner: 'areaowner@bd.test',
+  technologyOwner: 'cio@bd.test', aiGovernance: 'aigov@bd.test', aiGovernance2: 'aigov2@bd.test',
 };
-export const ROLES = { mo: ['methodOwner'], recorder: ['recorder'], advisor: ['advisor'], gc: ['gc'], chair: ['chair'], director: ['director'], ceo: ['ceo'], cro: ['cro'], areaOwner: ['areaOwner'] };
+export const ROLES = { mo: ['methodOwner'], recorder: ['recorder'], advisor: ['advisor'], gc: ['gc'], chair: ['chair'], director: ['director'], ceo: ['ceo'], cro: ['cro'], areaOwner: ['areaOwner'], technologyOwner: ['technologyOwner'], aiGovernance: ['aiGovernance'], aiGovernance2: ['aiGovernance'] };
 
 export async function api(method, path, body, as = ADMIN) {
   const r = await fetch(BASE + path, { method, headers: { 'X-Dev-User': as, 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });

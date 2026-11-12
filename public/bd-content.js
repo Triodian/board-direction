@@ -558,6 +558,53 @@ window.BD_CONTENT = {
       "H6": "Description"
     }
   },
+  "managementBriefing": {
+    "title": "Management briefing",
+    "tip": "The meeting with the CIO or AI lead and the AI governance team, held before anything goes to directors. It sets out what the board will decide, what it will not, and how the inventory is used.",
+    "intro": "The board advisor, the GC and Triodian meet the technology owner and the AI governance team before anything reaches directors. The inventory is theirs to bring.",
+    "notYet": "Record the meeting here once it is held. Where the company has no separate technology lead, record that with the reason.",
+    "noRoles": "No one has the technology owner or AI governance team role yet. Give the roles in Admin, or record why the briefing is not needed.",
+    "status": "Drafted by Triodian for the board advisor, and settled by the GC before it is issued. It is not legal advice.",
+    "sections": [
+      {
+        "h": "What the board will decide",
+        "p": [
+          "How far AI may go in each area of the business, the uses it will not accept, the decisions it keeps for itself, what may be put into which kind of tool, the harm it will not tolerate, and what it wants reported. Each position is proposed by a director, the chair or the CEO, and recorded with who proposed it."
+        ]
+      },
+      {
+        "h": "What the board will not decide",
+        "p": [
+          "Which tools to buy, how they are built or configured, or how the technology function is run. Those stay with management. The board does not review individual deployments in this engagement."
+        ]
+      },
+      {
+        "h": "How the inventory is used",
+        "p": [
+          "The AI governance team enters and maintains the list of AI in use, and the technology owner confirms each line. The board reads it to test each position against what is in use today: a posture against the highest authority recorded in the area, and each red line against the lines it would cross.",
+          "Existing policies and thresholds are brought the same way, so the board starts from what the company has already set."
+        ]
+      },
+      {
+        "h": "Where a use is already past a position",
+        "p": [
+          "A use that goes beyond a position the board takes is not a finding on a past decision. It becomes an action on the 90-day list, with an owner and a date, and the list goes to the CEO with the board behind it."
+        ]
+      },
+      {
+        "h": "The measures",
+        "p": [
+          "The AI governance team drafts the measures the board will receive at each meeting, and the technology owner confirms each. A director or the CEO proposes them to the board."
+        ]
+      },
+      {
+        "h": "What comes back",
+        "p": [
+          "A written record of what the CEO can approve alone and what goes to the board, the measures, a named person for each accountability, and the 90-day action list."
+        ]
+      }
+    ]
+  },
   "briefing": {
     "title": "Director briefing",
     "intro": "Every director starts the workshop from the same place. This briefing takes about fifteen minutes: AI in plain terms, the obligations in scope for the company, how directors’ duties bear on AI, and the ways AI commonly fails. It ends with four questions that check understanding. They are not a test, and no one else on the board sees your answers.",
