@@ -52,6 +52,14 @@ const OE = make(E, C, { today: '2026-12-01' });
 ok('empty: statement says no red lines were set', OE.statement().includes('The board set no red lines.'));
 ok('empty: reserved decisions fall back to the six starting events', OE.statement().includes('The six starting events apply'));
 ok('empty: every list generates', ['statement', 'directions', 'aupOutline', 'minute', 'actionList', 'plan'].every(k => typeof OE[k]() === 'string'));
+{ const cw = O.crosswalk();
+  ok('crosswalk: one row for each step B0 to B9, against both frameworks', (cw.match(/^\| B\d /gm) || []).length === 10 && cw.includes('ISO/IEC 42001:2023') && cw.includes('NIST AI RMF 1.0'));
+  ok('crosswalk: it says what the worked example recorded', /B1 Inventory \| 8 lines, 7 confirmed by the technology owner/.test(cw) && /management briefing held 6 November 2026/.test(cw) && /5 measures at each meeting/.test(cw) && /Resolved 2 December 2026/.test(cw));
+  ok('crosswalk: it names clauses, controls and subcategories', ['5.2 AI policy', 'A.3.2 AI roles and responsibilities', '9.3 Management review', 'GOVERN 1.6', 'GOVERN 2.3', 'MAP 1.5'].every(x => cw.includes(x)));
+  ok('crosswalk: it claims no conformity and gives no legal view', cw.includes('not a statement of conformity') && cw.includes('not legal advice') && !/\b(complies|compliant|conforms|meets the requirement|satisfies)\b/i.test(cw) && !/\b(must|required)\b/i.test(cw));
+  const ce = OE.crosswalk();
+  ok('crosswalk: an empty engagement shows each step as not yet recorded', (ce.match(/Not yet recorded/g) || []).length === 9 && ce.includes('Not yet resolved'));
+  ok('crosswalk: it is in the list for both modes', LIST.some(x => x.id === 'crosswalk' && x.mode === 'both' && x.kind === 'docx')); }
 ok('the list names each output once', new Set(LIST.map(x => x.id)).size === LIST.length);
 
 console.log(fails ? `\n${fails} failed` : '\nAll passed');

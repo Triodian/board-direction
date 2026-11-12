@@ -217,7 +217,41 @@
       };
     }
 
-    return { statement, directions, aupOutline, minute, actionList, plan, confidentiality, reality, status };
+    /* ---------- the framework crosswalk (development plan task 7.6) ----------
+       For the technology owner and the AI governance team: where what the board recorded supplies the direction from
+       the top that the frameworks they already run ask for. ISO/IEC 42001:2023 and the NIST AI RMF 1.0 first. It
+       states what is recorded against each reference and nothing more: it is not a statement of conformity with
+       either framework, and it is not legal advice. The NIST entries are paraphrases, not the framework's text. */
+    function crosswalk() {
+      const out = head('Framework crosswalk', 'Where the board’s direction supplies the direction from the top that an AI management framework asks for. For the technology owner and the AI governance team, to place beside the framework they already run.', 'crosswalk');
+      const inv = S.inventory || [], b2 = pos('B2'), areas = S.areas || [], set = areas.filter(a => (b2[a.id] || {}).posture && b2[a.id].posture !== 'NS').length;
+      const dirs = (S.people || []).filter(p => (p.roles || []).some(x => x === 'chair' || x === 'director')), briefed = dirs.filter(p => ((S.education || {})[p.id] || {}).completedOn).length;
+      const n = (k, one, many) => `${k} ${k === 1 ? one : many}`, none = 'Not yet recorded';
+      const lines = (pos('B3').lines || []).length, reserved = (pos('B4').events || []).length, marked = Object.keys(pos('B5').cells || {}).length, harms = Object.keys(pos('B6').harms || {}).length;
+      const ms = (pos('B7').measures || []).length, evs = (pos('B7').events || []).length, owners = Object.values(pos('B8').owners || {}).filter(v => String(v || '').trim()).length, goals = (b2.goals || []).length;
+      const mb = S.managementBriefing || {};
+      const rows = [
+        ['B0 Briefings', dirs.length ? `${briefed} of ${n(dirs.length, 'director', 'directors')} completed the director briefing` + (mb.heldOn ? `; management briefing held ${dl(mb.heldOn)}` : '') : none, 'The people who decide start from the same understanding of AI', '7.2 Competence; 7.3 Awareness', 'GOVERN 2.2 (training for those with AI risk duties)'],
+        ['B1 Inventory', inv.length ? `${n(inv.length, 'line', 'lines')}${inv.some(l => l.confirmedBy) ? `, ${inv.filter(l => l.confirmedBy).length} confirmed by the technology owner` : ''}` : none, 'The list of AI in use that every position is tested against', 'No single clause; it informs 4.3 Scope of the AI management system', 'GOVERN 1.6 (a way to inventory AI systems)'],
+        ['B2 Posture and goals', set || goals ? `A posture for ${set} of ${n(areas.length, 'area', 'areas')}; ${n(goals, 'governance goal', 'governance goals')}` : none, 'How far AI may go in each area, and what governance of AI is to achieve', '5.1 Leadership and commitment; 6.2 AI objectives', 'GOVERN 1.3 (effort set by risk tolerance); MAP 1.5 (risk tolerances determined and documented)'],
+        ['B3 Red lines', lines ? n(lines, 'red line', 'red lines') : none, 'The uses the board will not accept, each tested against the inventory', '5.2 AI policy; A.2.2 AI policy; A.9.2 Processes for responsible use of AI systems', 'GOVERN 1.4 (risk management set out in policies and controls)'],
+        ['B4 Reserved decisions', reserved ? n(reserved, 'reserved event', 'reserved events') : none, 'What comes to the board before it happens, and what the board is told after', '5.3 Roles, responsibilities and authorities; A.3.2 AI roles and responsibilities', 'GOVERN 2.1 (roles and lines of communication); GOVERN 2.3 (leadership takes responsibility for decisions about AI risk)'],
+        ['B5 Information and tools', marked ? `${n(marked, 'combination', 'combinations')} of information class and tool kind marked` : none, 'Which information may go into which kind of tool', 'A.9.2 Processes for responsible use of AI systems; A.9.4 Intended use of the AI system', 'GOVERN 1.4; GOVERN 6.1 (policies for risks from third parties)'],
+        ['B6 Harm thresholds', harms ? `${n(harms, 'threshold', 'thresholds')}; a material AI incident is one that reaches any of them` : none, 'What the board will not tolerate, in the company’s own terms', '6.1.2 AI risk assessment (the criteria risk is judged against)', 'GOVERN 1.3; MAP 1.5'],
+        ['B7 Reporting', ms || evs ? `${n(ms, 'measure', 'measures')} at each meeting; ${n(evs, 'event', 'events')} reported between meetings` : none, 'What management reports to the board, and how fast', '9.1 Monitoring, measurement, analysis and evaluation; 9.3 Management review', 'GOVERN 1.5 (monitoring and periodic review planned); GOVERN 4.3 (incidents identified and shared)'],
+        ['B8 Accountability', owners ? `${n(owners, 'accountability', 'accountabilities')} named` : none, 'A named person for each accountability', '5.3 Roles, responsibilities and authorities; A.3.2 AI roles and responsibilities', 'GOVERN 2.1; GOVERN 2.3'],
+        ['B9 Resolution and review', resolved ? `Resolved ${dl(r.on)}${r.minuteRef ? ', ' + r.minuteRef : ''}${r.interval ? '; review: ' + r.interval : ''}` : 'Not yet resolved', 'The board’s decision on the record, and when it is looked at again', '5.1 Leadership and commitment; A.2.4 Review of the AI policy', 'GOVERN 1.5; GOVERN 2.3'],
+      ];
+      out.push(tableMd(['Step', 'What the board recorded', 'What it supplies', 'ISO/IEC 42001:2023', 'NIST AI RMF 1.0'], rows), '');
+      out.push('## How to read this', '',
+        '- Each row says what is recorded in this engagement and names the clause, control or subcategory it bears on. The board’s direction is one input to each; the rest of what a clause asks for sits with management’s own processes.',
+        '- A row marked not yet recorded has nothing to place beside the framework yet.',
+        '- The ISO/IEC 42001 entries give the clause or Annex A control by number and title. The NIST AI RMF entries give the subcategory with a short paraphrase, not the framework’s own words.',
+        '- This is not a statement of conformity with either framework, and it is not legal advice. Whether an obligation calls for any of these positions is a question for counsel.', '');
+      return out.join('\n');
+    }
+
+    return { statement, directions, aupOutline, minute, actionList, plan, crosswalk, confidentiality, reality, status };
   }
 
   /* The list of outputs shown on screen. kind: 'docx' or 'json'. mode: 'standalone', 'connected' or 'both'. */
@@ -229,6 +263,7 @@
     { id: 'actionList', ref: 'BO4', name: '90-day action list', for: 'The CEO', mode: 'both', kind: 'docx' },
     { id: 'worklist', ref: 'BO5', name: 'Automated-decision worklist', for: 'The GC', mode: 'both', kind: 'docx' },
     { id: 'plan', ref: '', name: 'Engagement plan', for: 'Everyone in the engagement', mode: 'both', kind: 'docx' },
+    { id: 'crosswalk', ref: 'BO8', name: 'Framework crosswalk', for: 'The technology owner and the AI governance team', mode: 'both', kind: 'docx' },
     { id: 'education', ref: '', name: 'Director education record', for: 'The chair and the company secretary', mode: 'both', kind: 'docx' },
     { id: 'confidentiality', ref: '', name: 'Confidentiality position file', for: 'A later confidential-matter assessment', mode: 'standalone', kind: 'json' },
     { id: 'evidence', ref: 'BO7', name: 'APRA letter evidence index', for: 'The CRO and the board: the response to APRA and the AI management review', mode: 'connected', kind: 'docx' },

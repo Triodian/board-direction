@@ -57,4 +57,19 @@ t('once resolved: no resolution or workshop reminders', !dueReminders(rr, users,
 t('each reminder has a daily key, so it goes once a day', dueReminders(w, users, '2026-11-18', X).every(m => m.key.endsWith(':2026-11-18')));
 const n3 = base(); n3.resolution = { by: 'ch' };
 t('the resolution goes to everyone else with a role', eventsFromSave(base(), n3, users, U('ch'), X).length === 5);
+// Management's part (development plan phase 7)
+{ const us = users.concat([{ id: 'to', email: 'to@x', roles: ['technologyOwner'], active: true }, { id: 'ag', email: 'ag@x', roles: ['aiGovernance'], active: true }, { id: 'av', email: 'av@x', roles: ['advisor'], active: true }]);
+  const A = id => us.find(u => u.id === id), sub = (m, re) => m.filter(x => re.test(x.subject));
+  const h = base(); h.managementBriefing = { heldOn: '2026-11-06', confirmed: { to: '2026-11-06' } };
+  t('the management briefing recorded as held tells those who have still to read it', to(sub(eventsFromSave(base(), h, us, A('av'), X), /management briefing/)) === 'ag');
+  const ag = base(); ag.scopeAgreed = { gcBy: 'gc', gcOn: 'x', chairBy: 'ch', chairOn: 'x' };
+  const pre = base(); pre.scopeAgreed = { gcBy: 'gc', gcOn: 'x' };
+  t('once the scope is agreed, the inventory is told to the two roles as well as the CEO', to(sub(eventsFromSave(pre, ag, us, A('ch'), X), /inventory is waiting/)) === 'ag,ce,to');
+  const l1 = base(); l1.inventory = [{ id: 'L1', use: 'Chat', suppliedBy: 'ag' }];
+  const m1 = eventsFromSave(base(), l1, us, A('ag'), X);
+  t('a new line tells the technology owner there is something to confirm, with a count and no detail', to(sub(m1, /To confirm/)) === 'to' && /1 inventory line or draft measure is waiting/.test(sub(m1, /To confirm/)[0].text) && !/Chat/.test(JSON.stringify(m1.map(x => x.text))));
+  const l2 = JSON.parse(JSON.stringify(l1)); l2.inventory[0].confirmedBy = 'to';
+  t('confirming it tells no one', sub(eventsFromSave(l1, l2, us, A('to'), X), /To confirm/).length === 0);
+  t('a company with neither role gets none of these', sub(eventsFromSave(base(), h, users, U('rc'), X), /management briefing|To confirm/).length === 0 && to(sub(eventsFromSave(pre, ag, users, U('ch'), X), /inventory is waiting/)) === 'ce'); }
+
 console.log(fails ? fails + ' FAILED' : 'all passed'); process.exit(fails ? 1 : 0);

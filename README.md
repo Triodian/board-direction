@@ -47,7 +47,7 @@ Triodian recording. It runs as a Cloudflare Worker: the files in `public/` are s
 - `public/` – the app
   - `/` – the engagement (`index.html`, `bd.js`, `bd-content.js`, `app.css`) and the worked example (`bd-example.js`: a fictional company, browser only, never saved)
   - `/shared/rules.js` – the roles and per-change permission rules, one copy read by the browser and the server
-  - `/bd-outputs.js` – the outputs (framework section 8): statement, directions paper, policy outline, minute, 90-day list, engagement plan, confidentiality position file; unit tests in `tests/outputs.test.mjs`
+  - `/bd-outputs.js` – the outputs (framework section 8): statement, directions paper, policy outline, minute, 90-day list, engagement plan, framework crosswalk (task 7.6), confidentiality position file; unit tests in `tests/outputs.test.mjs`
   - `/shared/versions.js` – the version snapshot and the comparison with now, shared by the server (`lib/core/versions.js`) and the browser
   - `/shared/checks.js` – the checks BK1 to BK7 (framework 10.1), run in the browser as positions change; unit tests in `tests/checks.test.mjs`
   - `/shared/matter-brief.js` – reads an AI Obligations Atlas matter brief (`triodian.matterBrief/1`) for B0; browser and server

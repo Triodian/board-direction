@@ -1056,7 +1056,7 @@ function downloadOutput(id) {
   if (id === 'education') return downloadDocx(educationMarkdown(), 'Director education record');
   if (id === 'evidence') return downloadDocx(evidenceMarkdown(), meta.name, { wide: true });
   if (id === 'confidentiality') { saveBlob(new Blob([JSON.stringify(O.confidentiality(), null, 2)], { type: 'application/json' }), `Confidentiality position${safe}.json`); toast('Confidentiality position file downloaded'); return; }
-  downloadDocx(O[id](), meta.name, { wide: id === 'statement' || id === 'directions' || id === 'actionList' || id === 'plan' });
+  downloadDocx(O[id](), meta.name, { wide: id === 'statement' || id === 'directions' || id === 'actionList' || id === 'plan' || id === 'crosswalk' });
 }
 /* ---------- the checks BK1 to BK7 (framework 10.1; plan task 1.7) ---------- */
 const runChecks = () => window.BDChecks.runChecks(S, { harm: Object.fromEntries(SC.harm), owners: Object.fromEntries(SC.accountability) });
