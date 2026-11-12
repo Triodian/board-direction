@@ -31,6 +31,9 @@ test('?example=superannuation opens Coastline Super in connected mode, and the c
   await p.goto('/?example=superannuation');
   await expect(p.locator('.examplenote').first()).toContainText('a fictional superannuation trustee, Coastline Super');
   await expect(p).toHaveURL(/\/$/);                                   // the link's parameter is taken off the address
+  await p.goto('/?other=1&example=superannuation');                // only its own parameter is removed, so the suite's stays for the suite to read
+  await expect(p).toHaveURL(/\/\?other=1(#.*)?$/);
+  await expect(p.locator('.examplenote', { hasText: 'Coastline Super' }).first()).toBeVisible({ timeout: 15_000 });
   await expect(p.locator('body')).toContainText('Coastline Super');
   await expect(p.locator('body')).toContainText('Connected mode');
   await expect(p.locator('body')).not.toContainText('Harrow Valley Foods');
