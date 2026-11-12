@@ -303,11 +303,26 @@ function reality() {
   return out;
 }
 /* ---------- B1: the AI inventory (framework section 5.2) and the automated-decision worklist (BO5, section 8.5) ----------
-   The CEO and Triodian add and edit lines. In the worked example anyone can try it; nothing is saved.
+   The AI governance team, the technology owner, the CEO and Triodian add and edit lines; the technology owner confirms each. In the worked example anyone can try it; nothing is saved.
    Marking a line as making decisions about individuals (field 8) raises a question to counsel and puts the line
    on the worklist. Field 8 records the fact only: whether the Privacy Act requirement is engaged is counsel's call. */
 const INV_REQUIRED = [['use', 'use'], ['tool', 'tool'], ['area', 'area'], ['who', 'who uses it'], ['authority', 'authority'], ['info', 'information'], ['kind', 'tool kind'], ['owner', 'owner'], ['source', 'source']];
 const invWhy = () => UI.practice ? '' : deny('inventory');
+/* Management's part (development plan phase 7): the AI governance team enters the lines and drafts the measures, and
+   the technology owner confirms each. Shown once someone holds either role, or a line or measure carries the record. */
+const confirmWhy = () => UI.practice ? '' : deny('confirm');
+const draftWhy = () => UI.practice ? '' : deny('draftMeasure');
+const mgmtWhy = () => UI.practice ? '' : deny('mgmtBriefing');
+const confirmerId = () => UI.practice ? 'p-cio' : ((SRV.user || {}).id || '');
+const iAmManagement = () => !UI.practice && !!SRV.user && (SRV.user.roles || []).some(r => RULES.MANAGEMENT.includes(r));
+const showProv = (list, by) => RULES.managementPeople(S).length > 0 || (list || []).some(x => x[by] || x.confirmedBy);
+const unconfirm = x => { if (x && x.confirmedBy && x.confirmedBy !== confirmerId()) { delete x.confirmedBy; delete x.confirmedOn; } };
+function provCell(x, by, act) {
+  const who = x[by] ? `<span class="small soft">${by === 'draftedBy' ? 'Drafted' : 'Supplied'} by ${esc(pname(x[by]))}</span><br>` : '';
+  const c = x.confirmedBy ? `<span class="badge b-green">Confirmed</span> <span class="small soft">${esc(pname(x.confirmedBy))}${x.confirmedOn ? ', ' + esc(dl(x.confirmedOn)) : ''}</span>` : '<span class="badge b-grey">Not confirmed</span>';
+  const btn = !confirmWhy() ? ` <button class="btn sm ghost" data-act="${act}" data-id="${esc(x.id)}" aria-label="${x.confirmedBy ? 'Withdraw the confirmation of' : 'Confirm'} ${esc(x.id)}">${x.confirmedBy ? 'Withdraw' : 'Confirm'}</button>` : '';
+  return who + c + btn;
+}
 const todayISO = () => new Date().toLocaleDateString('en-CA');
 const myId = () => UI.practice ? 'p-rec' : (SRV.user || {}).id || '';
 const myName = () => UI.practice ? 'Lee Chan' : ((SRV.user || {}).name || (SRV.user || {}).email || '');
@@ -348,11 +363,11 @@ function worklist() {
     + '<p class="small soft">Field 8 records the fact only. Whether the requirement is engaged is counsel’s determination.</p></div>';
 }
 function inventoryBody() {
-  const inv = S.inventory || [], why = invWhy(), can = !why;
-  const head = ['Line', 'Use', 'Area', 'Authority', 'Sees', 'Tool kind', { html: tip('About individuals', C.tips.adm) }, 'Owner'];
-  const rows = inv.map(l => { const m = missing(l); return [refTip(l.id) + (m.length ? `<br>${tip('Incomplete', 'Still to record: ' + m.join(', ') + '.', 'badge b-grey')}` : ''), esc(l.use || '') + `<br><span class="small soft">${[l.tool, l.who, l.source].filter(Boolean).map(esc).join(' · ')}</span>`, esc(l.area ? areaName(l.area) : ''), l.authority ? authTip(l.authority) : '', l.info ? classTip(l.info) : '', l.kind ? kindTip(l.kind) : '', l.adm ? '<span class="badge b-ochre">Yes · to counsel</span>' : 'No', esc(pname(l.owner))].concat(can ? [`<button class="btn sm ghost" data-act="editLine" data-id="${l.id}" aria-label="Edit line ${l.id}">${UI.editLine === l.id ? 'Editing' : 'Edit'}</button>`] : []); });
+  const inv = S.inventory || [], why = invWhy(), can = !why, prov = showProv(inv, 'suppliedBy');
+  const head = ['Line', 'Use', 'Area', 'Authority', 'Sees', 'Tool kind', { html: tip('About individuals', C.tips.adm) }, 'Owner'].concat(prov ? [{ html: tip('Supplied and confirmed', 'Who entered the line, and whether the technology owner has confirmed it. A change to a confirmed line by someone else withdraws the confirmation.') }] : []);
+  const rows = inv.map(l => { const m = missing(l); return [refTip(l.id) + (m.length ? `<br>${tip('Incomplete', 'Still to record: ' + m.join(', ') + '.', 'badge b-grey')}` : ''), esc(l.use || '') + `<br><span class="small soft">${[l.tool, l.who, l.source].filter(Boolean).map(esc).join(' · ')}</span>`, esc(l.area ? areaName(l.area) : ''), l.authority ? authTip(l.authority) : '', l.info ? classTip(l.info) : '', l.kind ? kindTip(l.kind) : '', l.adm ? '<span class="badge b-ochre">Yes · to counsel</span>' : 'No', esc(pname(l.owner))].concat(prov ? [provCell(l, 'suppliedBy', 'confirmLine')] : []).concat(can ? [`<button class="btn sm ghost" data-act="editLine" data-id="${l.id}" aria-label="Edit line ${l.id}">${UI.editLine === l.id ? 'Editing' : 'Edit'}</button>`] : []); });
   const editing = can && inv.find(l => l.id === UI.editLine);
-  const intro = !inv.length ? `<p class="small" style="margin:4px 0 8px">One line per AI use, 10 to 20 lines, supplied by the CEO or the people they nominate. Start with:</p><ul class="small" style="margin:0 0 8px 18px"><li>Which AI tools have we licensed, and which do staff use without a licence?</li><li>Which of our providers use AI in the work they do for us?</li></ul>${!UI.practice && !RULES.modeLocked(S) ? `<p class="small soft">The mode (${esc(lbl(C.modes.map(m => [m.id, m.name]), S.engagement.mode))}) is fixed once the first line is added.</p>` : ''}` : '';
+  const intro = !inv.length ? `<p class="small" style="margin:4px 0 8px">One line per AI use, 10 to 20 lines, supplied by management: the AI governance team or the CEO enters the lines, and the technology owner confirms each. Start with:</p><ul class="small" style="margin:0 0 8px 18px"><li>Which AI tools have we licensed, and which do staff use without a licence?</li><li>Which of our providers use AI in the work they do for us?</li></ul>${!UI.practice && !RULES.modeLocked(S) ? `<p class="small soft">The mode (${esc(lbl(C.modes.map(m => [m.id, m.name]), S.engagement.mode))}) is fixed once the first line is added.</p>` : ''}` : '';
   const n = inv.length, count = n ? `<p class="small soft" style="margin:4px 0">${n} line${n === 1 ? '' : 's'}${n < 10 ? ' · the framework expects 10 to 20' : n > 20 ? ' · more than the 20 the framework expects; consider grouping similar uses' : ''}</p>` : '';
   return intro + count + table(can ? head.concat(['']) : head, rows) + (editing ? invForm(editing) : '')
     + (can ? `<div class="row" style="gap:8px;margin:8px 0"><button class="btn sm" data-act="addLine">Add a line</button><button class="btn sm ghost" data-act="importInventory">Import the provider register (CSV)</button>${inv.length ? '<button class="btn sm ghost" data-act="inventoryCsv">Download as CSV</button><button class="btn sm ghost" data-act="inventoryImportCsv">Download in the import format</button>' : ''}${UI.practice ? '<span class="small soft">Worked example: try it. Nothing is saved.</span>' : ''}</div>` + importReportHtml() : (inv.length ? '<div class="row" style="margin:8px 0"><button class="btn sm ghost" data-act="inventoryCsv">Download as CSV</button></div>' : (!why ? '' : `<p class="small soft">${esc(why)}</p>`)))
@@ -371,7 +386,7 @@ function setInv(id, k, v) {
   const why = invWhy(); if (why) { toast(why); render(); return; }
   const l = (S.inventory || []).find(x => x.id === id); if (!l) return;
   const from = l[k]; if (from === v) return;
-  l[k] = v; log('edit', `inventory.${id}.${k}`, from == null ? null : from, v);
+  l[k] = v; unconfirm(l); log('edit', `inventory.${id}.${k}`, from == null ? null : from, v);
   if (k === 'adm') {
     if (v) { const ref = raiseADM(l); toast(ref ? `${ref} raised to counsel on line ${id}. The line is on the worklist.` : `Line ${id} is back on the worklist. Its question to counsel is already raised.`); }
     else { const q = lineQuestion(l); toast(`Line ${id} is off the worklist.` + (q && q.status !== 'answered' ? ` ${q.ref} stays open for counsel to close.` : '')); }
@@ -451,6 +466,11 @@ function actionsPanel() {
       <div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="answerQ" data-ref="${esc(q.ref)}">Record the answer</button></div></div>`);
   });
   if (RULES.takesBriefing(u.roles) && !RULES.isResolved(S) && !((S.education || {})[u.id] || {}).completedOn) items.push(`<div class="panel2" style="padding:12px 14px"><strong>Director briefing (B0) to complete</strong><p class="small" style="margin:6px 0 0">About fifteen minutes, before the workshop${(S.engagement.boardDates || {}).workshop ? ' on ' + esc(dl(S.engagement.boardDates.workshop)) : ''}. Only you and the facilitators see your answers.</p><div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="goB0">Open the briefing</button></div></div>`);
+  if ((u.roles || []).some(r => RULES.MANAGEMENT.includes(r)) && !RULES.isResolved(S) && RULES.managementBriefingState(S).held && !((S.managementBriefing || {}).confirmed || {})[u.id]) items.push('<div class="panel2" style="padding:12px 14px"><strong>Management briefing (B0) to read</strong><p class="small" style="margin:6px 0 0">What the board will decide, what it will not, and how your inventory is used.</p><div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="goMgmt">Open the briefing</button></div></div>');
+  if (!RULES.deny('confirm', u, S) && !RULES.isResolved(S)) {
+    const nl = (S.inventory || []).filter(l => !l.confirmedBy).length, nm = (((S.positions || {}).B7 || {}).measures || []).filter(m => !m.confirmedBy).length;
+    if (nl || nm) items.push(`<div class="panel2" style="padding:12px 14px"><strong>To confirm: ${[nl ? `${nl} inventory line${nl === 1 ? '' : 's'} (B1)` : '', nm ? `${nm} draft measure${nm === 1 ? '' : 's'} (B7)` : ''].filter(Boolean).join(' and ')}</strong><p class="small" style="margin:6px 0 0">Open the step and confirm each one.</p></div>`);
+  }
   if (!RULES.deny('inventory', u, S)) {
     const inc = (S.inventory || []).filter(l => missing(l).length);
     if (inc.length) items.push(`<div class="panel2" style="padding:12px 14px"><strong>AI inventory (B1): ${inc.length} line${inc.length === 1 ? '' : 's'} to complete</strong><p class="small" style="margin:6px 0 0">${inc.map(l => `${esc(l.id)}: ${esc(missing(l).join(', '))}`).join('<br>')}</p><div class="row" style="margin-top:8px"><button class="btn sm" data-act="goB1">Open the inventory</button></div></div>`);
@@ -482,11 +502,12 @@ function walk(step, path, create) {
   }
   return { o, last };
 }
+const isMeasurePath = (step, path) => step === 'B7' && String(path || '').startsWith('measures.');
 function setPos(step, path, v) {
-  const why = posWhy(); if (why) { toast(why); render(); return; }
+  const why = posWhy(); if (why && !(isMeasurePath(step, path) && !draftWhy())) { toast(why); render(); return; }
   const w = walk(step, path, true); if (!w) return;
   const from = w.o[w.last]; if ((from == null ? '' : from) === v) return;
-  w.o[w.last] = v; log('edit', `positions.${step}.${path}`, from == null ? null : from, v);
+  w.o[w.last] = v; if (isMeasurePath(step, path)) unconfirm(w.o); log('edit', `positions.${step}.${path}`, from == null ? null : from, v);
   rerender();
 }
 const proposerOpts = () => (S.people || []).filter(p => p.active !== false && !RULES.proposerError(p.roles, S)).map(p => [p.id, p.name]);
@@ -595,22 +616,26 @@ function posEditor(id) {
         pf('Proposed by', id, k + '.proposedBy', v.proposedBy, { select: proposerOpts(), blank: 'Choose…', label: 'Proposed by' }), pf('Dissent', id, k + '.dissent', v.dissent, { ph: 'If any', label: 'Dissent' })] }); }).map(b => b.replace('<div class="pblock">', '<div class="pblock pblock-area">')));
     h += '<datalist id="dl_source"><option value="New"><option value="Risk appetite statement"><option value="Delegations of authority"><option value="Incident thresholds"><option value="Complaints policy"></datalist><p class="small soft">A material AI incident is an AI failure that reaches any threshold above. RV5 (B4) and EV1 (B7) use this definition.</p>';
   } else if (id === 'B7') {
-    const ms = P.measures || [], ev = P.events || [], goals = (pos('B2').goals || []);
+    const ms = P.measures || [], ev = P.events || [], goals = (pos('B2').goals || []), draftOnly = !!posWhy(), mprov = showProv(ms, 'draftedBy');
+    if (draftOnly) h += '<p class="small" style="margin:0 0 6px">You draft the measures the board will receive. A director or the CEO proposes them, and the board, the CEO or Triodian records the events and who proposed the reporting.</p>';
     h += sub('At each meeting · three to five measures, each countable from the inventory or the action list');
     h += blocks(ms.map(x => blk({ ref: refTip(x.id) + (x.goal ? `<div class="small soft" style="margin-top:2px">for ${esc(x.goal)}</div>` : ''), del: delBtn(id, 'measures', x.id),
-      main: [pf('Measure', id, `measures.${x.id}.measure`, x.measure, { rows: 1, label: 'Measure ' + x.id })],
+      main: [pf('Measure', id, `measures.${x.id}.measure`, x.measure, { rows: 1, label: 'Measure ' + x.id })].concat(mprov ? [`<div class="small" style="margin-top:2px">${provCell(x, 'draftedBy', 'confirmMeasure').replace('<br>', ' · ')}</div>`] : []),
       fields: [pf('Limit', id, `measures.${x.id}.limit`, x.limit, { ph: 'e.g. 0', label: 'Limit for ' + x.id }), pf('Owner', id, `measures.${x.id}.owner`, x.owner, { ph: 'Named person', label: 'Owner of ' + x.id })] })));
     if (ms.length > 5) h += '<p class="small" style="margin:4px 0">More than the five measures the framework suggests. Consider which the board will read.</p>';
     const linked = g => ms.some(m => m.goal === g.id) || ms.some(m => g.measure && new RegExp('^' + m.id + '\\b').test(g.measure));
     const open = goals.filter(g => g.measure && !linked(g));
     if (open.length) h += `<div class="panel2" style="padding:10px 14px;margin:6px 0"><p class="small" style="margin:0 0 6px"><strong>From the governance goals (B2).</strong> Each goal’s measure is reported here.</p>${open.map(g => `<div class="row between" style="gap:8px;margin:4px 0"><span class="small">${refTip(g.id)} ${esc(g.measure)}</span><button class="btn sm ghost" data-act="goalMeasure" data-id="${esc(g.id)}">Add as a measure</button></div>`).join('')}</div>`;
     h += sub('Between meetings');
+    if (draftOnly) h += (ev.length ? table(['Ref', 'Event', 'Reported to', 'Within'], ev.map(x => [refTip(x.id), esc(x.event), esc(x.to), esc(x.within)])) : '<p class="small soft">No events recorded yet.</p>') + '<div class="row" style="gap:8px;margin:6px 0"><button class="btn sm" data-act="addMeasure">Add a measure</button></div>' + (P.proposedBy ? `<p class="small soft">Proposed by ${esc(pname(P.proposedBy))}</p>` : '');
+    else {
     h += blocks(ev.map(x => blk({ ref: refTip(x.id), del: delBtn(id, 'events', x.id),
       main: [pf('Event', id, `events.${x.id}.event`, x.event, { rows: 1, label: 'Event ' + x.id })],
       fields: [pf('Reported to', id, `events.${x.id}.to`, x.to, { list: 'dl_to', label: x.id + ' reported to' }), pf('Within', id, `events.${x.id}.within`, x.within, { ph: 'e.g. 24 hours', label: x.id + ' within' })] })));
     h += '<datalist id="dl_to"><option value="Chair"><option value="Chair and GC"><option value="Accountable executive"><option value="Full board"></datalist>';
     h += `<div class="row" style="gap:8px;margin:6px 0">${ms.length || ev.length ? '' : '<button class="btn sm primary" data-act="loadStart" data-step="B7">Start from BM1 to BM5 and EV1 to EV4</button>'}<button class="btn sm" data-act="addMeasure">Add a measure</button><button class="btn sm" data-act="addEvent">Add an event</button></div>`;
     h += `<div class="fgrid" style="margin-top:8px"><label class="f"><span>Proposed by</span>${propSel(id, 'proposedBy', P.proposedBy)}</label><label class="f"><span>Dissent</span>${dissentIn(id, 'dissent', P.dissent)}</label></div>`;
+    }
   } else if (id === 'B8') {
     const o = P.owners || {}, ph = { AC1: 'e.g. Audit and risk committee, or the full board', AC2: 'Named director, or none', AC3: 'Named executive', AC4: 'One per area, or “each executive for their area”', AC5: 'Who, and within what limit' };
     h += table(['Ref', 'Accountability', 'Named'], SC.accountability.map(a => [`<span class="mono">${a[0]}</span>`, esc(a[1]), pIn(id, `owners.${a[0]}`, o[a[0]], { ph: ph[a[0]], label: a[1] })]));
@@ -685,6 +710,41 @@ function checksBody(mine, editable) {
       + (a ? `<p class="small" style="margin:6px 0 0">${a === q.answer ? '<span class="badge b-green">That’s it</span>' : '<span class="badge b-ochre">Not quite</span>'} ${esc(q.why)}</p>` : '') + '</fieldset>';
   }).join('');
 }
+/* The management briefing (development plan task 7.3): a staging point before anything reaches directors. The board
+   advisor, the GC and Triodian meet the technology owner and the AI governance team; the app records that the meeting
+   was held and who has read the briefing. A company with no separate technology lead records that with the reason. */
+const mgmtText = () => C.managementBriefing.sections.map(s => `<h3 class="sh" style="font-size:15px;margin:14px 0 6px">${esc(s.h)}</h3>${(s.p || []).map(p => `<p style="margin:0 0 8px">${esc(p)}</p>`).join('')}`).join('');
+function mgmtBriefingPanel() {
+  const B = C.managementBriefing, m = S.managementBriefing || {}, st = RULES.managementBriefingState(S), c = m.confirmed || {}, can = !mgmtWhy() && !(RULES.isResolved(S) && !UI.practice);
+  const recBy = m.recordedBy ? ` · recorded by ${esc(pname(m.recordedBy))}` : '';
+  let h = sub(tip('Management briefing', B.tip) + ' · before anything reaches directors') + `<p class="small" style="margin:0 0 6px">${esc(B.intro)}</p>`;
+  h += st.held ? `<p class="small" id="mgmt_status" style="margin:0 0 6px"><span class="badge b-green">Held ${esc(dl(m.heldOn))}</span> ${esc(m.attended || '')}<span class="soft">${recBy}</span></p>`
+    : st.notNeeded ? `<p class="small" id="mgmt_status" style="margin:0 0 6px"><span class="badge b-grey">Not needed</span> ${esc(m.notNeeded)}<span class="soft">${recBy}</span></p>`
+    : `<p class="small" id="mgmt_status" style="margin:0 0 6px"><span class="badge b-ochre">Not yet held</span> ${esc(B.notYet)}</p>`;
+  h += st.people.length ? table(['Who', 'Role', 'Read confirmed'], st.people.map(p => [esc(p.name), esc(p.roles.filter(r => RULES.MANAGEMENT.includes(r)).map(roleName).join(', ')), c[p.id] ? '<span class="badge b-green">' + esc(dl(c[p.id])) + '</span>' : '<span class="badge b-grey">Not yet</span>']))
+    : `<p class="small soft" style="margin:0 0 6px">${esc(B.noRoles)}</p>`;
+  const mine = iAmManagement() && !!c[SRV.user.id];
+  h += `<details class="panel2" id="mgmtbrief" style="padding:12px 16px;margin:8px 0" ${UI.mgmtOpen || (iAmManagement() && !mine && UI.mgmtOpen !== false) ? 'open' : ''}><summary style="cursor:pointer"><strong>Read the management briefing</strong></summary><div style="margin-top:8px">${mgmtText()}<p class="small soft" style="margin:8px 0 0">${esc(B.status)}</p>`
+    + (iAmManagement() ? `<label style="display:flex;gap:10px;align-items:flex-start;margin:10px 0 0;cursor:pointer"><input type="checkbox" id="mgmt_read" data-mgmt-read="1" ${mine ? 'checked' : ''} ${RULES.isResolved(S) ? 'disabled' : ''} style="margin-top:4px;width:16px;height:16px;flex:0 0 auto"><span><strong>I have read the briefing.</strong> <span class="small soft">Your read date is recorded, and the chair sees it before the director briefing goes out.</span></span></label>` : '')
+    + '</div></details>';
+  if (can) h += `<div class="fgrid" style="margin:8px 0"><label class="f" for="mgmt_heldOn"><span>Held on</span><input class="in" type="date" id="mgmt_heldOn" data-mgmt="heldOn" value="${esc(m.heldOn || '')}"></label><label class="f" for="mgmt_attended"><span>Who met</span><input class="in" id="mgmt_attended" data-mgmt="attended" value="${esc(m.attended || '')}" placeholder="For example: the board advisor, the GC and Triodian with the CIO"></label><label class="f" for="mgmt_notNeeded"><span>Or, not needed because</span><input class="in" id="mgmt_notNeeded" data-mgmt="notNeeded" value="${esc(m.notNeeded || '')}" placeholder="For example: no separate technology lead; the CEO holds it" ${m.heldOn ? 'disabled' : ''}></label></div>`;
+  h += '<div class="row" style="gap:8px;margin:8px 0"><button class="btn sm" data-act="mgmtBriefingDocx">Download the management briefing (Word)</button></div>';
+  return h;
+}
+function mgmtBriefingMarkdown() {
+  const e = S.engagement, B = C.managementBriefing, out = [];
+  if (String(e.privilegeMarking || '').trim()) out.push(e.privilegeMarking.trim(), '');
+  out.push('# Management briefing', '', `**${e.company || '[company]'}**${e.reference ? ' · ' + e.reference : ''} · ${dl(todayISO())}`, '', B.intro, '', B.status, '');
+  B.sections.forEach(s => { out.push(`## ${s.h}`, ''); (s.p || []).forEach(p => out.push(p, '')); });
+  return out.join('\n');
+}
+/* One line on the management briefing, for the director briefing panel and the education record. */
+function mgmtLine() {
+  const m = S.managementBriefing || {}, st = RULES.managementBriefingState(S);
+  if (st.held) return `Management briefing held ${dl(m.heldOn)}.` + (st.people.length ? (st.unconfirmed.length ? ` Not yet confirmed as read: ${st.unconfirmed.map(p => p.name).join(', ')}.` : ' Everyone with a management role has confirmed it as read.') : '');
+  if (st.notNeeded) return `Management briefing not needed: ${m.notNeeded}`;
+  return 'The management briefing has not been recorded. Brief the CIO or AI lead before this goes to directors, or record why it is not needed.';
+}
 function briefingPanel() {
   const edu = S.education || {}, ppl = boardPeople(), mine = myBriefing(), takes = iTakeBriefing(), resolved = RULES.isResolved(S) && !UI.practice;
   const rows = ppl.map(p => { const x = edu[p.id] || {}; return [esc(p.name) + (UI.practice && p.id === PRACTICE_DIRECTOR ? ' <span class="small soft">(you, in the worked example)</span>' : ''), esc(p.roles.filter(r => RULES.BOARD.includes(r)).map(roleName).join(', ')), x.readOn ? esc(dl(x.readOn)) : '<span class="soft">Not yet</span>', x.completedOn ? '<span class="badge b-green">' + esc(dl(x.completedOn)) + '</span>' : '<span class="badge b-grey">Not yet</span>']; });
@@ -704,6 +764,7 @@ function briefingPanel() {
     h += `<details style="margin:8px 0"><summary class="small" style="cursor:pointer">Directors’ answers · seen only by each director and the facilitators</summary>`
       + (show.length ? table(['Director', ...qs.map((q, i) => 'Q' + (i + 1))], show.map(x => [esc(pname(x.personId)), ...qs.map(q => { const a = (x.answers || {})[q.id]; return !a ? '<span class="soft">—</span>' : a === q.answer ? `<span class="badge b-green">${esc(a)}</span>` : `<span class="badge b-ochre">${esc(a)}</span>`; })])) + '<p class="small soft">Green: the expected answer. Use these to see what the board may want explained at the workshop, not to grade anyone.</p>' : '<p class="small soft">No answers yet.</p>') + '</details>';
   }
+  h += `<p class="small" id="mgmt_note" style="margin:8px 0 0${RULES.managementBriefingState(S).done ? '' : ';color:var(--ochre, #8A4B08)'}">${esc(mgmtLine())}</p>`;
   h += `<div class="row" style="gap:8px;margin:8px 0"><button class="btn sm" data-act="briefingDocx">Download the director briefing (Word)</button><button class="btn sm ghost" data-act="educationDocx">Download the education record (Word)</button></div>`;
   return h;
 }
@@ -719,6 +780,8 @@ function b0Body() {
   const e = S.engagement, mb = e.matterBrief, bw = briefWhy();
   let h = `<dl class="kv"><dt>Company</dt><dd>${esc(e.company || '—')} · ${esc(lbl(C.entityTypes, e.entityType) || '—')} · ${esc(lbl(C.jurisdictions, e.jurisdiction))}</dd><dt>Mode</dt><dd>${esc(lbl(C.modes.map(m => [m.id, m.name]), e.mode))}</dd><dt>Sector pack</dt><dd>${esc((SECTOR().packOf(C, e) || {}).name || '—')}</dd><dt>Privilege marking</dt><dd>${esc(e.privilegeMarking || 'Not set. Counsel directs the marking.')}</dd><dt>Board dates</dt><dd>Workshop ${esc(dl((e.boardDates || {}).workshop) || 'not set')} · resolution ${esc(dl((e.boardDates || {}).resolution) || 'not set')}</dd>${e.gcActsAsCounsel ? `<dt>Counsel</dt><dd>The GC also acts as counsel. Every output records that the GC held both roles.</dd>` : ''}</dl>
     <p class="small soft" style="margin:4px 0 0">Change these in set-up above.</p>`;
+  // the management briefing comes first (plan task 7.3)
+  h += mgmtBriefingPanel();
   // the matter brief
   h += sub('Obligations in scope · from the AI Obligations Atlas matter brief');
   if (mb) {
@@ -789,7 +852,7 @@ function educationMarkdown() {
     '| Director | Role | Read confirmed | Completed |', '| --- | --- | --- | --- |');
   boardPeople().forEach(p => { const x = edu[p.id] || {}; out.push(`| ${cell(p.name)} | ${cell(p.roles.filter(r => RULES.BOARD.includes(r)).map(roleName).join(', '))} | ${x.readOn ? dl(x.readOn) : 'Not yet'} | ${x.completedOn ? dl(x.completedOn) : 'Not yet'} |`); });
   const not = notBriefed();
-  out.push('', not.length ? `Not yet completed: ${not.map(p => p.name).join(', ')}. The chair decides whether to proceed.` : 'Every director has completed the briefing.');
+  out.push('', not.length ? `Not yet completed: ${not.map(p => p.name).join(', ')}. The chair decides whether to proceed.` : 'Every director has completed the briefing.', '', mgmtLine());
   return out.join('\n');
 }
 const notBriefed = () => boardPeople().filter(p => !((S.education || {})[p.id] || {}).completedOn);
@@ -878,7 +941,7 @@ function stepBody(id) {
     h = b0Body();
   } else if (id === 'B1') {
     h = inventoryBody();
-  } else if (RULES.POSITION_STEPS.includes(id) && !posWhy()) {
+  } else if (RULES.POSITION_STEPS.includes(id) && (!posWhy() || (id === 'B7' && !draftWhy()))) {
     h = posEditor(id);
   } else if (id === 'B2') {
     const b2 = pos('B2'), goals = b2.goals || [];
@@ -896,7 +959,7 @@ function stepBody(id) {
       + (Object.keys(hs).length ? '<p class="small soft">A material AI incident is an AI failure that reaches any threshold above.</p>' : '');
   } else if (id === 'B7') {
     const b7 = pos('B7');
-    h = ((b7.measures || []).length ? '<p class="mini" style="margin:8px 0 4px">At each meeting</p>' + table(['Ref', 'Measure', 'Limit', 'Owner'], b7.measures.map(x => [refTip(x.id), esc(x.measure), esc(x.limit), esc(x.owner)])) : '')
+    h = ((b7.measures || []).length ? '<p class="mini" style="margin:8px 0 4px">At each meeting</p>' + table(['Ref', 'Measure', 'Limit', 'Owner'].concat(showProv(b7.measures, 'draftedBy') ? ['Drafted and confirmed'] : []), b7.measures.map(x => [refTip(x.id), esc(x.measure), esc(x.limit), esc(x.owner)].concat(showProv(b7.measures, 'draftedBy') ? [provCell(x, 'draftedBy', 'confirmMeasure')] : []))) : '')
       + ((b7.events || []).length ? '<p class="mini" style="margin:12px 0 4px">Between meetings</p>' + table(['Ref', 'Event', 'Reported to', 'Within'], b7.events.map(x => [refTip(x.id), esc(x.event), esc(x.to), esc(x.within)])) : '');
   } else if (id === 'B8') {
     const o = pos('B8').owners || {};
@@ -1025,6 +1088,17 @@ document.addEventListener('change', ev => {
   if (t.dataset.evby) { UI.evBy = t.value; render(); return; }
   if (t.dataset.brief) { const m = myBriefing(); saveBriefing({ ...m.answers, [t.dataset.brief]: t.value }, m.read); return; }
   if (t.dataset.briefRead) { const m = myBriefing(); saveBriefing(m.answers, t.checked); return; }
+  if (t.dataset.mgmt) {
+    const why = mgmtWhy(); if (why) { toast(why); render(); return; }
+    const M = (S.managementBriefing = S.managementBriefing || {}), k = t.dataset.mgmt, from = M[k] || '', v = t.value.trim(); if (from === v) return;
+    M[k] = v; if (k === 'heldOn' && v) M.notNeeded = ''; M.recordedBy = myId(); log('edit', 'managementBriefing.' + k, from || null, v); render(); return;
+  }
+  if (t.dataset.mgmtRead) {
+    if (!iAmManagement()) return;
+    const M = (S.managementBriefing = S.managementBriefing || {}), c = (M.confirmed = M.confirmed || {}), id = SRV.user.id;
+    if (t.checked) c[id] = todayISO(); else delete c[id];
+    log(t.checked ? 'confirm' : 'withdraw', 'managementBriefing.confirmed', null, t.checked ? id : null); render(); toast(t.checked ? 'Your read confirmation is recorded.' : 'Your read confirmation is withdrawn.'); return;
+  }
   if (t.dataset.path) setPath(t.dataset.path, t.type === 'checkbox' ? t.checked : t.value);
   else if (t.dataset.pos) setPos(t.dataset.pos, t.dataset.ppath, t.tagName === 'SELECT' ? t.value : t.value.trim());
   else if (t.dataset.cond != null) { const why = posWhy(); if (why) { toast(why); return; } const P = posObj('B5'), i = +t.dataset.cond; P.conditions = P.conditions || []; const from = P.conditions[i], v = t.value.trim(); if (from === v) return; P.conditions[i] = v; log('edit', 'positions.B5.conditions.' + i, from == null ? null : from, v); rerender(); }
@@ -1035,7 +1109,7 @@ document.addEventListener('change', ev => {
   else if (t.dataset.inv) setInv(t.dataset.inv, t.dataset.k, t.type === 'checkbox' ? t.checked : (t.tagName === 'SELECT' ? t.value : t.value.trim()));
   else if (t.dataset.area != null) { if (deny('setup')) return; const a = S.areas[+t.dataset.area], v = t.value.trim(); if (!a || a.name === v) return; const from = a.name; a.name = v; log('edit', 'areas.' + a.id, from, v); }
 });
-document.addEventListener('toggle', ev => { const d = ev.target; if (d && d.dataset && d.dataset.check) { UI.checkOpen = UI.checkOpen || {}; UI.checkOpen[d.dataset.check] = d.open; } if (d && d.id === 'briefing') UI.briefOpen = d.open; if (d && d.id && d.id.startsWith('step-')) { UI.open = UI.open || {}; UI.open[d.id.slice(5)] = d.open; } }, true);
+document.addEventListener('toggle', ev => { const d = ev.target; if (d && d.dataset && d.dataset.check) { UI.checkOpen = UI.checkOpen || {}; UI.checkOpen[d.dataset.check] = d.open; } if (d && d.id === 'briefing') UI.briefOpen = d.open; if (d && d.id === 'mgmtbrief') UI.mgmtOpen = d.open; if (d && d.id && d.id.startsWith('step-')) { UI.open = UI.open || {}; UI.open[d.id.slice(5)] = d.open; } }, true);
 /* The tip box: one element, placed under the item (or above it near the bottom of the window). */
 let tipFor = null;
 function showTip(el) {
@@ -1071,7 +1145,7 @@ document.addEventListener('click', async ev => {
     const why = invWhy(); if (why) { toast(why); return; }
     S.inventory = S.inventory || [];
     const first = !S.inventory.length, n = S.inventory.reduce((m, l) => Math.max(m, +String(l.id).replace(/\D/g, '') || 0), 0) + 1;
-    const l = { id: 'L' + n, use: '', tool: '', area: '', who: '', authority: '', info: '', kind: '', adm: false, owner: '', source: `${myName()}, ${dl(todayISO())}`, decisions: '', personalInfo: '' };
+    const l = { id: 'L' + n, use: '', tool: '', area: '', who: '', authority: '', info: '', kind: '', adm: false, owner: '', source: `${myName()}, ${dl(todayISO())}`, decisions: '', personalInfo: '', suppliedBy: myId() };
     S.inventory.push(l); log('add', 'inventory.' + l.id, null, 'added');
     UI.editLine = l.id; UI.confirmDel = ''; UI.open = UI.open || {}; UI.open.B1 = true; render();
     const el = document.getElementById(`inv_${l.id}_use`); if (el) el.focus();
@@ -1162,10 +1236,19 @@ document.addEventListener('click', async ev => {
   }
   if (act === 'briefingDocx') downloadDocx(briefingMarkdown(), 'Director briefing');
   if (act === 'educationDocx') downloadDocx(educationMarkdown(), 'Director education record');
+  if (act === 'goMgmt') { UI.open = UI.open || {}; UI.open.B0 = true; UI.mgmtOpen = true; render(); const d = document.getElementById('mgmtbrief'); if (d) d.scrollIntoView({ block: 'start' }); }
   if (act === 'goB0') { UI.open = UI.open || {}; UI.open.B0 = true; UI.briefOpen = true; render(); const d = document.getElementById('briefing') || document.getElementById('step-B0'); if (d) d.scrollIntoView({ block: 'start' }); }
   // B2 to B8
   const posAct = ['addGoal', 'usePosture', 'addRedLine', 'addReserved', 'loadStart', 'addMeasure', 'addEvent', 'goalMeasure', 'delRow', 'addCond', 'delCond'];
-  if (posAct.includes(act) && posWhy()) { toast(posWhy()); return; }
+  const draftAct = act === 'addMeasure' || act === 'goalMeasure' || (act === 'delRow' && b.dataset.step === 'B7' && b.dataset.list === 'measures');
+  if (posAct.includes(act) && posWhy() && !(draftAct && !draftWhy())) { toast(posWhy()); return; }
+  if (act === 'confirmLine' || act === 'confirmMeasure') {
+    const why = confirmWhy(); if (why) { toast(why); return; }
+    const x = act === 'confirmLine' ? (S.inventory || []).find(l => l.id === b.dataset.id) : (((S.positions || {}).B7 || {}).measures || []).find(m => m.id === b.dataset.id); if (!x) return;
+    const on = !x.confirmedBy; if (on) { x.confirmedBy = confirmerId(); x.confirmedOn = todayISO(); } else { delete x.confirmedBy; delete x.confirmedOn; }
+    log(on ? 'confirm' : 'withdraw', (act === 'confirmLine' ? 'inventory.' : 'positions.B7.measures.') + x.id + '.confirmed', null, on ? x.confirmedBy : null); render(); return;
+  }
+  if (act === 'mgmtBriefingDocx') { downloadDocx(mgmtBriefingMarkdown(), 'Management briefing'); return; }
   const focusNew = sel => { render(); const el = document.querySelector(sel); if (el) { el.focus({ preventScroll: true }); el.scrollIntoView({ block: 'center' }); } };
   if (act === 'toggleGoalIdeas') { UI.goalIdeas = !UI.goalIdeas; render(); }
   if (act === 'toggleCand') { UI.cand = !UI.cand; render(); }
@@ -1179,9 +1262,9 @@ document.addEventListener('click', async ev => {
     if (st === 'B7' && !(P.measures || []).length && !(P.events || []).length) { P.measures = C.starting.measures.map(([id, measure, limit]) => ({ id, measure, limit, owner: '' })); P.events = C.starting.events.map(([id, event, to]) => ({ id, event, to, within: '' })); log('add', 'positions.B7', null, 'starting measures BM1 to BM5 and events EV1 to EV4'); }
     render();
   }
-  if (act === 'addMeasure') { const r = addRow('B7', 'measures', 'BM', { measure: '', limit: '', owner: '' }); focusNew(`#p_B7_measures_${r.id}_measure`); }
+  if (act === 'addMeasure') { const r = addRow('B7', 'measures', 'BM', { measure: '', limit: '', owner: '', draftedBy: myId() }); focusNew(`#p_B7_measures_${r.id}_measure`); }
   if (act === 'addEvent') { const r = addRow('B7', 'events', 'EV', { event: '', to: '', within: '' }); focusNew(`#p_B7_events_${r.id}_event`); }
-  if (act === 'goalMeasure') { const g = (pos('B2').goals || []).find(x => x.id === b.dataset.id); if (g) { addRow('B7', 'measures', 'BM', { measure: g.measure, limit: '', owner: g.owner || '', goal: g.id }); render(); } }
+  if (act === 'goalMeasure') { const g = (pos('B2').goals || []).find(x => x.id === b.dataset.id); if (g) { addRow('B7', 'measures', 'BM', { measure: g.measure, limit: '', owner: g.owner || '', goal: g.id, draftedBy: myId() }); render(); } }
   if (act === 'delRow') {
     const { step, list, id } = b.dataset, k = step + '.' + list + '.' + id;
     if (UI.confirmDel !== k) { UI.confirmDel = k; render(); return; }

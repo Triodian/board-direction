@@ -7,7 +7,8 @@
 //                  practitioner branding, board dates, whether the GC also acts as counsel and the second approver
 //   areas          the areas of the business (BP0.3), { id, name }
 //   scopeAgreed    BP0.6: the GC's and the chair's agreement to the scope
-//   inventory      B1, one line per AI use, { id, ... }
+//   inventory      B1, one line per AI use, { id, ..., suppliedBy, confirmedBy, confirmedOn }
+//   managementBriefing  the briefing of management before anything reaches directors (development plan task 7.3)
 //   positions      B2 to B8, keyed by step: each holds the board's recorded positions and who proposed them
 //   questions      questions to counsel, QC-01 onward
 //   resolution     B9: who recorded it, when, the minute reference, the review interval
@@ -23,10 +24,18 @@ export const ROLES = [
   { id: 'ceo', name: 'CEO or accountable executive (company)' },
   { id: 'cro', name: 'CRO (company, connected mode)' },
   { id: 'areaOwner', name: 'Area owner (company)' },
+  { id: 'technologyOwner', name: 'Technology owner (company)' },
+  { id: 'aiGovernance', name: 'AI governance team (company)' },
 ];
 export const ROLE_IDS = ROLES.map(r => r.id);
 export const TRIODIAN = ['methodOwner', 'recorder'];
 export const BOARD = ['chair', 'director'];
+/** Management's seats for AI (development plan phase 7): the technology owner (one person, usually the CIO) and the AI
+ *  governance team (several). They supply the inventory and draft the measures. Neither proposes or records a position.
+ *  Both are optional: an engagement with neither runs as before, with the CEO supplying the inventory. */
+export const MANAGEMENT = ['technologyOwner', 'aiGovernance'];
+/** Roles one active person holds at a time. Admin refuses a second. */
+export const SINGLE_ROLES = ['technologyOwner'];
 /** Who may propose a position at B2 to B8 (framework section 3.3). The CRO only in connected mode. */
 export const PROPOSERS = ['chair', 'director', 'ceo', 'cro'];
 export const STEPS = ['B0', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9'];
@@ -37,7 +46,11 @@ export const PERMISSIONS = [
   { what: 'Set-up: company, mode, areas, branding, board dates', roles: ['methodOwner', 'recorder'] },
   { what: 'GC agreement to the scope (B0)', roles: ['gc'] },
   { what: 'Chair agreement to the scope (B0)', roles: ['chair'] },
-  { what: 'AI inventory (B1)', roles: ['ceo', 'methodOwner', 'recorder'] },
+  { what: 'Record the management briefing as held, or as not needed (B0)', roles: ['advisor', 'gc', 'chair', 'methodOwner', 'recorder'] },
+  { what: 'Confirm the management briefing as read (B0); own name only', roles: ['technologyOwner', 'aiGovernance'] },
+  { what: 'AI inventory (B1): enter and maintain the lines', roles: ['aiGovernance', 'technologyOwner', 'ceo', 'methodOwner', 'recorder'] },
+  { what: 'Confirm an inventory line (B1) or a draft measure (B7)', roles: ['technologyOwner'] },
+  { what: 'Draft the measures the board will receive (B7); a director or the CEO proposes them', roles: ['aiGovernance', 'technologyOwner'] },
   { what: 'Record positions B2 to B8 (proposed by a director, the chair, the CEO or, connected, the CRO)', roles: ['chair', 'director', 'ceo', 'cro', 'methodOwner', 'recorder'] },
   { what: 'Questions to counsel', roles: ['advisor', 'gc', 'methodOwner', 'recorder', 'chair', 'director', 'ceo'] },
   { what: 'Answers from counsel', roles: ['gc'] },
@@ -90,7 +103,13 @@ export function deny(target, user, S) {
     }
     case 'brief': return tri || user.isAdmin ? '' : 'Only Triodian or an administrator loads the matter brief.';
     case 'briefing': return r('chair') || r('director') ? '' : 'The director briefing is for the chair and directors.';
-    case 'inventory': return r('ceo') || tri ? '' : 'Only the CEO or Triodian can change the AI inventory.';
+    case 'inventory': return r('ceo') || tri || MANAGEMENT.some(r) ? '' : 'Only the AI governance team, the technology owner, the CEO or Triodian can change the AI inventory.';
+    case 'confirm': return r('technologyOwner') ? '' : 'Only the technology owner confirms an inventory line or a draft measure.';
+    case 'draftMeasure':
+      if (r('chair') || r('director') || r('ceo') || tri || MANAGEMENT.some(r) || (r('cro') && connected)) return '';
+      return 'The measures are drafted by the AI governance team or the technology owner, and recorded by the board, the CEO or Triodian.';
+    case 'mgmtBriefing': return tri || user.isAdmin || r('advisor') || r('gc') || r('chair') ? '' : 'The board advisor, the GC, the chair or Triodian records the management briefing.';
+    case 'mgmtRead': return MANAGEMENT.some(r) ? '' : 'The management briefing is confirmed by the technology owner and the AI governance team.';
     case 'position':
       if (r('chair') || r('director') || r('ceo') || tri) return '';
       if (r('cro')) return connected ? '' : 'The CRO records positions in connected mode only.';
@@ -102,6 +121,14 @@ export function deny(target, user, S) {
     case 'boardView': return tri || r('chair') || r('ceo') ? '' : 'Only Triodian, the chair or the CEO takes the board view for a meeting.';
   }
   return 'This change is not allowed.';
+}
+
+/** The management briefing (B0): held, or recorded as not needed with the reason, before the director briefing goes out. */
+export const managementPeople = S => ((S && S.people) || []).filter(p => p.active !== false && (p.roles || []).some(x => MANAGEMENT.includes(x)));
+export function managementBriefingState(S) {
+  const m = (S && S.managementBriefing) || {}, ppl = managementPeople(S), c = m.confirmed || {};
+  const held = !!m.heldOn, notNeeded = !held && !!String(m.notNeeded || '').trim();
+  return { held, notNeeded, done: held || notNeeded, people: ppl, unconfirmed: held ? ppl.filter(p => !c[p.id]) : [] };
 }
 
 /** Whether a person may be named as the proposer of a position, given the engagement's mode. */
