@@ -4,7 +4,7 @@
    to a real organisation is coincidence. Positions are illustrations of the method, not recommendations. */
 (function () {
 'use strict';
-window.BDExample = function buildExample() {
+function buildUnregulated() {
   const P = (id, name, organisation, roles) => ({ id, name, organisation, roles, active: true });
   const areas = [
     ['A1', 'Customer service and communications'], ['A2', 'Sales and marketing'], ['A3', 'People and hiring'], ['A4', 'Finance and payments'],
@@ -154,5 +154,10 @@ window.BDExample = function buildExample() {
     { id: 'V2', label: 'Resolved by the board (B9)', at: '2026-12-02T15:40:00Z', by: 'Margaret Lowe', snapshot: snap(S.positions, { on: '2026-12-02', minuteRef: 'Board minute 2026/12-04' }) },
   ];
   return S;
-};
+}
+/* The worked examples this app has, by sector. The sector ids are the same in every Triodian app and in Triodian
+   Start, which opens an app on one with ?example=<id>. Each file that defines an example adds itself to the list. */
+window.BDExamples = [{ id: 'unregulated', name: 'Unregulated business', note: 'Worked example: a fictional company, board and advisers, for practice only. Nothing is saved.', offer: 'A fictional manufacturer’s board takes all ten steps, from its AI inventory to a resolved statement.', build: buildUnregulated }].concat(window.BDExamples || []);
+window.BDExampleOf = id => window.BDExamples.find(x => x.id === id) || window.BDExamples[0];
+window.BDExample = id => window.BDExampleOf(id).build();
 })();
