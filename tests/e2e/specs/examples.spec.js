@@ -92,3 +92,42 @@ test('the menu offers the other example, and a link for a sector this app has no
   expect(errs).toEqual([]);
   await ctx.close();
 });
+
+test('?example=insurance opens Corvane General Insurance: directions recorded, the board yet to resolve', async ({ browser }) => {
+  const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.gc }, acceptDownloads: true });
+  await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); } catch (e) {} });
+  const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
+  await p.goto('/?example=insurance');
+  await expect(p.locator('.examplenote').first()).toContainText('a fictional general insurer, Corvane General Insurance');
+  await expect(p.locator('body')).toContainText('Connected mode');
+  await expect(p.locator('body')).not.toContainText('Coastline Super');
+  const open = async id => { const d = p.locator(`#step-${id}`); if ((await d.getAttribute('open')) == null) await p.locator(`#step-${id} > summary`).click(); };
+  await open('B0');
+  await expect(p.locator('#step-B0')).toContainText('General insurer');
+  await expect(p.locator('#mgmt_status')).toContainText('Held 3 September 2026');
+  await expect(p.locator('#step-B0')).toContainText('Common failures in general insurance');
+  await open('B1');
+  await expect(p.locator('#step-B1')).toContainText('Routing motor claims to fast-track payment or investigation');
+  await expect(p.locator('#step-B1')).toContainText('Supplied by Tobias Reed');
+  await open('B2');
+  await expect(p.locator('#step-B2')).toContainText('A person decides every decline');
+  await open('B9');
+  await expect(p.locator('#step-B9')).toContainText('Recorded by Margaret Osei on 24 September 2026 (version V2)');
+  await expect(p.locator('#step-B9')).not.toContainText('Resolved by the board');
+  await expect(p.locator('#checks')).toContainText('7 of 7 pass');
+  // the directions paper and the working documents download as Word, in the insurer's words
+  const want = { directions: 'A person decides every decline', actionList: 'L3', crosswalk: '13 lines, 12 confirmed by the technology owner', plan: 'Where it stands', worklist: 'Automated-decision worklist' };
+  for (const [id, phrase] of Object.entries(want)) {
+    const f = await grab(p, id);
+    expect(f.name).toMatch(/\.docx$/);
+    expect(text(unzip(f.buf, 'word/document.xml')), id).toContain(phrase);
+    expect(text(unzip(f.buf, 'word/document.xml')), id).not.toContain('Coastline');
+  }
+  // the menu offers the other two
+  await p.locator('[data-act="drawer"]').first().click();
+  await expect(p.locator('[data-act="example"][data-ex="insurance"]')).toHaveCount(0);
+  await expect(p.locator('[data-act="example"][data-ex]')).toHaveCount(2);
+  expect((await api('GET', '/api/engagement', undefined, U.mo)).body.data?.engagement?.company || '').not.toContain('Corvane');
+  expect(errs).toEqual([]);
+  await ctx.close();
+});

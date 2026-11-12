@@ -45,7 +45,7 @@ Triodian recording. It runs as a Cloudflare Worker: the files in `public/` are s
 (`Triodian/confidentiality-exposure-assessment`), which shares the AI Use Assessment's.
 
 - `public/` – the app
-  - `/` – the engagement (`index.html`, `bd.js`, `bd-content.js`, `app.css`) and the worked examples (`bd-example.js`: a fictional company; `bd-example-super.js`: a fictional superannuation trustee; browser only, never saved; `?example=<sector>` opens one)
+  - `/` – the engagement (`index.html`, `bd.js`, `bd-content.js`, `app.css`) and the worked examples (`bd-example.js`: a fictional company; `bd-example-super.js`: a fictional superannuation trustee; `bd-example-insurer.js`: a fictional general insurer; browser only, never saved; `?example=<sector>` opens one)
   - `/shared/rules.js` – the roles and per-change permission rules, one copy read by the browser and the server
   - `/bd-outputs.js` – the outputs (framework section 8): statement, directions paper, policy outline, minute, 90-day list, engagement plan, framework crosswalk (task 7.6), confidentiality position file; unit tests in `tests/outputs.test.mjs`
   - `/shared/versions.js` – the version snapshot and the comparison with now, shared by the server (`lib/core/versions.js`) and the browser
