@@ -119,8 +119,19 @@ const EX_LEFT = 'triodian.example.left';
 const exampleLeft = () => { try { return sessionStorage.getItem(EX_LEFT) === '1'; } catch (e) { return false; } };
 const markExampleLeft = left => { try { if (left) sessionStorage.setItem(EX_LEFT, '1'); else sessionStorage.removeItem(EX_LEFT); } catch (e) {} };
 const openExampleByDefault = () => !exampleLeft() && location.hash !== '#actions';
-/* Opens the worked example: a fictional company, board and advisers, never saved. */
-function openExample() { if (!UI.practice) REAL = { S, rev: SRV.rev, exists: SRV.exists }; S = window.BDExample(); UI.practice = true; UI.drawer = false; UI.open = {}; UI.editLine = ""; UI.confirmDel = ""; UI.pBrief = null; UI.briefOpen = undefined; render(); }
+/* Which worked example: one for each sector this app has (public/bd-example*.js). Triodian Start opens the app on one
+   with ?example=<sector>; the choice is kept for this browser session, and that link always opens the example. The
+   sector ids (unregulated, superannuation, insurance, banking) are the same in every Triodian app. */
+const EX_SECTOR = 'triodian.example.sector';
+function exampleChoice() {
+  let id = '';
+  try { const u = new URLSearchParams(location.search), q = u.get('example'); if (q) { sessionStorage.setItem(EX_SECTOR, q); markExampleLeft(false); u.delete('example'); const rest = u.toString(); history.replaceState(history.state, '', location.pathname + (rest ? '?' + rest : '') + location.hash); } id = sessionStorage.getItem(EX_SECTOR) || ''; } catch (e) {}
+  return window.BDExampleOf(id);
+}
+const setExampleChoice = id => { try { sessionStorage.setItem(EX_SECTOR, id); } catch (e) {} };
+const exampleNote = () => exampleChoice().note;
+/* Opens the worked example: a fictional organisation, board and advisers, never saved. */
+function openExample() { if (!UI.practice) REAL = { S, rev: SRV.rev, exists: SRV.exists }; S = exampleChoice().build(); UI.practice = true; UI.drawer = false; UI.open = {}; UI.editLine = ""; UI.confirmDel = ""; UI.pBrief = null; UI.briefOpen = undefined; render(); }
 /* ---------- board directions (connected mode, task 3.4) ----------
    The chair records the directions BD1 to BD7 once B2 to B8 are settled; the server keeps that version and serves it to
    the AI Risk Appetite app. A change to B2 to B8 afterwards withdraws the record (the server does the same), so the
@@ -135,7 +146,7 @@ function withdrawIfChanged() {
 }
 const DIR_LABEL = 'Board directions recorded';
 const recordedDirections = () => ((S && S.versions) || []).filter(v => v.label === DIR_LABEL).pop() || null;
-const dirWhy = () => UI.practice ? 'The worked example is standalone, so it records no directions.' : deny('directions');
+const dirWhy = () => UI.practice ? (S && S.engagement.mode === 'connected' ? 'In the worked example the directions are already recorded. Nothing is saved.' : 'The worked example is standalone, so it records no directions.') : deny('directions');
 function directionsCard() {
   if (!S || S.engagement.mode !== 'connected') return '';
   const d = S.directions || {}, v = recordedDirections(), why = dirWhy();
@@ -153,7 +164,7 @@ function directionsCard() {
    For each board meeting, the board view is taken from the AI Risk Appetite app: the positions the board approved
    (the calibration set as issued), where the appetite stands now, and the latest in-use measures from AI Use
    Assessment. Each view is kept as taken, so the papers for a meeting show what the board saw. */
-const bvWhy = () => UI.practice ? 'The worked example is standalone, so it has no board view.' : deny('boardView');
+const bvWhy = () => UI.practice ? (S && S.engagement.mode === 'connected' ? 'The board view is read from the AI Risk Appetite app in a live engagement. Open that app’s worked example to see the approved appetite.' : 'The worked example is standalone, so it has no board view.') : deny('boardView');
 const STATUS_WORDS = { default: 'not yet agreed', working: 'working, agreed by the CRO', approved: 'approved by the board' };
 function boardViewBody(v) {
   const a = v.appetite || {}, ap = v.approved, iu = v.inUse;
@@ -221,9 +232,9 @@ function paintSave() { const el = document.getElementById('savechip'); if (el) e
 /* The demo band (public/suite.js, on the demo and test sites) carries the worked example's note, so the app shows no
    band of its own for it there. A client site has no demo band and keeps the app's band. */
 const suiteBand = () => (document.documentElement.getAttribute('data-suite-demo') || 'on') !== 'off';
-const EXAMPLE_NOTE = 'Worked example: a fictional company, board and advisers, for practice only. Nothing is saved.';
+
 function suiteNote() {
-  const h = UI.practice && suiteBand() ? `<span class="examplenote"><span class="tsu-long">${EXAMPLE_NOTE}</span><span class="tsu-short">Worked example, fictional. Nothing is saved.</span><button data-act="leaveExample">Leave<span class="tsu-long"> the worked example</span></button></span>` : '';
+  const h = UI.practice && suiteBand() ? `<span class="examplenote"><span class="tsu-long">${esc(exampleNote())}</span><span class="tsu-short">Worked example, fictional. Nothing is saved.</span><button data-act="leaveExample">Leave<span class="tsu-long"> the worked example</span></button></span>` : '';
   if (window.TriodianSuiteNote !== h) { window.TriodianSuiteNote = h; window.dispatchEvent(new Event('triodian:note')); }
 }
 function header() {
@@ -238,7 +249,7 @@ function header() {
       <a role="menuitem" class="item" href="/profile/">Your profile</a>${u.isAdmin ? '<a role="menuitem" class="item" href="/admin/">Admin · users and activity</a>' : ''}<a role="menuitem" class="item" href="/user-guide/">User guide</a><a role="menuitem" class="item signout" href="/auth/logout">Sign out</a></div>` : ''}</span>` : ''}<button class="iconbtn" data-act="drawer" aria-label="Menu" aria-expanded="${UI.drawer}">☰</button></div>
   </div>${e ? `<div class="docband"><div class="docband-in"><span class="docband-l">${TriodianBrand.chip(e.practitioner)}${priv}</span><span class="stat"><strong>${esc(e.company || '[company not set]')}</strong> · ${esc((C.modes.find(m => m.id === e.mode) || {}).name || '')} mode</span></div></div>` : ''}</header>
   ${SRV.site ? `<div class="examplebar" style="background:#FDF0E1;color:#8A4B08;border-color:#F0D2AE">${esc(SRV.site)}: a test site for trying things out, not the live engagement</div>` : ''}
-  ${UI.practice && !suiteBand() ? `<div class="examplebar examplenote">${EXAMPLE_NOTE} <button class="lnk" data-act="leaveExample">Leave the worked example</button></div>` : ''}`;
+  ${UI.practice && !suiteBand() ? `<div class="examplebar examplenote">${esc(exampleNote())} <button class="lnk" data-act="leaveExample">Leave the worked example</button></div>` : ''}`;
 }
 /* The menu: account links and the five Triodian apps, in the order of the suite. */
 const appUrl = h => 'https://' + h + (SRV.site ? '-test' : '') + '.triodian.com/?suite=1';
@@ -252,7 +263,7 @@ function drawer() {
     <a class="item" href="/user-guide/" style="text-decoration:none">User guide</a>
     <a class="item" href="/auth/logout" style="text-decoration:none">Sign out</a>
     <div class="grp">Practice</div>
-    ${UI.practice ? '<button class="item" data-act="leaveExample">Leave the worked example</button>' : '<button class="item" data-act="example">Open the worked example</button>'}
+    ${window.BDExamples.map(x => UI.practice && exampleChoice().id === x.id ? '' : `<button class="item" data-act="example" data-ex="${x.id}">Open the worked example · ${esc(x.name)}</button>`).join('')}${UI.practice ? '<button class="item" data-act="leaveExample">Leave the worked example</button>' : ''}
     <p class="small soft" style="padding:0 10px">The worked example is fictional and runs in this browser only. Nothing in it is saved.</p>
     <div class="grp">Apps</div>
     ${app('obligations-atlas', 'OA', '#E3E9EF', 'var(--navy)', 'AI Obligations Atlas', 'Obligations by jurisdiction, tier and use case')}
@@ -972,7 +983,7 @@ function stepBody(id) {
 const hasContent = id => id === 'B0' ? !!(S.engagement.company) : id === 'B1' ? (S.inventory || []).length > 0 : id === 'B9' ? !!(S.resolution || {}).by : Object.keys(pos(id)).length > 0;
 
 /* ---------- screens ---------- */
-const exampleOffer = () => `<div class="panel2" style="padding:14px 16px;margin-top:14px"><p style="margin:0 0 8px"><strong>See it worked through.</strong> A fictional manufacturer’s board takes all ten steps, from its AI inventory to a resolved statement.</p><button class="btn" data-act="example">Open the worked example</button></div>`;
+const exampleOffer = () => `<div class="panel2" style="padding:14px 16px;margin-top:14px"><p style="margin:0 0 8px"><strong>See it worked through.</strong> Each worked example is fictional and nothing in it is saved.</p>${window.BDExamples.map(x => `<p class="small" style="margin:0 0 8px"><button class="btn" data-act="example" data-ex="${x.id}">Open the worked example · ${esc(x.name)}</button> <span class="soft">${esc(x.offer)}</span></p>`).join('')}</div>`;
 function entryScreen() {
   if (!SRV.checked) return '<p class="soft">Connecting…</p>';
   if (!SRV.user) return `${opening('AI Board Direction', 'No access yet', '')}<div class="panel2" role="status" style="padding:12px 14px">${esc(SRV.reason || 'You have not been given access to this app.')} <a href="/auth/logout">Sign out</a></div>${exampleOffer()}`;
@@ -1136,7 +1147,7 @@ document.addEventListener('click', async ev => {
   const act = b.dataset.act;
   if (act === 'acct') { UI.acct = !UI.acct; UI.drawer = false; render(); }
   if (act === 'drawer') { UI.drawer = !UI.drawer; UI.acct = false; render(); }
-  if (act === 'example') { markExampleLeft(false); openExample(); scrollTo(0, 0); }
+  if (act === 'example') { if (b.dataset.ex) setExampleChoice(b.dataset.ex); markExampleLeft(false); openExample(); scrollTo(0, 0); }
   if (act === 'leaveExample') { markExampleLeft(true); UI.practice = false; UI.drawer = false; UI.open = {}; UI.editLine = ""; UI.confirmDel = ""; UI.pBrief = null; UI.briefOpen = undefined; if (REAL) { S = REAL.S; SRV.rev = REAL.rev; SRV.exists = REAL.exists; } REAL = null; render(); scrollTo(0, 0); }
   if (act === 'new') { S = blank(); SRV.rev = 0; render(); await save(); if (SRV.exists) await load(); }
   if (act === 'usePackAreas') { if (deny('setup')) return; const X = SECTOR(), p = X.packOf(C, S.engagement), r = X.useAreas(C, S, p); if (r.error) { toast(r.error); return; } log('edit', 'areas', null, p.name); render(); return; }
@@ -1313,6 +1324,7 @@ document.addEventListener('click', async ev => {
   SRV.user = r.body.user; SRV.site = r.body.site || ''; SRV.defaults = r.body.defaults || {};
   await load();
   loadBriefing();
+  exampleChoice();   // a sector link from Triodian Start always opens the example, even after leaving it
   if (openExampleByDefault()) openExample();
   else if (location.hash === '#actions') { const el = document.getElementById('actions'); if (el) el.scrollIntoView({ block: 'start' }); }
 })();
