@@ -153,5 +153,21 @@ function buildUnregulated() {
    Start, which opens an app on one with ?example=<id>. Each file that defines an example adds itself to the list. */
 window.BDExamples = [{ id: 'unregulated', name: 'Company outside prudential regulation', note: 'Worked example: a fictional company, Harrow Valley Foods, its board and advisers, for practice only. Nothing is saved.', offer: 'A fictional manufacturer’s board takes all ten steps, from its AI inventory to a resolved statement.', build: buildUnregulated }].concat(window.BDExamples || []);
 window.BDExampleOf = id => window.BDExamples.find(x => x.id === id) || window.BDExamples[0];
-window.BDExample = id => window.BDExampleOf(id).build();
+// Every worked example records a competence statement for each person who runs the engagement (task ISO.6).
+const EXAMPLE_COMPETENCE = {
+  ceo: ['Chief executive: proposes the positions for management and is accountable for running within them', 'Role description and board delegations'],
+  cro: ['Chief risk officer: owns the risk management framework the directions sit in', 'Role description and board delegations'],
+  gc: ['General counsel: responsible for the company’s legal position and for instructing counsel', 'Role description'],
+  advisor: ['Board adviser: advises boards on governance and risk, and facilitates the workshop', 'Engagement letter; CV on file'],
+  methodOwner: ['Owns the Triodian method for the engagement; trained on the Board AI Appetite Framework', 'Triodian method training record, 2026'],
+  recorder: ['Records the positions the board takes; trained on the framework and the app', 'Triodian method training record, 2026'],
+  areaOwner: ['Accountable for the area of the business; supplies its inventory lines and drafts its measures', 'Role description'],
+  technologyOwner: ['Owns the company’s technology estate; confirms the AI inventory', 'Role description; the technology asset register'],
+  aiGovernance: ['Works in the AI governance team; supplies the AI inventory and drafts the measures', 'Role description; ISO/IEC 42001 foundation training'],
+};
+window.BDExample = id => {
+  const S = window.BDExampleOf(id).build();
+  if (!S.engagement.competence) S.engagement.competence = Object.fromEntries(S.people.map(p => [p, p.roles.find(r => EXAMPLE_COMPETENCE[r])]).filter(([, r]) => r).map(([p, r]) => [p.id, { statement: EXAMPLE_COMPETENCE[r][0], evidence: EXAMPLE_COMPETENCE[r][1] }]));
+  return S;
+};
 })();

@@ -854,6 +854,16 @@ function briefingMarkdown() {
   out.push('', '## Check of understanding', '', 'Four short questions follow in the app. They check understanding and are not a test. Only you and the facilitators see your answers.');
   return out.join('\n');
 }
+/* ---------- competence (task ISO.6; ISO/IEC 42001:2023, 7.2) ----------
+   For each person who runs the engagement or supplies to it: why they are competent for the role, and the evidence.
+   Directors' competence for this work is the education record itself (B0). Printed at the end of that record. */
+const competenceOf = id => ((S.engagement.competence || {})[id]) || {};
+const runners = () => (S.people || []).filter(p => p.active !== false && p.roles.some(r => !RULES.BOARD.includes(r)));
+function competenceCard(why) {
+  const ps = runners(), done = ps.filter(p => String(competenceOf(p.id).statement || '').trim()).length;
+  return `<section class="card" id="competence"><h2 class="sh">5a · Competence</h2><p class="small soft">For each person who runs the engagement or supplies to it: why they are competent for the role, and the evidence (ISO/IEC 42001:2023, 7.2). Directors’ competence for this work is the education record (B0). ${done} of ${ps.length} recorded. Printed in the education record.</p>
+    <div class="stack" style="gap:10px">${ps.map(p => `<div class="fgrid" style="grid-template-columns:minmax(180px,1fr) 2fr 2fr"><div><strong>${esc(p.name)}</strong><br><span class="small soft">${esc(p.roles.filter(r => !RULES.BOARD.includes(r)).map(roleName).join(', '))}</span></div>${fld('Why competent for the role', `engagement.competence.${p.id}.statement`, competenceOf(p.id).statement || '')}${fld('Evidence', `engagement.competence.${p.id}.evidence`, competenceOf(p.id).evidence || '')}</div>`).join('') || '<p class="soft small">No one outside the board has a role yet.</p>'}</div></section>`;
+}
 function educationMarkdown() {
   const e = S.engagement, edu = S.education || {}, cell = v => String(v == null ? '' : v).replace(/\|/g, '\\|');
   const out = [];
@@ -864,6 +874,8 @@ function educationMarkdown() {
   boardPeople().forEach(p => { const x = edu[p.id] || {}; out.push(`| ${cell(p.name)} | ${cell(p.roles.filter(r => RULES.BOARD.includes(r)).map(roleName).join(', '))} | ${x.readOn ? dl(x.readOn) : 'Not yet'} | ${x.completedOn ? dl(x.completedOn) : 'Not yet'} |`); });
   const not = notBriefed();
   out.push('', not.length ? `Not yet completed: ${not.map(p => p.name).join(', ')}. The chair decides whether to proceed.` : 'Every director has completed the briefing.', '', mgmtLine());
+  out.push('', '## Competence of the people who run the engagement', '', 'ISO/IEC 42001:2023, 7.2. Directors’ competence for this work is the record above.', '', '| Person | Role | Why competent for the role | Evidence |', '| --- | --- | --- | --- |',
+    ...runners().map(p => `| ${cell(p.name)} | ${cell(p.roles.filter(r => !RULES.BOARD.includes(r)).map(roleName).join(', '))} | ${cell(competenceOf(p.id).statement || '[not yet recorded]')} | ${cell(competenceOf(p.id).evidence || '')} |`));
   return out.join('\n');
 }
 const notBriefed = () => boardPeople().filter(p => !((S.education || {})[p.id] || {}).completedOn);
@@ -1021,6 +1033,7 @@ function mainScreen() {
   </div><div style="margin-top:14px">${TriodianBrand.logoControl(e.practitioner, deny('setup') ? 'disabled' : '')}</div></section>
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">4 · Areas of the business</h2>${why ? '' : '<button class="btn sm" data-act="addArea">Add an area</button>'}</div>${sectorPanel(why)}<p class="small soft">The board sets a posture for each area at B2. Change these to the company's own list.</p><div class="stack" style="gap:8px">${areas}</div></section>
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">5 · People</h2>${SRV.user && SRV.user.isAdmin ? '<a class="btn sm" href="/admin/">Manage in Admin</a>' : ''}</div><p class="small soft">Everyone with a role in this engagement. Roles are given in Admin.</p><div class="stack" style="gap:8px">${people}</div></section>
+  ${competenceCard(why)}
   <section class="card"><h2 class="sh">6 · The ten steps</h2><p class="small soft">From the Board AI Appetite Framework, section 4.1. Open a step to see what is recorded.${UI.practice ? ' In the worked example you can try the inventory (B1) and the positions (B2 to B8). Nothing is saved.' : ''}</p><div class="steplist">${steps}</div></section>
   ${checksSection()}
   ${outputsSection()}`;

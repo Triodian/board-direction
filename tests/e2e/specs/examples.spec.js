@@ -52,7 +52,7 @@ test('?example=superannuation opens Coastline Super in connected mode, and the c
   await expect(p.locator('#checks')).toContainText('7 of 7 pass');
   // connected mode: the directions paper, not the statement; each document downloads as Word
   await expect(p.locator('#outputs [data-id="statement"]')).toHaveCount(0);
-  const want = { directions: 'A person decides every death or disablement claim', minute: 'Board minute 2026/11-07', actionList: 'L3', crosswalk: '13 lines, 12 confirmed by the technology owner', plan: 'Where it stands', worklist: 'Automated-decision worklist', education: 'Director education record' };
+  const want = { directions: 'A person decides every death or disablement claim', minute: 'Board minute 2026/11-07', actionList: 'L3', crosswalk: '13 lines, 12 confirmed by the technology owner', plan: 'Where it stands', worklist: 'Automated-decision worklist' };
   for (const [id, phrase] of Object.entries(want)) {
     const f = await grab(p, id);
     expect(f.name).toMatch(/\.docx$/);
@@ -153,7 +153,8 @@ test('?example=banking opens Wattlebrook Bank in connected mode, resolved by its
   await open('B9');
   await expect(p.locator('#step-B9')).toContainText('Recorded by Catherine Demetriou on 28 October 2026 (version V2)');
   await expect(p.locator('#checks')).toContainText('7 of 7 pass');
-  const want = { directions: 'A person decides before an account is frozen or closed', minute: 'Board minute 2026/11-09', actionList: 'L3', crosswalk: '13 lines, 12 confirmed by the technology owner', plan: 'Where it stands', worklist: 'Automated-decision worklist', education: 'Director education record' };
+  // ISO readiness (task ISO.6): the education record ends with the competence of the people who run the engagement
+  const want = { directions: 'A person decides before an account is frozen or closed', minute: 'Board minute 2026/11-09', education: 'Competence of the people who run the engagement', actionList: 'L3', crosswalk: '13 lines, 12 confirmed by the technology owner', plan: 'Where it stands', worklist: 'Automated-decision worklist' };
   for (const [id, phrase] of Object.entries(want)) {
     const f = await grab(p, id);
     expect(f.name).toMatch(/\.docx$/);
