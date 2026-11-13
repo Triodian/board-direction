@@ -14,13 +14,23 @@ export function packOf(C, e) {
   return list.find(p => p.id === id) || list.find(p => p.id === 'general') || list[0] || null;
 }
 /** The pack that fits the entity type, regulated sector and mode: a pack for the entity type, then one for the sector,
-    otherwise the general pack. */
+    then the sector's best-practice baseline, otherwise the general pack. */
 export function suggestPack(C, entityType, mode, sector) {
   const list = packsFor(C, mode || 'standalone');
   return list.find(p => entityType && (p.entityTypes || []).includes(entityType))
-    || list.find(p => sector && (p.sectors || []).includes(sector))
+    || list.find(p => !p.baseline && sector && (p.sectors || []).includes(sector))
+    || baselinePackFor(C, list, sector)
     || list.find(p => p.id === 'general') || list[0] || null;
 }
+/** The best-practice baseline pack for a sector with no pack of its own: the first of the sector's baselines
+    (Metamodel baselineProfiles, in their order) that has a pack. */
+function baselinePackFor(C, list, sector) {
+  const d = sectorById(C, sector);
+  for (const b of (d && d.baselineProfiles) || []) { const p = list.find(x => x.baseline === b); if (p) return p; }
+  return null;
+}
+/** The governing body the pack names: 'board', or 'accountableAuthority' for a public body. */
+export function governingBodyOf(C, e) { const p = packOf(C, e); return (p && p.governingBody) || 'board'; }
 
 /* Regulated sectors (Triodian Metamodel reference data, copied into the content by tools/sync-sectors.mjs).
    A sector belongs to one jurisdiction and narrows the entity types offered at set-up. */

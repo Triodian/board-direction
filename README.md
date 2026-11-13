@@ -102,6 +102,8 @@ People sign in at `/login`: with email (Cloudflare Access guards `/auth/email` o
 
 A new engagement starts in the jurisdiction and regulated sector set by `DEFAULT_JURISDICTION` (`AU` or `SG`) and `DEFAULT_SECTOR` (for example `AU-INSURANCE`, or empty) in `wrangler.jsonc`; the installer sets both. Set-up changes them at any time: jurisdiction, then regulated sector, then entity type. A financially regulated sector suggests Connected mode, and the sector or entity type suggests the sector pack. The sectors are the Triodian Metamodel's (`reference-data/regulated-sectors.json`), copied into `public/bd-content.json` with `node tools/sync-sectors.mjs ../triodian_metamodel && node tools/build-content.mjs`.
 
+**Best-practice baselines.** A sector with no pack of its own (Australian health or critical infrastructure, for example) is offered its [best-practice baseline](https://github.com/Triodian/Triodian_Metamodel/blob/main/docs/baselines.md): a pack that holds in any jurisdiction, drawn from international standard setters. Packs for a public body (government, or critical infrastructure run by government) name the accountable authority where the app says "board", on screen and in every download. The baseline packs are written from the Metamodel with `node tools/sync-baselines.mjs ../triodian_metamodel && node tools/build-content.mjs`. To add a jurisdiction, see [adding a jurisdiction](https://github.com/Triodian/Triodian_Metamodel/blob/main/docs/adding-a-jurisdiction.md).
+
 ## Tests
 ```
 for f in tests/*.test.mjs; do node "$f"; done

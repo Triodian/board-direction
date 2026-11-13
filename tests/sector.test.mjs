@@ -23,7 +23,7 @@ const ra = ['Underwriting and pricing', 'Claims', 'Fraud and investigations', 'P
 ok('the general insurer areas match the AI Risk Appetite functions', JSON.stringify(ins.areas) === JSON.stringify(ra));
 
 // fit
-ok('standalone offers only the general pack', X.packsFor(C, 'standalone').map(p => p.id).join() === 'general');
+ok('standalone offers the general pack and the baselines only', X.packsFor(C, 'standalone').every(p => p.id === 'general' || p.baseline) && X.packsFor(C, 'standalone')[0].id === 'general');
 ok('connected offers every pack', X.packsFor(C, 'connected').length === C.sectorPacks.length);
 ok('a general insurer is offered the general insurer pack', X.suggestPack(C, 'generalInsurer', 'connected').id === 'generalInsurer');
 ok('an ADI is offered the ADI pack', X.suggestPack(C, 'authorisedDepositTakingInstitution', 'connected').id === 'adi');
@@ -64,7 +64,7 @@ ok('old entity ids are renamed', Object.values(X.ENTITY_RENAMED).every(t => type
 ok('a sector narrows the entity types to its own', X.entityTypesFor(C, 'AU', 'AU-INSURANCE').map(t => t[0]).join() === 'generalInsurer,lifeInsurer,privateHealthInsurer,other');
 ok('without a sector, the jurisdiction’s types are offered', X.entityTypesFor(C, 'SG', '').some(t => t[0] === 'financialInstitution') && !X.entityTypesFor(C, 'SG', '').some(t => t[0] === 'authorisedDepositTakingInstitution'));
 ok('a Singapore bank is offered the MAS pack by sector', X.suggestPack(C, 'bank', 'connected', 'SG-BANKING').id === 'masFi');
-ok('an Australian payments provider is not offered the MAS pack', X.suggestPack(C, 'paymentServiceProvider', 'connected', 'AU-PAYMENTS').id === 'general');
+ok('an Australian payments provider is not offered the MAS pack; it gets the payments baseline', X.suggestPack(C, 'paymentServiceProvider', 'connected', 'AU-PAYMENTS').id === 'bpPayments');
 ok('the entity type wins over the sector', X.suggestPack(C, 'generalInsurer', 'connected', 'AU-INSURANCE').id === 'generalInsurer');
 ok('a financially regulated sector takes connected mode', X.modeFor(C, 'AU-SUPERANNUATION') === 'connected' && X.modeFor(C, 'AU-HEALTH') === 'standalone' && X.modeFor(C, '') === '');
 

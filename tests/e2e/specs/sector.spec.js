@@ -24,7 +24,7 @@ test('choosing the entity type and mode brings in the sector pack, its areas and
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
   await p.goto('/');
   const pack = p.locator('#f_engagement_sectorPack'), area0 = p.locator('[data-area="0"]');
-  await expect(pack.locator('option')).toHaveCount(1); // standalone: the general pack only
+  await expect(pack.locator('option')).toHaveCount(9); // standalone: the general pack and the eight baselines
   await expect(area0).toHaveValue(C.startingAreas[0]);
 
   await p.locator('#f_engagement_mode').selectOption('connected');
@@ -115,6 +115,35 @@ test('the worked example names its pack at B0', async ({ browser }) => {
   await p.goto('/'); await expect(p.locator('.examplenote')).toContainText('Worked example');
   await p.locator('#step-B0 > summary').click();
   await expect(p.locator('#step-B0')).toContainText('General (any organisation)');
+  expect(errs).toEqual([]);
+  await ctx.close();
+});
+
+test('a baseline for a public body names the accountable authority on screen, and a company pack names the board again', async ({ browser }) => {
+  const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.mo }, viewport: { width: 1280, height: 900 } });
+  await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); sessionStorage.setItem('triodian.example.left', '1'); } catch (e) {} });
+  let rev = 1, last = null;
+  await ctx.route('**/api/engagement', async route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: { exists: true, revision: rev, data: fresh(), people: [] } });
+    last = route.request().postDataJSON().data; rev += 1;
+    return route.fulfill({ json: { revision: rev } });
+  });
+  const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
+  await p.goto('/');
+  const app = p.locator('#app');
+  await expect(app).toContainText('board');
+  await p.locator('#f_engagement_sectorPack').selectOption('bpGovernment');
+  await expect.poll(() => last && last.engagement.sectorPack).toBe('bpGovernment');
+  await expect(app).toContainText('accountable authority');
+  expect(await app.evaluate(el => /\bboards?\b/.test(el.innerText.replace(/AI Board Direction|Board Direction/g, '')))).toBe(false);
+  await p.locator('#step-B3 > summary').click();
+  await p.click('[data-act="toggleCand"]');
+  await expect(p.locator('#step-B3')).toContainText('A decision adverse to a person made by AI with no officer');
+  // back to a company: the board returns
+  await p.locator('#f_engagement_sectorPack').selectOption('general');
+  await expect.poll(() => last && last.engagement.sectorPack).toBe('general');
+  await p.reload();
+  await expect(app).toContainText('board');
   expect(errs).toEqual([]);
   await ctx.close();
 });
