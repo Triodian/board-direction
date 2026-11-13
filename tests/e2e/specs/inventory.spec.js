@@ -111,7 +111,7 @@ test('the worked example lets anyone try the inventory and saves nothing', async
   await expect(p.locator('#step-B1')).toContainText('CVs, work history');
   const before = (await api('GET', '/api/engagement', undefined, U.director)).body.revision;
   await p.click('[data-act="addLine"]');
-  await p.locator('#inv_L9_use').fill('Practice line'); await p.locator('#inv_L9_adm').check();
+  await p.locator('#inv_L13_use').fill('Practice line'); await p.locator('#inv_L13_adm').check();
   await expect(p.locator('#toast')).toContainText('QC-04');
   expect((await api('GET', '/api/engagement', undefined, U.director)).body.revision).toBe(before);
   expect(errs).toEqual([]);

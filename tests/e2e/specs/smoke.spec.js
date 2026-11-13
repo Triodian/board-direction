@@ -70,7 +70,7 @@ test('the worked example opens, every step shows its record, and nothing is save
     await p.click(`#step-${id} > summary`);
     await expect(p.locator(`#step-${id} .badge`).first()).toHaveText('Recorded');
   }
-  await expect(p.locator('#step-B1 table').first().locator('tbody tr')).toHaveCount(8);
+  await expect(p.locator('#step-B1 table').first().locator('tbody tr')).toHaveCount(12);
   expect(await p.locator('#step-B9 tbody tr').count()).toBeGreaterThan(0); // the reality note
   await p.click('.examplenote [data-act="leaveExample"]');
   await expect(p.locator('.examplenote')).toHaveCount(0);
