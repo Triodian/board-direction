@@ -115,6 +115,7 @@ function buildUnregulated() {
           { id: 'BM3', measure: 'Material AI incidents', limit: '0', owner: 'CEO', draftedBy: 'p-aig1', confirmedBy: 'p-cio', confirmedOn: '2026-11-20' },
           { id: 'BM4', measure: 'Known uses of information marked N in B5', limit: '0', owner: 'CEO', draftedBy: 'p-aig1', confirmedBy: 'p-cio', confirmedOn: '2026-11-20' },
           { id: 'BM5', measure: 'Actions on the 90-day list overdue', limit: '2', owner: 'CEO', draftedBy: 'p-aig1', confirmedBy: 'p-cio', confirmedOn: '2026-11-20' },
+          { id: 'BM6', measure: 'Concerns about the use of AI raised through the reporting route, and how many remain open', limit: '0 open beyond 30 days', owner: 'CEO', draftedBy: 'p-aig1', confirmedBy: 'p-cio', confirmedOn: '2026-11-20' },
         ],
         events: [
           { id: 'EV1', event: 'A material AI incident', to: 'Chair', within: '24 hours' },

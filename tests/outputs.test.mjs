@@ -30,7 +30,10 @@ ok('statement: red lines listed', docs.statement.includes('AI holding credential
 ok('statement: material AI incident defined', docs.statement.includes('A material AI incident is'));
 ok('directions: BD1 to BD7', ['BD1', 'BD2', 'BD3', 'BD4', 'BD5', 'BD6', 'BD7'].every(d => docs.directions.includes('## ' + d)));
 ok('policy outline: says it is not a policy', docs.aupOutline.includes('This outline is not a policy'));
-ok('policy outline: seven headings', (docs.aupOutline.match(/^## \d\./gm) || []).length === 7);
+ok('policy outline: eight headings', (docs.aupOutline.match(/^## \d\./gm) || []).length === 8);
+// Task ISO.7: a route for raising a concern (ISO/IEC 42001:2023, A.3.3), and the measure the board hears it through.
+ok('policy outline: raising a concern is a heading, tied to its measure', /## 7\. Raising a concern\n\n[^\n]*A\.3\.3 Reporting of concerns/.test(docs.aupOutline) && docs.aupOutline.includes('The board hears of concerns through measure BM6: Concerns about the use of AI raised through the reporting route, and how many remain open (limit: 0 open beyond 30 days).'));
+ok('statement: the concerns measure is one of the board’s measures', docs.statement.includes('Concerns about the use of AI raised through the reporting route'));
 ok('policy outline: decisions about individuals left to counsel', docs.aupOutline.includes('What the policy says about them is for counsel'));
 ok('minute: the resolution and minute reference', docs.minute.includes(S.resolution.text) && docs.minute.includes('Board minute 2026/12-04'));
 ok('minute: lists directors who did not complete the briefing', docs.minute.includes('Not completed before the resolution: Priya Raman'));
@@ -54,7 +57,11 @@ ok('empty: reserved decisions fall back to the six starting events', OE.statemen
 ok('empty: every list generates', ['statement', 'directions', 'aupOutline', 'minute', 'actionList', 'plan'].every(k => typeof OE[k]() === 'string'));
 { const cw = O.crosswalk();
   ok('crosswalk: one row for each step B0 to B9, against both frameworks', (cw.match(/^\| B\d /gm) || []).length === 10 && cw.includes('ISO/IEC 42001:2023') && cw.includes('NIST AI RMF 1.0'));
-  ok('crosswalk: it says what the worked example recorded', /B1 Inventory \| 12 lines, 11 confirmed by the technology owner/.test(cw) && /management briefing held 6 November 2026/.test(cw) && /5 measures at each meeting/.test(cw) && /Resolved 2 December 2026/.test(cw));
+  ok('crosswalk: it says what the worked example recorded', /B1 Inventory \| 12 lines, 11 confirmed by the technology owner/.test(cw) && /management briefing held 6 November 2026/.test(cw) && /6 measures at each meeting/.test(cw) && /Resolved 2 December 2026/.test(cw));
+  // Tasks ISO.4 and ISO.7: ISO/IEC 38507:2022 beside the other two, and a cross-walk for each scale the app uses.
+  ok('crosswalk: each step names the governing body’s task under ISO/IEC 38507:2022', cw.includes('| ISO/IEC 38507:2022 |') && /\| B2 Posture and goals \|[^\n]*\| Direct: the objectives for the use of AI[^\n]*\|/.test(cw) && /\| B7 Reporting \|[^\n]*\| Monitor: what the governing body is told, and how fast \|/.test(cw));
+  ok('crosswalk: the goals are clause 6.2, the owners A.3.2, and the harm thresholds an input to A.5.2 only', /B2 Posture and goals[^\n]*6\.2 AI objectives/.test(cw) && /B8 Accountability[^\n]*A\.3\.2 AI roles and responsibilities/.test(cw) && /B6 Harm thresholds[^\n]*an input to A\.5\.2, not an AI system impact assessment/.test(cw));
+  ok('crosswalk: harm kinds beside A.5 and ISO/IEC 42005:2025, information classes beside the company’s own scheme', cw.includes('## Harm kinds H1 to H6 beside ISO/IEC 42001:2023 A.5 and ISO/IEC 42005:2025') && cw.includes('| H1 Customers or members | Individuals and groups of individuals | A.5.4') && cw.includes('## Information classes G1 to G6 beside the company’s own classification scheme (ISO/IEC 27002:2022, 5.12 and 5.13)') && cw.includes('| G6 Board and transaction |'));
   ok('crosswalk: it names clauses, controls and subcategories', ['5.2 AI policy', 'A.3.2 AI roles and responsibilities', '9.3 Management review', 'GOVERN 1.6', 'GOVERN 2.3', 'MAP 1.5'].every(x => cw.includes(x)));
   ok('crosswalk: it claims no conformity and gives no legal view', cw.includes('not a statement of conformity') && cw.includes('not legal advice') && !/\b(complies|compliant|conforms|meets the requirement|satisfies)\b/i.test(cw) && !/\b(must|required)\b/i.test(cw));
   const ce = OE.crosswalk();

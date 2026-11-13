@@ -119,6 +119,7 @@ function buildSuper() {
           { id: 'BM4', measure: 'Known uses of information marked N in B5', limit: '0', owner: 'CEO' },
           { id: 'BM5', measure: 'Actions on the 90-day list overdue', limit: '2', owner: 'CEO' },
           { id: 'BM6', measure: 'Material providers whose use of AI on members is not known', limit: '0 by 30 June 2027', owner: 'CRO', goal: 'GL3' },
+          { id: 'BM7', measure: 'Concerns about the use of AI raised through the reporting route, and how many remain open', limit: '0 open beyond 30 days', owner: 'CEO' },
         ].map(m => ({ ...m, draftedBy: m.id === 'BM6' ? 'p-aig2' : 'p-aig1', confirmedBy: 'p-cio', confirmedOn: '2026-10-20' })),
         events: [
           { id: 'EV1', event: 'A material AI incident', to: 'Chair', within: '24 hours' },
