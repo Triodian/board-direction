@@ -82,7 +82,7 @@ test('the menu offers the other example, and a link for a sector this app has no
   await p.locator('[data-act="drawer"]').first().click();
   await p.locator('[data-act="example"][data-ex="unregulated"]').click();
   await expect(p.locator('body')).toContainText('Harrow Valley Foods');
-  await p.goto('/?example=banking');                                                                             // not written yet
+  await p.goto('/?example=payments');                                                                            // a sector with no example
   await expect(p.locator('body')).toContainText('Harrow Valley Foods');
   // leaving, then a sector link: the link always opens the example
   await p.locator('[data-act="leaveExample"]').first().click();
@@ -126,8 +126,44 @@ test('?example=insurance opens Corvane General Insurance: directions recorded, t
   // the menu offers the other two
   await p.locator('[data-act="drawer"]').first().click();
   await expect(p.locator('[data-act="example"][data-ex="insurance"]')).toHaveCount(0);
-  await expect(p.locator('[data-act="example"][data-ex]')).toHaveCount(2);
+  await expect(p.locator('[data-act="example"][data-ex]')).toHaveCount(3);
   expect((await api('GET', '/api/engagement', undefined, U.mo)).body.data?.engagement?.company || '').not.toContain('Corvane');
+  expect(errs).toEqual([]);
+  await ctx.close();
+});
+
+test('?example=banking opens Wattlebrook Bank in connected mode, resolved by its board', async ({ browser }) => {
+  const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.gc }, acceptDownloads: true });
+  await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); } catch (e) {} });
+  const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
+  await p.goto('/?example=banking');
+  await expect(p.locator('.examplenote').first()).toContainText('a fictional bank, Wattlebrook Bank');
+  await expect(p.locator('body')).toContainText('Connected mode');
+  await expect(p.locator('body')).not.toContainText('Coastline Super');
+  const open = async id => { const d = p.locator(`#step-${id}`); if ((await d.getAttribute('open')) == null) await p.locator(`#step-${id} > summary`).click(); };
+  await open('B0');
+  await expect(p.locator('#step-B0')).toContainText('Authorised deposit-taking institution');
+  await expect(p.locator('#mgmt_status')).toContainText('Held 8 October 2026');
+  await expect(p.locator('#step-B0')).toContainText('Common failures in banking');
+  await open('B1');
+  await expect(p.locator('#step-B1')).toContainText('Screening outgoing payments for scams and fraud, and holding those it flags');
+  await expect(p.locator('#step-B1')).toContainText('Supplied by Dylan Kruger');
+  await open('B2');
+  await expect(p.locator('#step-B2')).toContainText('A person decides before an account is frozen or closed');
+  await open('B9');
+  await expect(p.locator('#step-B9')).toContainText('Recorded by Catherine Demetriou on 28 October 2026 (version V2)');
+  await expect(p.locator('#checks')).toContainText('7 of 7 pass');
+  const want = { directions: 'A person decides before an account is frozen or closed', minute: 'Board minute 2026/11-09', actionList: 'L3', crosswalk: '13 lines, 12 confirmed by the technology owner', plan: 'Where it stands', worklist: 'Automated-decision worklist', education: 'Director education record' };
+  for (const [id, phrase] of Object.entries(want)) {
+    const f = await grab(p, id);
+    expect(f.name).toMatch(/\.docx$/);
+    expect(text(unzip(f.buf, 'word/document.xml')), id).toContain(phrase);
+    expect(text(unzip(f.buf, 'word/document.xml')), id).not.toContain('Coastline');
+    expect(text(unzip(f.buf, 'word/footer1.xml')), id + ' footer').toContain('Resolved by the board, version V3, 25 November 2026');
+  }
+  await p.locator('[data-act="drawer"]').first().click();
+  await expect(p.locator('[data-act="example"][data-ex]')).toHaveCount(3);
+  expect((await api('GET', '/api/engagement', undefined, U.mo)).body.data?.engagement?.company || '').not.toContain('Wattlebrook');
   expect(errs).toEqual([]);
   await ctx.close();
 });
