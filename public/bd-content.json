@@ -215,15 +215,16 @@
       "id": "B7",
       "name": "What we expect to hear",
       "question": "What should management report to us about AI, and how fast?",
-      "answeredAs": "Three to five measures, and the events reported between meetings",
+      "answeredAs": "Three to six measures, and the events reported between meetings",
       "position": "BP7",
       "direction": "BD6",
       "task": "1.5",
       "prompts": [
         "Which three to five numbers would tell us whether AI is being used as we intend?",
-        "What must reach the chair before the next meeting, and how fast?"
+        "What must reach the chair before the next meeting, and how fast?",
+        "How does a member of staff, a customer or a provider raise a concern about our use of AI, and how do we hear of it?"
       ],
-      "start": "The five measures BM1 to BM5 and four events EV1 to EV4, with limits, owners and times left for the session."
+      "start": "The six measures BM1 to BM6 and four events EV1 to EV4, with limits, owners and times left for the session. BM6 counts concerns about AI that people raise (ISO/IEC 42001:2023, A.3.3)."
     },
     {
       "id": "B8",
@@ -523,6 +524,11 @@
       [
         "BM5",
         "Actions on the 90-day list overdue",
+        ""
+      ],
+      [
+        "BM6",
+        "Concerns about the use of AI raised through the reporting route, and how many remain open",
         ""
       ]
     ],
@@ -1106,5 +1112,105 @@
       ],
       "financiallyRegulated": false
     }
-  ]
+  ],
+  "crosswalks": {
+    "harm": {
+      "title": "Harm kinds H1 to H6 beside ISO/IEC 42001:2023 A.5 and ISO/IEC 42005:2025",
+      "intro": "ISO/IEC 42005:2025 describes an AI system impact assessment: the impact of one AI system on individuals, on groups of individuals and on society, across its life cycle. ISO/IEC 42001:2023 asks for it in clause 6.1.4 and controls A.5.2 to A.5.5. The board’s harm thresholds (B6) are not that assessment. They say what harm the board will not tolerate, and so what a later impact assessment is measured against. Three of the six kinds are harm to the company itself, which is a matter for risk assessment (clause 6.1.2), not impact assessment.",
+      "head": [
+        "Harm kind",
+        "Whose harm",
+        "Beside ISO/IEC 42001:2023",
+        "Use"
+      ],
+      "rows": [
+        [
+          "H1 Customers or members",
+          "Individuals and groups of individuals",
+          "A.5.4 Assessing AI system impact on individuals or groups of individuals",
+          "An input: the threshold an impact assessment is read against"
+        ],
+        [
+          "H2 Staff and applicants",
+          "Individuals and groups of individuals",
+          "A.5.4",
+          "An input, as H1"
+        ],
+        [
+          "H3 The company’s money",
+          "The company",
+          "6.1.2 AI risk assessment",
+          "A risk criterion. Not an impact on individuals or society"
+        ],
+        [
+          "H4 Operations",
+          "The company, and through it its customers",
+          "6.1.2; for an APRA-regulated entity, the tolerance for the critical operation",
+          "A risk criterion"
+        ],
+        [
+          "H5 Legal and regulatory standing",
+          "The company",
+          "6.1.2; counsel decides what an obligation calls for",
+          "A risk criterion"
+        ],
+        [
+          "H6 Reputation and trust",
+          "The company; where the failure affects the public, society",
+          "6.1.2; A.5.5 Assessing societal impacts of AI systems where the public is affected",
+          "A risk criterion, and an input where the public is affected"
+        ]
+      ],
+      "note": "The cross-walk gives the nearest term in each standard so that the two vocabularies can be read side by side. It is Triodian’s reading, for a person with the relevant ISO competence to check, and it is not an equivalence. Read each term in a licensed copy of the standard."
+    },
+    "info": {
+      "title": "Information classes G1 to G6 beside the company’s own classification scheme (ISO/IEC 27002:2022, 5.12 and 5.13)",
+      "intro": "A company that runs an information security management system to ISO/IEC 27001:2022 already classifies and labels its information (controls 5.12 and 5.13), and treats personal information under 5.34. The classes here are the board’s working set for one decision: which information may go into which kind of AI tool. The GC records the company’s own label for each class at B5, so the confidentiality position reads in the company’s terms.",
+      "head": [
+        "Class",
+        "What it holds",
+        "A typical label in a company’s own scheme",
+        "Note"
+      ],
+      "rows": [
+        [
+          "G1 Public",
+          "Published information",
+          "Public",
+          ""
+        ],
+        [
+          "G2 Internal",
+          "Everyday working information",
+          "Internal",
+          ""
+        ],
+        [
+          "G3 Commercial in confidence",
+          "Pricing, contracts, plans",
+          "Confidential",
+          ""
+        ],
+        [
+          "G4 Personal information",
+          "Information about identifiable people",
+          "Confidential, with the handling rules for personal information (5.34)",
+          "Privacy law applies as counsel advises"
+        ],
+        [
+          "G5 Restricted",
+          "Health, hardship, security and other information with tighter rules",
+          "Restricted, or the scheme’s second-highest level",
+          ""
+        ],
+        [
+          "G6 Board and transaction",
+          "Board papers, price-sensitive and deal information",
+          "The scheme’s highest level, with named access",
+          "The class the AI Confidentiality Exposure Assessment tests for a deal"
+        ]
+      ],
+      "note": "The cross-walk gives the nearest term in each standard so that the two vocabularies can be read side by side. It is Triodian’s reading, for a person with the relevant ISO competence to check, and it is not an equivalence. Read each term in a licensed copy of the standard."
+    }
+  }
 }

@@ -629,11 +629,11 @@ function posEditor(id) {
   } else if (id === 'B7') {
     const ms = P.measures || [], ev = P.events || [], goals = (pos('B2').goals || []), draftOnly = !!posWhy(), mprov = showProv(ms, 'draftedBy');
     if (draftOnly) h += '<p class="small" style="margin:0 0 6px">You draft the measures the board will receive. A director or the CEO proposes them, and the board, the CEO or Triodian records the events and who proposed the reporting.</p>';
-    h += sub('At each meeting · three to five measures, each countable from the inventory or the action list');
+    h += sub('At each meeting · three to six measures, each countable from the inventory or the action list');
     h += blocks(ms.map(x => blk({ ref: refTip(x.id) + (x.goal ? `<div class="small soft" style="margin-top:2px">for ${esc(x.goal)}</div>` : ''), del: delBtn(id, 'measures', x.id),
       main: [pf('Measure', id, `measures.${x.id}.measure`, x.measure, { rows: 1, label: 'Measure ' + x.id })].concat(mprov ? [`<div class="small" style="margin-top:2px">${provCell(x, 'draftedBy', 'confirmMeasure').replace('<br>', ' · ')}</div>`] : []),
       fields: [pf('Limit', id, `measures.${x.id}.limit`, x.limit, { ph: 'e.g. 0', label: 'Limit for ' + x.id }), pf('Owner', id, `measures.${x.id}.owner`, x.owner, { ph: 'Named person', label: 'Owner of ' + x.id })] })));
-    if (ms.length > 5) h += '<p class="small" style="margin:4px 0">More than the five measures the framework suggests. Consider which the board will read.</p>';
+    if (ms.length > 7) h += '<p class="small" style="margin:4px 0">More than seven measures. The framework suggests three to six. Consider which the board will read.</p>';
     const linked = g => ms.some(m => m.goal === g.id) || ms.some(m => g.measure && new RegExp('^' + m.id + '\\b').test(g.measure));
     const open = goals.filter(g => g.measure && !linked(g));
     if (open.length) h += `<div class="panel2" style="padding:10px 14px;margin:6px 0"><p class="small" style="margin:0 0 6px"><strong>From the governance goals (B2).</strong> Each goal’s measure is reported here.</p>${open.map(g => `<div class="row between" style="gap:8px;margin:4px 0"><span class="small">${refTip(g.id)} ${esc(g.measure)}</span><button class="btn sm ghost" data-act="goalMeasure" data-id="${esc(g.id)}">Add as a measure</button></div>`).join('')}</div>`;
@@ -644,7 +644,7 @@ function posEditor(id) {
       main: [pf('Event', id, `events.${x.id}.event`, x.event, { rows: 1, label: 'Event ' + x.id })],
       fields: [pf('Reported to', id, `events.${x.id}.to`, x.to, { list: 'dl_to', label: x.id + ' reported to' }), pf('Within', id, `events.${x.id}.within`, x.within, { ph: 'e.g. 24 hours', label: x.id + ' within' })] })));
     h += '<datalist id="dl_to"><option value="Chair"><option value="Chair and GC"><option value="Accountable executive"><option value="Full board"></datalist>';
-    h += `<div class="row" style="gap:8px;margin:6px 0">${ms.length || ev.length ? '' : '<button class="btn sm primary" data-act="loadStart" data-step="B7">Start from BM1 to BM5 and EV1 to EV4</button>'}<button class="btn sm" data-act="addMeasure">Add a measure</button><button class="btn sm" data-act="addEvent">Add an event</button></div>`;
+    h += `<div class="row" style="gap:8px;margin:6px 0">${ms.length || ev.length ? '' : '<button class="btn sm primary" data-act="loadStart" data-step="B7">Start from BM1 to BM6 and EV1 to EV4</button>'}<button class="btn sm" data-act="addMeasure">Add a measure</button><button class="btn sm" data-act="addEvent">Add an event</button></div>`;
     h += `<div class="fgrid" style="margin-top:8px"><label class="f"><span>Proposed by</span>${propSel(id, 'proposedBy', P.proposedBy)}</label><label class="f"><span>Dissent</span>${dissentIn(id, 'dissent', P.dissent)}</label></div>`;
     }
   } else if (id === 'B8') {
@@ -854,6 +854,16 @@ function briefingMarkdown() {
   out.push('', '## Check of understanding', '', 'Four short questions follow in the app. They check understanding and are not a test. Only you and the facilitators see your answers.');
   return out.join('\n');
 }
+/* ---------- competence (task ISO.6; ISO/IEC 42001:2023, 7.2) ----------
+   For each person who runs the engagement or supplies to it: why they are competent for the role, and the evidence.
+   Directors' competence for this work is the education record itself (B0). Printed at the end of that record. */
+const competenceOf = id => ((S.engagement.competence || {})[id]) || {};
+const runners = () => (S.people || []).filter(p => p.active !== false && p.roles.some(r => !RULES.BOARD.includes(r)));
+function competenceCard(why) {
+  const ps = runners(), done = ps.filter(p => String(competenceOf(p.id).statement || '').trim()).length;
+  return `<section class="card" id="competence"><h2 class="sh">5a · Competence</h2><p class="small soft">For each person who runs the engagement or supplies to it: why they are competent for the role, and the evidence (ISO/IEC 42001:2023, 7.2). Directors’ competence for this work is the education record (B0). ${done} of ${ps.length} recorded. Printed in the education record.</p>
+    <div class="stack" style="gap:10px">${ps.map(p => `<div class="fgrid" style="grid-template-columns:minmax(180px,1fr) 2fr 2fr"><div><strong>${esc(p.name)}</strong><br><span class="small soft">${esc(p.roles.filter(r => !RULES.BOARD.includes(r)).map(roleName).join(', '))}</span></div>${fld('Why competent for the role', `engagement.competence.${p.id}.statement`, competenceOf(p.id).statement || '')}${fld('Evidence', `engagement.competence.${p.id}.evidence`, competenceOf(p.id).evidence || '')}</div>`).join('') || '<p class="soft small">No one outside the board has a role yet.</p>'}</div></section>`;
+}
 function educationMarkdown() {
   const e = S.engagement, edu = S.education || {}, cell = v => String(v == null ? '' : v).replace(/\|/g, '\\|');
   const out = [];
@@ -864,6 +874,8 @@ function educationMarkdown() {
   boardPeople().forEach(p => { const x = edu[p.id] || {}; out.push(`| ${cell(p.name)} | ${cell(p.roles.filter(r => RULES.BOARD.includes(r)).map(roleName).join(', '))} | ${x.readOn ? dl(x.readOn) : 'Not yet'} | ${x.completedOn ? dl(x.completedOn) : 'Not yet'} |`); });
   const not = notBriefed();
   out.push('', not.length ? `Not yet completed: ${not.map(p => p.name).join(', ')}. The chair decides whether to proceed.` : 'Every director has completed the briefing.', '', mgmtLine());
+  out.push('', '## Competence of the people who run the engagement', '', 'ISO/IEC 42001:2023, 7.2. Directors’ competence for this work is the record above.', '', '| Person | Role | Why competent for the role | Evidence |', '| --- | --- | --- | --- |',
+    ...runners().map(p => `| ${cell(p.name)} | ${cell(p.roles.filter(r => !RULES.BOARD.includes(r)).map(roleName).join(', '))} | ${cell(competenceOf(p.id).statement || '[not yet recorded]')} | ${cell(competenceOf(p.id).evidence || '')} |`));
   return out.join('\n');
 }
 const notBriefed = () => boardPeople().filter(p => !((S.education || {})[p.id] || {}).completedOn);
@@ -1021,6 +1033,7 @@ function mainScreen() {
   </div><div style="margin-top:14px">${TriodianBrand.logoControl(e.practitioner, deny('setup') ? 'disabled' : '')}</div></section>
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">4 · Areas of the business</h2>${why ? '' : '<button class="btn sm" data-act="addArea">Add an area</button>'}</div>${sectorPanel(why)}<p class="small soft">The board sets a posture for each area at B2. Change these to the company's own list.</p><div class="stack" style="gap:8px">${areas}</div></section>
   <section class="card"><div class="row between"><h2 class="sh" style="margin:0">5 · People</h2>${SRV.user && SRV.user.isAdmin ? '<a class="btn sm" href="/admin/">Manage in Admin</a>' : ''}</div><p class="small soft">Everyone with a role in this engagement. Roles are given in Admin.</p><div class="stack" style="gap:8px">${people}</div></section>
+  ${competenceCard(why)}
   <section class="card"><h2 class="sh">6 · The ten steps</h2><p class="small soft">From the Board AI Appetite Framework, section 4.1. Open a step to see what is recorded.${UI.practice ? ' In the worked example you can try the inventory (B1) and the positions (B2 to B8). Nothing is saved.' : ''}</p><div class="steplist">${steps}</div></section>
   ${checksSection()}
   ${outputsSection()}`;
@@ -1046,18 +1059,20 @@ function evidenceMarkdown() {
   out.push('# APRA letter evidence index', '', `**${e.company || '[company]'}**${e.reference ? ' · ' + e.reference : ''} · ${outputsFor().status}`, '');
   if (evTags('evidence')) out.push(`Evidence for: ${evTags('evidence')}.`, '');
   const notes = g ? (g.notes || []) : ['AI Risk Appetite and AI Use Assessment have not been gathered yet. Use “Gather the evidence” under the outputs.'];
-  return out.join('\n') + '\n' + EV().indexMarkdown({ artefacts: evArtefacts(), by: UI.evBy, review: e.managementReview, company: e.company, gatheredOn: dl(g ? g.gatheredOn : todayISO()), notes });
+  return out.join('\n') + '\n' + EV().indexMarkdown({ artefacts: evArtefacts(), by: UI.evBy, review: e.managementReview, company: e.company, gatheredOn: dl(g ? g.gatheredOn : todayISO()), notes, soa: g ? g.soa : null });
 }
 function evidenceCard() {
   if (!EV()) return '';
   const A = evArtefacts().filter(a => a.status !== 'none'), cv = EV().coverage(A), g = UI.evidence, by = UI.evBy === 'iso' ? 'iso' : 'letter';
+  const soaIx = g && Array.isArray(g.soa) && g.soa.length ? Object.fromEntries(g.soa.map(r => [r.control, r])) : null, sm = EV().isoSummary(A, g ? g.soa : null);
   const groups = by === 'iso' ? EV().ISO.map(([id, name]) => [id, name, A.filter(a => (a.iso || []).includes(id))]) : EV().LETTER.map(b => [b.id, b.text, A.filter(a => (a.letter || []).includes(b.id))]);
-  const cellOf = ([id, name, hits]) => `<div class="panel2" data-ev="${esc(id)}" style="padding:8px 12px"><div class="row between"><span><span class="mono">${esc(id)}</span> <span class="small">${esc(name)}</span></span>${hits.length ? `<span class="badge b-green">${hits.length}</span>` : '<span class="badge b-grey">none yet</span>'}</div>${hits.length ? `<div class="mini" style="margin-top:4px">${hits.map(a => esc(a.name) + (a.status === 'draft' ? ' (draft)' : '')).join(' · ')}</div>` : ''}</div>`;
+  const cellOf = ([id, name, hits]) => `<div class="panel2" data-ev="${esc(id)}" style="padding:8px 12px"><div class="row between"><span><span class="mono">${esc(id)}</span> <span class="small">${esc(name)}</span></span>${hits.length ? `<span class="badge b-green">${hits.length}</span>` : `<span class="badge b-grey">${by === 'iso' ? 'not evidenced by this suite' : 'none yet'}</span>`}</div>${by === 'iso' && soaIx && /^A\./.test(id) ? `<div class="mini" style="margin-top:4px">Statement of Applicability: ${esc(EV().soaLine(soaIx[id]))}</div>` : ''}${hits.length ? `<div class="mini" style="margin-top:4px">${hits.map(a => esc(a.name) + (a.status === 'draft' ? ' (draft)' : '')).join(' · ')}</div>` : ''}</div>`;
   return `<div id="evidence" style="margin-top:18px"><div class="row between"><h3 class="sh" style="margin:0">APRA letter evidence index (BO7)</h3><div class="row">
       <label class="f" style="min-width:200px" for="ev-by"><span>View</span><select class="in" id="ev-by" data-evby="1"><option value="letter" ${by === 'letter' ? 'selected' : ''}>By letter bullet</option><option value="iso" ${by === 'iso' ? 'selected' : ''}>By ISO/IEC 42001 control</option></select></label>
       <button class="btn sm" data-act="gatherEvidence">Gather the evidence</button></div></div>
     <p class="small soft">${g ? `Gathered from AI Risk Appetite and AI Use Assessment ${esc(dl(g.gatheredOn))}.` : 'Shows this engagement’s own artefacts until the evidence is gathered from AI Risk Appetite and AI Use Assessment.'} ${cv.bullets} of the ${cv.of} letter bullets have evidence: ${cv.recorded} artefact${cv.recorded === 1 ? '' : 's'} recorded and ${cv.draft} in draft.${S.engagement.managementReview ? ` Review dates follow the AI management review on ${esc(dl(S.engagement.managementReview))}.` : ' Set the next AI management review on set-up to give every artefact a review date.'}</p>
     ${g && (g.notes || []).length ? `<p class="small" style="color:var(--red)">${g.notes.map(esc).join(' ')}</p>` : ''}
+    ${by === 'iso' ? `<p class="small soft" id="ev-iso-note">Every clause the outputs are tagged to, then all ${sm.controls} controls of ISO/IEC 42001:2023 Annex A. The outputs evidence ${sm.evidencedAll} of them; the rest are for the client’s own AI management system. ${soaIx ? `The Statement of Applicability loaded in AI Risk Appetite lists ${sm.listed} controls, ${sm.applicable} of which apply; the outputs evidence ${sm.evidenced} of those.` : 'Load the client’s Statement of Applicability in AI Risk Appetite’s set-up to see each control against it.'} No output is an AI system impact assessment (A.5). The tags are Triodian’s reading, for the independent reviewer or another person with ISO/IEC 42001 competence to check.</p>` : ''}
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px">${groups.map(cellOf).join('')}</div></div>`;
 }
 function downloadOutput(id) {
