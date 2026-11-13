@@ -14,6 +14,7 @@ C.regulatedSectorsSource = `Triodian Metamodel ${version}, reference-data/regula
 C.regulatedSectors = items.map(d => ({
   id: d.regulatedSectorID, jurisdiction: d.jurisdiction, name: d.name, entityTypes: d.entityTypes,
   ...(d.alsoReaches ? { alsoReaches: d.alsoReaches } : {}), financiallyRegulated: d.financiallyRegulated,
+  ...(d.mainSector ? { mainSector: true } : {}), ...(d.baselineProfiles ? { baselineProfiles: d.baselineProfiles } : {}),
 }));
 writeFileSync(file, JSON.stringify(C, null, 2) + '\n');
 console.log(`${C.regulatedSectors.length} regulated sectors from Metamodel ${version}`);

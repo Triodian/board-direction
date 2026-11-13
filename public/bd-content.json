@@ -911,10 +911,285 @@
         "AI giving a customer personalised investment advice with no representative reviewing it",
         "Critical services depending on a single AI provider with no plan to replace it"
       ]
+    },
+    {
+      "id": "bpBanking",
+      "name": "Banking (best-practice baseline)",
+      "mode": "both",
+      "baseline": "BP-BANKING",
+      "governingBody": "board",
+      "entityTypes": [],
+      "sectors": [
+        "AU-BANKING",
+        "AU-CREDIT",
+        "SG-BANKING"
+      ],
+      "note": "A best-practice baseline that holds in any jurisdiction, for deposit-takers and lenders, drawn from BCBS, FSB, ISO/IEC, NIST. The jurisdiction's own obligations come from the matter brief.",
+      "areas": [
+        "Retail lending",
+        "Business lending",
+        "Deposits and payments",
+        "Fraud and financial crime",
+        "Markets and treasury",
+        "Customer service",
+        "Operations",
+        "Technology and security"
+      ],
+      "briefingHeading": "Common failures: banking",
+      "failures": [
+        "A credit model declines a group of applicants on a proxy for a protected attribute.",
+        "A fraud model freezes legitimate accounts at scale.",
+        "A provider's model change shifts decisions without notice.",
+        "An agent with payment authority is compromised."
+      ],
+      "redLineCandidates": [
+        "A final credit or account-closure decision no person can review",
+        "Agents initiating payments above a set value unattended",
+        "Customer data used to train an external model"
+      ]
+    },
+    {
+      "id": "bpInsurance",
+      "name": "Insurance (best-practice baseline)",
+      "mode": "both",
+      "baseline": "BP-INSURANCE",
+      "governingBody": "board",
+      "entityTypes": [],
+      "sectors": [
+        "AU-INSURANCE",
+        "SG-INSURANCE"
+      ],
+      "note": "A best-practice baseline that holds in any jurisdiction, for life, general and health insurers, drawn from IAIS, FSB, ISO/IEC, NIST. The jurisdiction's own obligations come from the matter brief.",
+      "areas": [
+        "Distribution and sales",
+        "Underwriting",
+        "Pricing",
+        "Claims",
+        "Customer service",
+        "Reinsurance and capital",
+        "Investments",
+        "Technology"
+      ],
+      "briefingHeading": "Common failures: insurance",
+      "failures": [
+        "Granular pricing excludes a group from cover.",
+        "Automated claims decline valid claims.",
+        "A third-party model's output cannot be explained to a claimant.",
+        "The insurer cannot obtain evidence from the vendor of a model it relies on."
+      ],
+      "redLineCandidates": [
+        "Claim denial with no person reviewing it",
+        "Pricing on data the customer did not provide and cannot see",
+        "Health or genetic data in models outside the insurer's control"
+      ]
+    },
+    {
+      "id": "bpSecurities",
+      "name": "Securities and investment advice (best-practice baseline)",
+      "mode": "both",
+      "baseline": "BP-SECURITIES",
+      "governingBody": "board",
+      "entityTypes": [],
+      "sectors": [
+        "AU-FINANCIAL-SERVICES",
+        "SG-CAPITAL-MARKETS"
+      ],
+      "note": "A best-practice baseline that holds in any jurisdiction, for broker-dealers, advisers and fund managers, drawn from IOSCO, ISO/IEC, NIST. The jurisdiction's own obligations come from the matter brief.",
+      "areas": [
+        "Advice and recommendations",
+        "Client communications",
+        "Trading and execution",
+        "Research",
+        "Portfolio management",
+        "Compliance and surveillance",
+        "Operations"
+      ],
+      "briefingHeading": "Common failures: securities and investment advice",
+      "failures": [
+        "Unsuitable or misleading AI-generated advice reaches clients.",
+        "A trading agent acts beyond its mandate.",
+        "Prompts and outputs are not kept as records.",
+        "Several firms using the same model move together in a stress."
+      ],
+      "redLineCandidates": [
+        "Advice sent to retail clients with no adviser review",
+        "Trading agents without a hard limit and a stop",
+        "Client communications generated with no record of the prompt"
+      ]
+    },
+    {
+      "id": "bpHealth",
+      "name": "Health care (best-practice baseline)",
+      "mode": "both",
+      "baseline": "BP-HEALTH",
+      "governingBody": "board",
+      "entityTypes": [],
+      "sectors": [
+        "AU-HEALTH",
+        "SG-HEALTH"
+      ],
+      "note": "A best-practice baseline that holds in any jurisdiction, for health care providers and health plans, drawn from WHO, ISO, IEC, ISO/IEC, NIST. The jurisdiction's own obligations come from the matter brief.",
+      "areas": [
+        "Clinical care",
+        "Diagnostics",
+        "Patient communication",
+        "Scheduling and administration",
+        "Clinical documentation",
+        "Coverage and prior authorisation",
+        "Research"
+      ],
+      "briefingHeading": "Common failures: health care",
+      "failures": [
+        "A clinician relies on a wrong AI suggestion (automation bias).",
+        "Coverage is denied by an algorithm with no clinical review.",
+        "Patient data reaches a model outside the organization's control.",
+        "A model performs worse for a population it was not trained on."
+      ],
+      "redLineCandidates": [
+        "A denial of care or coverage with no clinician's review",
+        "Patient-facing advice with no clinical oversight",
+        "Health information in tools not under the organization's contract"
+      ]
+    },
+    {
+      "id": "bpPayments",
+      "name": "Payments and money transmission (best-practice baseline)",
+      "mode": "both",
+      "baseline": "BP-PAYMENTS",
+      "governingBody": "board",
+      "entityTypes": [],
+      "sectors": [
+        "AU-PAYMENTS",
+        "SG-PAYMENTS"
+      ],
+      "note": "A best-practice baseline that holds in any jurisdiction, for payment providers, remitters and e-money issuers, drawn from FATF, CPMI-IOSCO, FSB, ISO/IEC, NIST. The jurisdiction's own obligations come from the matter brief.",
+      "areas": [
+        "Onboarding and identity",
+        "Transaction processing",
+        "Fraud",
+        "Sanctions and AML screening",
+        "Disputes and chargebacks",
+        "Customer service",
+        "Treasury and liquidity"
+      ],
+      "briefingHeading": "Common failures: payments and money transmission",
+      "failures": [
+        "False positives stop legitimate payments at scale.",
+        "A sanctions hit is missed because a model was tuned for fewer alerts.",
+        "An agent initiates payments on a compromised instruction.",
+        "A payment initiated by a customer's AI agent cannot be attributed."
+      ],
+      "redLineCandidates": [
+        "Agents initiating payments without a value limit and a stop",
+        "Account closure on a model score alone",
+        "Screening thresholds changed without a person's sign-off"
+      ]
+    },
+    {
+      "id": "bpCiGovernment",
+      "name": "Critical infrastructure, government-managed (best-practice baseline)",
+      "mode": "both",
+      "baseline": "BP-CI-GOVERNMENT",
+      "governingBody": "accountableAuthority",
+      "entityTypes": [],
+      "sectors": [
+        "AU-CRITICAL-INFRASTRUCTURE",
+        "SG-CRITICAL-INFRASTRUCTURE"
+      ],
+      "note": "A best-practice baseline that holds in any jurisdiction, for utilities, transport, water and networks run by a public body, drawn from CISA with the ACSC and six other national cyber agencies, IEC, NIST, OECD, ISO/IEC. The jurisdiction's own obligations come from the matter brief. The app names the accountable authority where it would name the board.",
+      "areas": [
+        "Network operations",
+        "Asset maintenance",
+        "Customer and community service",
+        "Emergency response",
+        "Procurement",
+        "Information technology",
+        "Operational technology"
+      ],
+      "briefingHeading": "Common failures: critical infrastructure, government-managed",
+      "failures": [
+        "An AI-enabled change reaches a safety system.",
+        "A supplier's remote access is used by an attacker's agent.",
+        "Decisions about the community (service restriction, prioritisation) cannot be explained or reviewed.",
+        "The operator cannot show what an AI did after an incident."
+      ],
+      "redLineCandidates": [
+        "AI that changes setpoints or switches in operational technology without a person's approval",
+        "AI with a path from the internet to control systems",
+        "Decisions about individuals' service with no review"
+      ]
+    },
+    {
+      "id": "bpCiCorporate",
+      "name": "Critical infrastructure, corporate-managed (best-practice baseline)",
+      "mode": "both",
+      "baseline": "BP-CI-CORPORATE",
+      "governingBody": "board",
+      "entityTypes": [],
+      "sectors": [
+        "AU-CRITICAL-INFRASTRUCTURE",
+        "SG-CRITICAL-INFRASTRUCTURE"
+      ],
+      "note": "A best-practice baseline that holds in any jurisdiction, for utilities, transport, water and networks run by a company or under concession, drawn from CISA with the ACSC and six other national cyber agencies, IEC, NIST, ISO/IEC. The jurisdiction's own obligations come from the matter brief.",
+      "areas": [
+        "Network operations",
+        "Asset maintenance",
+        "Customer and community service",
+        "Emergency response",
+        "Supplier management",
+        "Information technology",
+        "Operational technology",
+        "Commercial operations"
+      ],
+      "briefingHeading": "Common failures: critical infrastructure, corporate-managed",
+      "failures": [
+        "An AI-enabled change reaches a safety system.",
+        "A supplier's remote access is used by an attacker's agent.",
+        "Decisions about the community (service restriction, prioritisation) cannot be explained or reviewed.",
+        "The operator cannot show what an AI did after an incident.",
+        "A concession or licence condition is breached by an AI-driven change.",
+        "A vendor's model update changes plant behaviour."
+      ],
+      "redLineCandidates": [
+        "AI that changes setpoints or switches in operational technology without a person's approval",
+        "AI with a path from the internet to control systems",
+        "Decisions about individuals' service with no review"
+      ]
+    },
+    {
+      "id": "bpGovernment",
+      "name": "Government in general (best-practice baseline)",
+      "mode": "both",
+      "baseline": "BP-GOVERNMENT",
+      "governingBody": "accountableAuthority",
+      "entityTypes": [],
+      "sectors": [],
+      "note": "A best-practice baseline that holds in any jurisdiction, for departments and agencies, drawn from OECD, ISO/IEC, NIST. The jurisdiction's own obligations come from the matter brief. The app names the accountable authority where it would name the board.",
+      "areas": [
+        "Service delivery",
+        "Benefits and entitlements",
+        "Tax and revenue",
+        "Regulation and enforcement",
+        "Policy",
+        "Corporate services",
+        "Procurement"
+      ],
+      "briefingHeading": "Common failures: government in general",
+      "failures": [
+        "An automated decision about entitlements is wrong at scale and cannot be explained.",
+        "AI use is not disclosed and public trust is lost.",
+        "Procurement locks the agency into a provider it cannot assess.",
+        "The agency cannot answer a review or information request about what an AI did."
+      ],
+      "redLineCandidates": [
+        "A decision adverse to a person made by AI with no officer's review",
+        "AI use not listed on a public register",
+        "Personal information used to train an external model"
+      ]
     }
   ],
   "sectorPacksNote": "A sector pack gives the starting areas of the business, the failure cases in the director briefing and the uses boards commonly consider at B3. Drafted by Triodian; counsel reviews each pack’s wording.",
-  "regulatedSectorsSource": "Triodian Metamodel 2.5.0, reference-data/regulated-sectors.json",
+  "regulatedSectorsSource": "Triodian Metamodel 2.8.0, reference-data/regulated-sectors.json",
   "regulatedSectors": [
     {
       "id": "AU-BANKING",
@@ -923,7 +1198,11 @@
       "entityTypes": [
         "authorisedDepositTakingInstitution"
       ],
-      "financiallyRegulated": true
+      "financiallyRegulated": true,
+      "mainSector": true,
+      "baselineProfiles": [
+        "BP-BANKING"
+      ]
     },
     {
       "id": "AU-INSURANCE",
@@ -934,7 +1213,11 @@
         "lifeInsurer",
         "privateHealthInsurer"
       ],
-      "financiallyRegulated": true
+      "financiallyRegulated": true,
+      "mainSector": true,
+      "baselineProfiles": [
+        "BP-INSURANCE"
+      ]
     },
     {
       "id": "AU-SUPERANNUATION",
@@ -943,7 +1226,8 @@
       "entityTypes": [
         "superannuationTrustee"
       ],
-      "financiallyRegulated": true
+      "financiallyRegulated": true,
+      "mainSector": true
     },
     {
       "id": "AU-FINANCIAL-SERVICES",
@@ -952,7 +1236,10 @@
       "entityTypes": [
         "financialServicesLicensee"
       ],
-      "financiallyRegulated": true
+      "financiallyRegulated": true,
+      "baselineProfiles": [
+        "BP-SECURITIES"
+      ]
     },
     {
       "id": "AU-CREDIT",
@@ -961,7 +1248,10 @@
       "entityTypes": [
         "creditLicensee"
       ],
-      "financiallyRegulated": true
+      "financiallyRegulated": true,
+      "baselineProfiles": [
+        "BP-BANKING"
+      ]
     },
     {
       "id": "AU-PAYMENTS",
@@ -970,7 +1260,10 @@
       "entityTypes": [
         "paymentServiceProvider"
       ],
-      "financiallyRegulated": true
+      "financiallyRegulated": true,
+      "baselineProfiles": [
+        "BP-PAYMENTS"
+      ]
     },
     {
       "id": "AU-LISTED",
@@ -988,7 +1281,11 @@
       "entityTypes": [
         "healthServiceProvider"
       ],
-      "financiallyRegulated": false
+      "financiallyRegulated": false,
+      "mainSector": true,
+      "baselineProfiles": [
+        "BP-HEALTH"
+      ]
     },
     {
       "id": "AU-CRITICAL-INFRASTRUCTURE",
@@ -997,7 +1294,12 @@
       "entityTypes": [
         "criticalInfrastructureAssetOwner"
       ],
-      "financiallyRegulated": false
+      "financiallyRegulated": false,
+      "mainSector": true,
+      "baselineProfiles": [
+        "BP-CI-CORPORATE",
+        "BP-CI-GOVERNMENT"
+      ]
     },
     {
       "id": "AU-DEFENCE",
@@ -1028,7 +1330,11 @@
       "alsoReaches": [
         "financialInstitution"
       ],
-      "financiallyRegulated": true
+      "financiallyRegulated": true,
+      "mainSector": true,
+      "baselineProfiles": [
+        "BP-BANKING"
+      ]
     },
     {
       "id": "SG-INSURANCE",
@@ -1040,7 +1346,11 @@
       "alsoReaches": [
         "financialInstitution"
       ],
-      "financiallyRegulated": true
+      "financiallyRegulated": true,
+      "mainSector": true,
+      "baselineProfiles": [
+        "BP-INSURANCE"
+      ]
     },
     {
       "id": "SG-CAPITAL-MARKETS",
@@ -1052,7 +1362,11 @@
       "alsoReaches": [
         "financialInstitution"
       ],
-      "financiallyRegulated": true
+      "financiallyRegulated": true,
+      "mainSector": true,
+      "baselineProfiles": [
+        "BP-SECURITIES"
+      ]
     },
     {
       "id": "SG-PAYMENTS",
@@ -1064,7 +1378,10 @@
       "alsoReaches": [
         "financialInstitution"
       ],
-      "financiallyRegulated": true
+      "financiallyRegulated": true,
+      "baselineProfiles": [
+        "BP-PAYMENTS"
+      ]
     },
     {
       "id": "SG-LISTED",
@@ -1073,7 +1390,8 @@
       "entityTypes": [
         "listedEntity"
       ],
-      "financiallyRegulated": false
+      "financiallyRegulated": false,
+      "mainSector": true
     },
     {
       "id": "SG-HEALTH",
@@ -1082,7 +1400,10 @@
       "entityTypes": [
         "healthServiceProvider"
       ],
-      "financiallyRegulated": false
+      "financiallyRegulated": false,
+      "baselineProfiles": [
+        "BP-HEALTH"
+      ]
     },
     {
       "id": "SG-CRITICAL-INFRASTRUCTURE",
@@ -1091,7 +1412,12 @@
       "entityTypes": [
         "criticalInfrastructureAssetOwner"
       ],
-      "financiallyRegulated": false
+      "financiallyRegulated": false,
+      "mainSector": true,
+      "baselineProfiles": [
+        "BP-CI-CORPORATE",
+        "BP-CI-GOVERNMENT"
+      ]
     },
     {
       "id": "SG-DEFENCE",
@@ -1212,5 +1538,6 @@
       ],
       "note": "The cross-walk gives the nearest term in each standard so that the two vocabularies can be read side by side. It is Triodian’s reading, for a person with the relevant ISO competence to check, and it is not an equivalence. Read each term in a licensed copy of the standard."
     }
-  }
+  },
+  "baselinesSource": "Triodian Metamodel 2.8.0, reference-data/baseline-profiles.json"
 }

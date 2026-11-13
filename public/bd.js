@@ -1332,6 +1332,12 @@ document.addEventListener('click', async ev => {
 
 /* ---------- boot ---------- */
 (async function boot() {
+  // A pack for a public body names its accountable authority where the app says "board" (baselines, task BP.4).
+  if (window.TriodianTerms) {
+    const body = () => { try { return S ? SECTOR().governingBodyOf(C, S.engagement) : 'board'; } catch (e) { return 'board'; } };
+    TriodianTerms.watch(document.getElementById('app'), body);
+    TriodianTerms.wrapExport(window.RAFExport, body);
+  }
   render();
   const r = await api('GET', '/api/me');
   SRV.checked = true;
