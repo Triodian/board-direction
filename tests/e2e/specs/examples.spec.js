@@ -73,7 +73,7 @@ test('the menu offers the other example, and a link for a sector this app has no
   await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); } catch (e) {} });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
   await p.goto('/');
-  await expect(p.locator('.examplenote').first()).toContainText('a fictional company, board and advisers');   // the default is unchanged
+  await expect(p.locator('.examplenote').first()).toContainText('a fictional company, Harrow Valley Foods');   // the default is unchanged
   await expect(p.locator('body')).toContainText('Harrow Valley Foods');
   await p.locator('[data-act="drawer"]').first().click();
   await expect(p.locator('[data-act="example"][data-ex="unregulated"]')).toHaveCount(0);                         // already open

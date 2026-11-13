@@ -54,7 +54,7 @@ ok('empty: reserved decisions fall back to the six starting events', OE.statemen
 ok('empty: every list generates', ['statement', 'directions', 'aupOutline', 'minute', 'actionList', 'plan'].every(k => typeof OE[k]() === 'string'));
 { const cw = O.crosswalk();
   ok('crosswalk: one row for each step B0 to B9, against both frameworks', (cw.match(/^\| B\d /gm) || []).length === 10 && cw.includes('ISO/IEC 42001:2023') && cw.includes('NIST AI RMF 1.0'));
-  ok('crosswalk: it says what the worked example recorded', /B1 Inventory \| 8 lines, 7 confirmed by the technology owner/.test(cw) && /management briefing held 6 November 2026/.test(cw) && /5 measures at each meeting/.test(cw) && /Resolved 2 December 2026/.test(cw));
+  ok('crosswalk: it says what the worked example recorded', /B1 Inventory \| 12 lines, 11 confirmed by the technology owner/.test(cw) && /management briefing held 6 November 2026/.test(cw) && /5 measures at each meeting/.test(cw) && /Resolved 2 December 2026/.test(cw));
   ok('crosswalk: it names clauses, controls and subcategories', ['5.2 AI policy', 'A.3.2 AI roles and responsibilities', '9.3 Management review', 'GOVERN 1.6', 'GOVERN 2.3', 'MAP 1.5'].every(x => cw.includes(x)));
   ok('crosswalk: it claims no conformity and gives no legal view', cw.includes('not a statement of conformity') && cw.includes('not legal advice') && !/\b(complies|compliant|conforms|meets the requirement|satisfies)\b/i.test(cw) && !/\b(must|required)\b/i.test(cw));
   const ce = OE.crosswalk();
