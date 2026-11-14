@@ -104,6 +104,8 @@ A new engagement starts in the jurisdiction and regulated sector set by `DEFAULT
 
 **Best-practice baselines.** A sector with no pack of its own (Australian health or critical infrastructure, for example) is offered its [best-practice baseline](https://github.com/Triodian/Triodian_Metamodel/blob/main/docs/baselines.md): a pack that holds in any jurisdiction, drawn from international standard setters. Packs for a public body (government, or critical infrastructure run by government) name the accountable authority where the app says "board", on screen and in every download. The baseline packs are written from the Metamodel with `node tools/sync-baselines.mjs ../triodian_metamodel && node tools/build-content.mjs`. To add a jurisdiction, see [adding a jurisdiction](https://github.com/Triodian/Triodian_Metamodel/blob/main/docs/adding-a-jurisdiction.md).
 
+Two of the [baseline controls](https://github.com/Triodian/Triodian_Metamodel/blob/main/reference-data/baseline-controls.json) live here. **Fast path (BC2):** at B4 the board sets the number of days in which management may approve a new AI use at A1 or A2 that reaches no B6 threshold; it appears in the statement and travels in the board directions as event FP, so the directions format is unchanged. **Productivity measures (BC4):** BM7 (days from request to approval) and BM8 (share of AI use on sanctioned tools) are in the starting measures at B7.
+
 ## Tests
 ```
 for f in tests/*.test.mjs; do node "$f"; done

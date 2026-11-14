@@ -530,6 +530,16 @@
         "BM6",
         "Concerns about the use of AI raised through the reporting route, and how many remain open",
         ""
+      ],
+      [
+        "BM7",
+        "Days from request to approval for a new AI use, on the fast path and off it",
+        ""
+      ],
+      [
+        "BM8",
+        "Share of AI use on sanctioned tools",
+        ""
       ]
     ],
     "events": [
@@ -1539,5 +1549,6 @@
       "note": "The cross-walk gives the nearest term in each standard so that the two vocabularies can be read side by side. It is Triodian’s reading, for a person with the relevant ISO competence to check, and it is not an equivalence. Read each term in a licensed copy of the standard."
     }
   },
-  "baselinesSource": "Triodian Metamodel 2.8.0, reference-data/baseline-profiles.json"
+  "baselinesSource": "Triodian Metamodel 2.8.0, reference-data/baseline-profiles.json",
+  "fastPathNote": "Baseline control BC2. Management approves a new AI use that assists or recommends (A1 or A2) and reaches no threshold the board set at B6 within the number of days set here, and reports it under BM1. Anything above that goes to the reserved events. A quick approved route moves AI use onto sanctioned tools; BM7 and BM8 show whether it does."
 }
