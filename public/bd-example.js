@@ -167,6 +167,12 @@ const EXAMPLE_COMPETENCE = {
 };
 window.BDExample = id => {
   const S = window.BDExampleOf(id).build();
+  // The worked examples set the fast path (BC2) and report the two productivity measures (BC4).
+  const b4 = S.positions.B4 || (S.positions.B4 = {}), lead = ((b4.events || [])[0] || {}).proposedBy || '';
+  if (!b4.fastPath) b4.fastPath = { days: '10', by: 'CEO', proposedBy: lead };
+  const b7 = S.positions.B7 || (S.positions.B7 = {}), ms = b7.measures || (b7.measures = []), owner = (ms[0] || {}).owner || 'CEO';
+  if (!ms.some(m => m.id === 'BM7')) ms.push({ id: 'BM7', measure: 'Days from request to approval for a new AI use, on the fast path and off it', limit: '10 on the fast path', owner, proposedBy: lead });
+  if (!ms.some(m => m.id === 'BM8')) ms.push({ id: 'BM8', measure: 'Share of AI use on sanctioned tools', limit: 'Rising each quarter', owner, proposedBy: lead });
   if (!S.engagement.competence) S.engagement.competence = Object.fromEntries(S.people.map(p => [p, p.roles.find(r => EXAMPLE_COMPETENCE[r])]).filter(([, r]) => r).map(([p, r]) => [p.id, { statement: EXAMPLE_COMPETENCE[r][0], evidence: EXAMPLE_COMPETENCE[r][1] }]));
   return S;
 };

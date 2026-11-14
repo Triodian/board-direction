@@ -55,9 +55,11 @@ const OE = make(E, C, { today: '2026-12-01' });
 ok('empty: statement says no red lines were set', OE.statement().includes('The board set no red lines.'));
 ok('empty: reserved decisions fall back to the six starting events', OE.statement().includes('The six starting events apply'));
 ok('empty: every list generates', ['statement', 'directions', 'aupOutline', 'minute', 'actionList', 'plan'].every(k => typeof OE[k]() === 'string'));
+ok('the example sets the fast path, in the statement and the directions paper', /\*\*Fast path\.\*\* CEO may approve a new AI use .* within 10 days/.test(O.statement()) && /Fast path \(FP\)/.test(O.directions()));
+ok('the example reports the two productivity measures', /Days from request to approval/.test(O.statement()) && /Share of AI use on sanctioned tools/.test(O.statement()));
 { const cw = O.crosswalk();
   ok('crosswalk: one row for each step B0 to B9, against both frameworks', (cw.match(/^\| B\d /gm) || []).length === 10 && cw.includes('ISO/IEC 42001:2023') && cw.includes('NIST AI RMF 1.0'));
-  ok('crosswalk: it says what the worked example recorded', /B1 Inventory \| 12 lines, 11 confirmed by the technology owner/.test(cw) && /management briefing held 6 November 2026/.test(cw) && /6 measures at each meeting/.test(cw) && /Resolved 2 December 2026/.test(cw));
+  ok('crosswalk: it says what the worked example recorded', /B1 Inventory \| 12 lines, 11 confirmed by the technology owner/.test(cw) && /management briefing held 6 November 2026/.test(cw) && /8 measures at each meeting/.test(cw) && /Resolved 2 December 2026/.test(cw));
   // Tasks ISO.4 and ISO.7: ISO/IEC 38507:2022 beside the other two, and a cross-walk for each scale the app uses.
   ok('crosswalk: each step names the governing body’s task under ISO/IEC 38507:2022', cw.includes('| ISO/IEC 38507:2022 |') && /\| B2 Posture and goals \|[^\n]*\| Direct: the objectives for the use of AI[^\n]*\|/.test(cw) && /\| B7 Reporting \|[^\n]*\| Monitor: what the governing body is told, and how fast \|/.test(cw));
   ok('crosswalk: the goals are clause 6.2, the owners A.3.2, and the harm thresholds an input to A.5.2 only', /B2 Posture and goals[^\n]*6\.2 AI objectives/.test(cw) && /B8 Accountability[^\n]*A\.3\.2 AI roles and responsibilities/.test(cw) && /B6 Harm thresholds[^\n]*an input to A\.5\.2, not an AI system impact assessment/.test(cw));

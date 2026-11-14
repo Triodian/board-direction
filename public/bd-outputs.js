@@ -82,6 +82,7 @@
       out.push('## 5. Decisions reserved to the board', '');
       if (rv.length) out.push(tableMd(['Event', 'The board', 'Brought by'], rv.map(x => [x.event, x.timing || 'Not set', x.by || 'Not named'])), '');
       else out.push('No reserved decisions were recorded. The six starting events apply, with the board told after: a new AI use at a high authority level; a new use in an area marked Avoid; an exception to a red line; a new provider whose AI sees restricted or board information; a material AI incident; a change to this statement or its measures.', '');
+      { const fp = pos('B4').fastPath || {}; if (fp.days) out.push(`**Fast path.** ${cell(fp.by || 'Management')} may approve a new AI use that assists or recommends (A1 or A2) and reaches no threshold in section 7 within ${cell(fp.days)} days, and reports it to the board under the measures in section 8.`, ''); }
       out.push('## 6. Confidential information', '', 'What information may go into which kinds of AI tool.', '');
       const cells = b5.cells || {};
       out.push(tableMd(['Information', ...KINDS.map(k => lbl(SC.toolKind, k))], CLASSES.map(g => [lbl(SC.infoClass, g), ...KINDS.map(k => MARK[cells[g + ':' + k]] || 'Not set')])), '');
@@ -109,6 +110,7 @@
       out.push('## BD2 Red lines · read on decisions 1, authority, and 6, location', '');
       lines.length ? (lines.forEach(l => out.push(`- ${cell(l.use)} (${cell(l.scope || 'All areas')}; ${cell(l.appliesTo || '')})`)), out.push('')) : out.push('No red lines were set.', '');
       out.push('## BD3 Reserved decisions · read on decisions 1, authority, and 4, shortfall tolerance', '', rv.length ? tableMd(['Event', 'The board', 'Brought by'], rv.map(x => [x.event, x.timing || '', x.by || ''])) : 'The six starting events apply, with the board told after.', '');
+      { const fp = pos('B4').fastPath || {}; if (fp.days) out.push(`Fast path (FP): ${cell(fp.by || 'Management')} approves a new use at A1 or A2 that reaches no BD5 threshold within ${cell(fp.days)} days.`, ''); }
       out.push('## BD4 Confidential information · recorded on each AI use assessment entry that reaches the class', '', tableMd(['Information', ...KINDS], CLASSES.map(g => [lbl(SC.infoClass, g), ...KINDS.map(k => cells[g + ':' + k] || '—')])), '');
       out.push('## BD5 Harm not tolerated · read on decision 2, consequence thresholds', '', tableMd(['Harm to', 'Not tolerated', 'Threshold'], SC.harm.map(h => { const v = harms[h[0]] || {}; return [h[1], v.statement || 'Existing thresholds', v.threshold || '']; })), '');
       out.push('## BD6 Reporting expected · read on decision 7, triggers, and the measures', '', tableMd(['Measure or event', 'Limit or time', 'Owner or recipient'], [...(b7.measures || []).map(m => [m.measure, m.limit || '', m.owner || '']), ...(b7.events || []).map(x => [x.event, x.within || '', x.to || ''])]), '');

@@ -4,6 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import * as X from '../public/shared/sector.js';
+import { directionsFrom } from '../lib/core/directions.js';
 const T = createRequire(import.meta.url)('../public/shared/terms.js');
 
 let fails = 0; const ok = (label, cond, extra) => { if (!cond) fails++; console.log((cond ? 'PASS' : 'FAIL') + ' · ' + label + (extra ? ' → ' + extra : '')); };
@@ -35,5 +36,12 @@ ok('words containing board are left alone', T.relabel('dashboard and keyboard', 
 const ex = { toDocx: md => md }; T.wrapExport(ex, () => AA);
 ok('exports are relabelled', ex.toDocx('Board minute') === 'Accountable authority minute');
 
+// the fast path (BC2) and the two productivity measures (BC4)
+ok('the starting measures include the two productivity measures', ['BM7', 'BM8'].every(id => C.starting.measures.some(m => m[0] === id)));
+{ const data = { engagement: { id: 'e', company: 'Acme', mode: 'connected' }, areas: [], positions: { B4: { events: [{ id: 'RV1', event: 'A new AI use at A3 (Decides) or above', timing: 'Before it starts', by: 'CEO' }], fastPath: { days: '10', by: 'CEO' } } }, resolution: {} };
+  const d = directionsFrom({ id: 'V1', at: '2026-11-14T00:00:00Z', by: 'Chair', snapshot: data }, C, data).directions.BD3;
+  ok('the fast path travels in BD3 as event FP, so the directions format is unchanged', d.events.some(e => e.id === 'FP' && /within 10 days/.test(e.timing)) && d.reservedFrom === 'A3');
+  delete data.positions.B4.fastPath;
+  ok('no fast path, no FP event', !directionsFrom({ id: 'V1', at: '2026-11-14T00:00:00Z', by: 'Chair', snapshot: data }, C, data).directions.BD3.events.some(e => e.id === 'FP')); }
 console.log(fails ? `\n${fails} failure(s)` : '\nAll baseline checks pass');
 process.exit(fails ? 1 : 0);
