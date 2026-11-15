@@ -147,3 +147,32 @@ test('a baseline for a public body names the accountable authority on screen, an
   expect(errs).toEqual([]);
   await ctx.close();
 });
+
+test('a US bank gets the US banking pack: the banking baseline plus the US failure cases (task US.4)', async ({ browser }) => {
+  const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.mo }, viewport: { width: 1280, height: 900 } });
+  await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); sessionStorage.setItem('triodian.example.left', '1'); } catch (e) {} });
+  let rev = 1, last = null;
+  await ctx.route('**/api/engagement', async route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: { exists: true, revision: rev, data: fresh(), people: [] } });
+    last = route.request().postDataJSON().data; rev += 1;
+    return route.fulfill({ json: { revision: rev } });
+  });
+  const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
+  await p.goto('/');
+  const pack = p.locator('#f_engagement_sectorPack');
+  await expect(pack.locator('option', { hasText: '(United States)' })).toHaveCount(0); // an Australian engagement is not offered them
+  await p.locator('#f_engagement_jurisdiction').selectOption('US');
+  await p.locator('#f_engagement_sector').selectOption('US-BANKING');
+  await expect(p.locator('#f_engagement_entityType')).toHaveValue('bank');
+  await p.locator('#f_engagement_mode').selectOption('connected');
+  await expect(pack).toHaveValue('usBanking');
+  const us = C.sectorPacks.find(x => x.id === 'usBanking'), base = C.sectorPacks.find(x => x.id === 'bpBanking');
+  await expect(p.locator('[data-area="0"]')).toHaveValue(base.areas[0]);
+  await p.locator('#step-B0 > summary').click();
+  await expect(p.locator('#step-B0')).toContainText('Sector packBank (United States)');
+  await expect(p.locator('#step-B0')).toContainText('Test Mutual · Bank · United States'); // no Singapore label on a US bank
+  await expect.poll(() => last && [last.engagement.jurisdiction, last.engagement.sector, last.engagement.sectorPack].join()).toBe('US,US-BANKING,usBanking');
+  await expect.poll(() => last && last.areas.map(a => a.name).join('|')).toBe(us.areas.join('|'));
+  expect(errs).toEqual([]);
+  await ctx.close();
+});

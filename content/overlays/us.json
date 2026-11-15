@@ -1,0 +1,86 @@
+{
+  "jurisdiction": "US",
+  "checked": "2026-11-14",
+  "source": "Triodian project note 'United States - jurisdiction scope (US.1)' and the Atlas US round (data/research/2026-11-14-us-overlay.json in obligations-atlas). Failure cases describe what can go wrong; whether an instrument applies is counsel's question, and the matter brief lists the records.",
+  "packs": [
+    {
+      "id": "usBanking",
+      "name": "Bank (United States)",
+      "sector": "US-BANKING",
+      "baseline": "BP-BANKING",
+      "instruments": "SR 26-2 on model risk, the 2023 interagency third-party guidance (with the September 2026 proposal to replace it) and, in New York, 23 NYCRR 500",
+      "failures": [
+        "A vendor credit or fraud model is put into use without validation, and the people relying on it do not know its limits.",
+        "A generative or agentic AI tool is treated as outside model risk management, so nobody owns its testing or monitoring.",
+        "An AI provider's subcontractor holds customer data, and the bank's contract gives it no audit right that reaches the subcontractor.",
+        "An automated decision about a consumer is made without the notice a state automated-decision law may call for."
+      ],
+      "redLineCandidates": [
+        "Generative or agentic AI acting on customer accounts with no owner under the model risk or third-party framework"
+      ]
+    },
+    {
+      "id": "usInsurance",
+      "name": "Insurer (United States)",
+      "sector": "US-INSURANCE",
+      "baseline": "BP-INSURANCE",
+      "instruments": "the NAIC model bulletin on AI systems as each state has issued it and, in New York, Insurance Circular Letter No. 7",
+      "failures": [
+        "An underwriting or pricing model uses external consumer data that acts as a proxy for a protected class, and testing did not find it.",
+        "A model vendor will not provide audit reports or cooperate with a regulator's inquiry, and the contract gives the insurer no right to either.",
+        "The written AI programme exists on paper, but the board or its committee never receives reports on it.",
+        "An automated decision about a consumer is made without the notice a state automated-decision law may call for."
+      ],
+      "redLineCandidates": [
+        "An adverse underwriting, pricing or claims decision made by AI that no person can review"
+      ]
+    },
+    {
+      "id": "usSecurities",
+      "name": "Broker-dealer or investment adviser (United States)",
+      "sector": "US-SECURITIES",
+      "baseline": "BP-SECURITIES",
+      "instruments": "Regulation S-P, FINRA Rule 3110 and FINRA's 2026 report on generative AI and AI agents",
+      "failures": [
+        "An AI agent takes actions for a customer beyond the scope its supervisors approved.",
+        "A generative AI tool used by registered staff sits outside the firm's written supervisory procedures.",
+        "An AI provider holding customer information has a breach and does not tell the firm within the 72 hours its contract sets.",
+        "Communications drafted by AI go to customers without the review the firm applies to other communications."
+      ],
+      "redLineCandidates": [
+        "An AI agent placing trades or moving customer assets outside a scope a supervisor has approved"
+      ]
+    },
+    {
+      "id": "usHealth",
+      "name": "Health care provider (United States)",
+      "sector": "US-HEALTH",
+      "baseline": "BP-HEALTH",
+      "instruments": "45 CFR 92.210 on patient care decision support tools, the HIPAA business associate terms and the HTI-5 changes to certified health IT",
+      "failures": [
+        "A clinical decision support tool uses race, sex, age or disability as an input, and nobody identified or reduced the risk of discrimination.",
+        "An AI scribe or assistant processes patient records with no business associate agreement in place.",
+        "A predictive tool inside the electronic health record changes, and the vendor no longer supplies its source or known limits.",
+        "Patients are not told that AI is used in their care where a state law calls for that disclosure."
+      ],
+      "redLineCandidates": [
+        "AI deciding to deny or delay a patient's care with no clinician reviewing it"
+      ]
+    },
+    {
+      "id": "usCriticalInfrastructure",
+      "name": "Critical infrastructure owner or operator (United States)",
+      "sector": "US-CRITICAL-INFRASTRUCTURE",
+      "baseline": "BP-CI-CORPORATE",
+      "instruments": "NERC CIP-013 supply chain risk management (bulk electric system) and CIRCIA incident and ransom-payment reporting once its final rule is in force",
+      "failures": [
+        "An AI tool with remote access to operational systems is bought without the supply chain controls set for other vendors.",
+        "A cyber incident that involves an AI system or provider is not recognised as reportable, and the reporting window is missed.",
+        "An AI agent changes an operational technology setting with no authorised person approving the change."
+      ],
+      "redLineCandidates": [
+        "AI changing a safety-critical operational setting with no authorised person approving it"
+      ]
+    }
+  ]
+}
