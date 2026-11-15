@@ -32,7 +32,7 @@ ok('a Singapore company is told the brief covers Australia', /covers (AU|Austral
   ok('a brief for the US and New York fits a United States company', briefMismatch(ny, { jurisdiction: 'US' }, names).length === 0);
   ok('a brief for Texas alone fits a United States company', briefMismatch(only, { jurisdiction: 'US' }, names).length === 0);
   ok('a brief for New York does not fit an Australian company, and names the state', /New York \((US|United States)\)/.test(briefMismatch(ny, { jurisdiction: 'AU' }, names).join()), briefMismatch(ny, { jurisdiction: 'AU' }, names).join());
-  ok('state names: New York, an unknown subdivision, a country', jurisdictionLabel({ US: 'United States' }, 'US-NY') === 'New York (United States)' && jurisdictionLabel({ AU: 'Australia' }, 'AU-NSW') === 'AU-NSW (Australia)' && jurisdictionLabel({ US: 'United States' }, 'US') === 'United States');
+  ok('state names: New York, an unknown subdivision, a country', jurisdictionLabel({ US: 'United States' }, 'US-NY') === 'New York (United States)' && jurisdictionLabel({ AU: 'Australia' }, 'AU-NSW') === 'New South Wales (Australia)' && jurisdictionLabel({ AU: 'Australia' }, 'AU-XX') === 'AU-XX (Australia)' && jurisdictionLabel({ US: 'United States' }, 'US') === 'United States');
   const raw0 = JSON.parse(raw), rb = readBrief(JSON.stringify({ ...raw0, scope: { ...raw0.scope, jurisdictions: ['US', 'US-NY'] } }), { ...names, jurisdictions: { US: 'United States' } });
   ok('the scope line names the state', !rb.error && rb.brief.scope.includes('United States, New York (United States)'), rb.error || rb.brief.scope); }
 
