@@ -168,3 +168,34 @@ test('?example=banking opens Wattlebrook Bank in connected mode, resolved by its
   expect(errs).toEqual([]);
   await ctx.close();
 });
+
+test('?example=us-banking opens Harlow Ridge Bank with the US pack, and the menu then offers the other US examples only (task US.5)', async ({ browser }) => {
+  const ctx = await browser.newContext({ extraHTTPHeaders: { 'X-Dev-User': U.gc }, acceptDownloads: true });
+  await ctx.addInitScript(() => { try { sessionStorage.setItem('triodian.suite.seen', '1'); } catch (e) {} });
+  const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
+  await p.goto('/');
+  await p.locator('[data-act="drawer"]').first().click();
+  await expect(p.locator('[data-act="example"][data-ex^="us-"]')).toHaveCount(0);       // an Australian engagement is not offered them
+  await p.goto('/?example=us-banking');
+  await expect(p.locator('.examplenote').first()).toContainText('Harlow Ridge Bank');
+  await p.locator('#step-B0 > summary').click();
+  await expect(p.locator('#step-B0')).toContainText('Sector packBank (United States)');
+  await expect(p.locator('#step-B0')).toContainText('Harlow Ridge Bank · Bank · United States');
+  await expect(p.locator('#step-B0')).toContainText('OBL-US-');                          // the matter brief carries US records
+  await expect(p.locator('#step-B0')).toContainText('United States, New York (United States)');   // a New York bank's brief names its state (US-NY)
+  // the outputs and the evidence index name ISO/IEC 42001 only: the APRA letter and CPS 230 are Australian
+  await expect(p.locator('#outputs')).toContainText('ISO/IEC 42001 evidence index (BO7)');
+  await expect(p.locator('#outputs')).not.toContainText('APRA');
+  await expect(p.locator('#outputs')).not.toContainText('CPS 230');
+  await expect(p.locator('#outputs')).not.toContainText('letter bullets');
+  { const { name, buf } = await grab(p, 'evidence'); const doc = text(unzip(buf, 'word/document.xml'));
+    expect(name).toContain('evidence index'); expect(name).not.toContain('APRA');
+    expect(doc).toContain('by ISO/IEC 42001:2023 clause and Annex A control'); expect(doc).not.toContain('APRA'); expect(doc).not.toContain('CPS 230'); }
+  await p.locator('[data-act="drawer"]').first().click();
+  await expect(p.locator('[data-act="example"][data-ex^="us-"]')).toHaveCount(4);       // the other four US examples
+  await expect(p.locator('[data-act="example"][data-ex="banking"]')).toHaveCount(0);    // and not the Australian ones
+  await p.locator('[data-act="example"][data-ex="us-health"]').click();
+  await expect(p.locator('.examplenote').first()).toContainText('Fernhollow Health');
+  expect(errs).toEqual([]);
+  await ctx.close();
+});

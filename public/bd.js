@@ -128,6 +128,9 @@ function exampleChoice() {
   try { const u = new URLSearchParams(location.search), q = u.get('example'); if (q) { sessionStorage.setItem(EX_SECTOR, q); markExampleLeft(false); u.delete('example'); const rest = u.toString(); history.replaceState(history.state, '', location.pathname + (rest ? '?' + rest : '') + location.hash); } id = sessionStorage.getItem(EX_SECTOR) || ''; } catch (e) {}
   return window.BDExampleOf(id);
 }
+/* The examples offered on screen: those for the engagement's jurisdiction (an example with none named is Australian).
+   Triodian Start's links open any example by its id, whatever the jurisdiction. */
+const examplesHere = () => { const j = (S && S.engagement && S.engagement.jurisdiction) || 'AU', here = window.BDExamples.filter(x => (x.jurisdiction || 'AU') === j); return here.length ? here : window.BDExamples; };
 const setExampleChoice = id => { try { sessionStorage.setItem(EX_SECTOR, id); } catch (e) {} };
 const exampleNote = () => exampleChoice().note;
 /* Opens the worked example: a fictional organisation, board and advisers, never saved. */
@@ -263,7 +266,7 @@ function drawer() {
     <a class="item" href="/user-guide/" style="text-decoration:none">User guide</a>
     <a class="item" href="/auth/logout" style="text-decoration:none">Sign out</a>
     <div class="grp">Practice</div>
-    ${window.BDExamples.map(x => UI.practice && exampleChoice().id === x.id ? '' : `<button class="item" data-act="example" data-ex="${x.id}">Open the worked example · ${esc(x.name)}</button>`).join('')}${UI.practice ? '<button class="item" data-act="leaveExample">Leave the worked example</button>' : ''}
+    ${examplesHere().map(x => UI.practice && exampleChoice().id === x.id ? '' : `<button class="item" data-act="example" data-ex="${x.id}">Open the worked example · ${esc(x.name)}</button>`).join('')}${UI.practice ? '<button class="item" data-act="leaveExample">Leave the worked example</button>' : ''}
     <p class="small soft" style="padding:0 10px">The worked example is fictional and runs in this browser only. Nothing in it is saved.</p>
     <div class="grp">Apps</div>
     ${app('obligations-atlas', 'OA', '#E3E9EF', 'var(--navy)', 'AI Obligations Atlas', 'Obligations by jurisdiction, tier and use case')}
@@ -802,7 +805,7 @@ function b0Body() {
     h += `<p class="small" style="margin:0 0 6px">${esc(mb.scope)}${mb.loadedOn ? ` · loaded ${esc(dl(mb.loadedOn))}${mb.loadedBy ? ' by ' + esc(mb.loadedBy) : ''}` : ''}${(mb.dataset || {}).generatedAt ? ` · Atlas data of ${esc(dl(String(mb.dataset.generatedAt).slice(0, 10)))}` : ''}${(mb.dataset || {}).preview ? ' · <span class="badge b-ochre">Preview data</span>' : ''}</p>`
       + mis.map(m => `<p class="small" role="alert" style="color:var(--ochre, #8A4B08);margin:0 0 6px">${esc(m)} Check the brief was built for this company.</p>`).join('')
       + table(['Tier', 'References'], mb.tiers.map(t => [esc(t.tier), t.refs.length ? t.refs.map(r => `<span class="mono">${esc(r[0])}</span> ${esc(r[1])}${r[3] ? ` <span class="small soft">${esc(r[3])}</span>` : ''}`).join('<br>') : '<span class="soft">None</span>']))
-      + (mb.coverage || []).map(c => `<p class="small soft">${esc(c.jurisdiction)}: ${esc(c.note)}</p>`).join('')
+      + (mb.coverage || []).map(c => `<p class="small soft">${esc(window.BDBrief && window.BDBrief.jurisdictionLabel ? window.BDBrief.jurisdictionLabel(NAMES().jurisdictions, c.jurisdiction) : c.jurisdiction)}: ${esc(c.note)}</p>`).join('')
       + '<p class="small soft">The brief lists what sources say by tier. Counsel decides what applies.</p>';
     const qs = mb.questions || [];
     if (qs.length) {
@@ -999,7 +1002,7 @@ function stepBody(id) {
 const hasContent = id => id === 'B0' ? !!(S.engagement.company) : id === 'B1' ? (S.inventory || []).length > 0 : id === 'B9' ? !!(S.resolution || {}).by : Object.keys(pos(id)).length > 0;
 
 /* ---------- screens ---------- */
-const exampleOffer = () => `<div class="panel2" style="padding:14px 16px;margin-top:14px"><p style="margin:0 0 8px"><strong>See it worked through.</strong> Each worked example is fictional and nothing in it is saved.</p>${window.BDExamples.map(x => `<p class="small" style="margin:0 0 8px"><button class="btn" data-act="example" data-ex="${x.id}">Open the worked example · ${esc(x.name)}</button> <span class="soft">${esc(x.offer)}</span></p>`).join('')}</div>`;
+const exampleOffer = () => `<div class="panel2" style="padding:14px 16px;margin-top:14px"><p style="margin:0 0 8px"><strong>See it worked through.</strong> Each worked example is fictional and nothing in it is saved.</p>${examplesHere().map(x => `<p class="small" style="margin:0 0 8px"><button class="btn" data-act="example" data-ex="${x.id}">Open the worked example · ${esc(x.name)}</button> <span class="soft">${esc(x.offer)}</span></p>`).join('')}</div>`;
 function entryScreen() {
   if (!SRV.checked) return '<p class="soft">Connecting…</p>';
   if (!SRV.user) return `${opening('AI Board Direction', 'No access yet', '')}<div class="panel2" role="status" style="padding:12px 14px">${esc(SRV.reason || 'You have not been given access to this app.')} <a href="/auth/logout">Sign out</a></div>${exampleOffer()}`;
@@ -1046,7 +1049,7 @@ function mainScreen() {
 function outputsSection() {
   const mode = S.engagement.mode || 'standalone', list = window.BDOutputs.LIST.filter(o => o.mode === 'both' || o.mode === mode);
   const O = outputsFor(), res = runChecks(), n = res.filter(c => c.ok).length, resolved = RULES.isResolved(S);
-  const rows = list.map(o => [o.ref ? `<span class="mono">${o.ref}</span>` : '', `<strong>${esc(o.name)}</strong>${evTags(o.id) ? `<div class="mini">${esc(evTags(o.id))}</div>` : ''}`, esc(o.for), `<button class="btn sm" data-act="output" data-id="${o.id}">${o.kind === 'json' ? 'Download (JSON)' : 'Download (Word)'}</button>`]);
+  const rows = list.map(o => [o.ref ? `<span class="mono">${o.ref}</span>` : '', `<strong>${esc(o.id === 'evidence' ? evTitle() : o.name)}</strong>${evTags(o.id) ? `<div class="mini">${esc(evTags(o.id))}</div>` : ''}`, esc(o.id === 'evidence' && !evAU() ? 'The CRO and the board: the AI management review' : o.for), `<button class="btn sm" data-act="output" data-id="${o.id}">${o.kind === 'json' ? 'Download (JSON)' : 'Download (Word)'}</button>`]);
   return `<section class="card" id="outputs"><div class="row between"><h2 class="sh" style="margin:0">8 · Outputs</h2><span class="badge ${resolved ? 'b-green' : 'b-grey'}">${esc(O.status)}</span></div>
     <p class="small soft">Every output carries the privilege marking on its first line and its status on every page. Each is marked draft until the chair records the resolution at B9.${n < res.length ? ` ${res.length - n} of the ${res.length} checks do not pass yet; the outputs say what is not set.` : ''} They state what was recorded and who proposed it, never what the law requires.</p>
     ${table(['', 'Output', 'For', ''], rows)}${mode === 'connected' ? evidenceCard() : ''}</section>`;
@@ -1055,26 +1058,29 @@ function outputsSection() {
    AI Board Direction's own artefacts, with those gathered from AI Risk Appetite and, through it, AI Use Assessment over
    the service bindings. The gathered list is kept for this visit only: the index is made again from the apps each time. */
 const EV = () => window.BDEvidence || null;
-const evTags = id => (EV() ? EV().tagLine('BD', id) : '');
+const evTags = id => (EV() ? EV().tagLine('BD', id, S && S.engagement.jurisdiction) : '');   // outside Australia, ISO/IEC 42001 only
+/* The APRA letter is an Australian instrument: elsewhere the index is by ISO/IEC 42001 control only. */
+const evAU = () => !S.engagement.jurisdiction || S.engagement.jurisdiction === 'AU';
+const evTitle = () => evAU() ? 'APRA letter evidence index' : 'ISO/IEC 42001 evidence index';
 const evArtefacts = () => EV() ? EV().boardArtefacts(S).concat((UI.evidence && UI.evidence.artefacts) || []) : [];
 function evidenceMarkdown() {
   const e = S.engagement, g = UI.evidence, out = [];
   if (String(e.privilegeMarking || '').trim()) out.push(e.privilegeMarking.trim(), '');
-  out.push('# APRA letter evidence index', '', `**${e.company || '[company]'}**${e.reference ? ' · ' + e.reference : ''} · ${outputsFor().status}`, '');
+  out.push('# ' + evTitle(), '', `**${e.company || '[company]'}**${e.reference ? ' · ' + e.reference : ''} · ${outputsFor().status}`, '');
   if (evTags('evidence')) out.push(`Evidence for: ${evTags('evidence')}.`, '');
   const notes = g ? (g.notes || []) : ['AI Risk Appetite and AI Use Assessment have not been gathered yet. Use “Gather the evidence” under the outputs.'];
-  return out.join('\n') + '\n' + EV().indexMarkdown({ artefacts: evArtefacts(), by: UI.evBy, review: e.managementReview, company: e.company, gatheredOn: dl(g ? g.gatheredOn : todayISO()), notes, soa: g ? g.soa : null });
+  return out.join('\n') + '\n' + EV().indexMarkdown({ artefacts: evArtefacts(), by: UI.evBy, jurisdiction: S.engagement.jurisdiction, review: e.managementReview, company: e.company, gatheredOn: dl(g ? g.gatheredOn : todayISO()), notes, soa: g ? g.soa : null });
 }
 function evidenceCard() {
   if (!EV()) return '';
-  const A = evArtefacts().filter(a => a.status !== 'none'), cv = EV().coverage(A), g = UI.evidence, by = UI.evBy === 'iso' ? 'iso' : 'letter';
+  const A = evArtefacts().filter(a => a.status !== 'none'), cv = EV().coverage(A), g = UI.evidence, by = UI.evBy === 'iso' || !evAU() ? 'iso' : 'letter';
   const soaIx = g && Array.isArray(g.soa) && g.soa.length ? Object.fromEntries(g.soa.map(r => [r.control, r])) : null, sm = EV().isoSummary(A, g ? g.soa : null);
   const groups = by === 'iso' ? EV().ISO.map(([id, name]) => [id, name, A.filter(a => (a.iso || []).includes(id))]) : EV().LETTER.map(b => [b.id, b.text, A.filter(a => (a.letter || []).includes(b.id))]);
   const cellOf = ([id, name, hits]) => `<div class="panel2" data-ev="${esc(id)}" style="padding:8px 12px"><div class="row between"><span><span class="mono">${esc(id)}</span> <span class="small">${esc(name)}</span></span>${hits.length ? `<span class="badge b-green">${hits.length}</span>` : `<span class="badge b-grey">${by === 'iso' ? 'not evidenced by this suite' : 'none yet'}</span>`}</div>${by === 'iso' && soaIx && /^A\./.test(id) ? `<div class="mini" style="margin-top:4px">Statement of Applicability: ${esc(EV().soaLine(soaIx[id]))}</div>` : ''}${hits.length ? `<div class="mini" style="margin-top:4px">${hits.map(a => esc(a.name) + (a.status === 'draft' ? ' (draft)' : '')).join(' · ')}</div>` : ''}</div>`;
-  return `<div id="evidence" style="margin-top:18px"><div class="row between"><h3 class="sh" style="margin:0">APRA letter evidence index (BO7)</h3><div class="row">
-      <label class="f" style="min-width:200px" for="ev-by"><span>View</span><select class="in" id="ev-by" data-evby="1"><option value="letter" ${by === 'letter' ? 'selected' : ''}>By letter bullet</option><option value="iso" ${by === 'iso' ? 'selected' : ''}>By ISO/IEC 42001 control</option></select></label>
+  return `<div id="evidence" style="margin-top:18px"><div class="row between"><h3 class="sh" style="margin:0">${evTitle()} (BO7)</h3><div class="row">
+      <label class="f" style="min-width:200px;${evAU() ? '' : 'display:none'}" for="ev-by"><span>View</span><select class="in" id="ev-by" data-evby="1"><option value="letter" ${by === 'letter' ? 'selected' : ''}>By letter bullet</option><option value="iso" ${by === 'iso' ? 'selected' : ''}>By ISO/IEC 42001 control</option></select></label>
       <button class="btn sm" data-act="gatherEvidence">Gather the evidence</button></div></div>
-    <p class="small soft">${g ? `Gathered from AI Risk Appetite and AI Use Assessment ${esc(dl(g.gatheredOn))}.` : 'Shows this engagement’s own artefacts until the evidence is gathered from AI Risk Appetite and AI Use Assessment.'} ${cv.bullets} of the ${cv.of} letter bullets have evidence: ${cv.recorded} artefact${cv.recorded === 1 ? '' : 's'} recorded and ${cv.draft} in draft.${S.engagement.managementReview ? ` Review dates follow the AI management review on ${esc(dl(S.engagement.managementReview))}.` : ' Set the next AI management review on set-up to give every artefact a review date.'}</p>
+    <p class="small soft">${g ? `Gathered from AI Risk Appetite and AI Use Assessment ${esc(dl(g.gatheredOn))}.` : 'Shows this engagement’s own artefacts until the evidence is gathered from AI Risk Appetite and AI Use Assessment.'} ${evAU() ? `${cv.bullets} of the ${cv.of} letter bullets have evidence: ` : 'The outputs hold '}${cv.recorded} artefact${cv.recorded === 1 ? '' : 's'} recorded and ${cv.draft} in draft.${S.engagement.managementReview ? ` Review dates follow the AI management review on ${esc(dl(S.engagement.managementReview))}.` : ' Set the next AI management review on set-up to give every artefact a review date.'}</p>
     ${g && (g.notes || []).length ? `<p class="small" style="color:var(--red)">${g.notes.map(esc).join(' ')}</p>` : ''}
     ${by === 'iso' ? `<p class="small soft" id="ev-iso-note">Every clause the outputs are tagged to, then all ${sm.controls} controls of ISO/IEC 42001:2023 Annex A. The outputs evidence ${sm.evidencedAll} of them; the rest are for the client’s own AI management system. ${soaIx ? `The Statement of Applicability loaded in AI Risk Appetite lists ${sm.listed} controls, ${sm.applicable} of which apply; the outputs evidence ${sm.evidenced} of those.` : 'Load the client’s Statement of Applicability in AI Risk Appetite’s set-up to see each control against it.'} No output is an AI system impact assessment (A.5). The tags are Triodian’s reading, for the independent reviewer or another person with ISO/IEC 42001 competence to check.</p>` : ''}
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px">${groups.map(cellOf).join('')}</div></div>`;
@@ -1084,7 +1090,7 @@ function downloadOutput(id) {
   const meta = window.BDOutputs.LIST.find(x => x.id === id); if (!meta) return;
   if (id === 'worklist') return downloadWorklist();
   if (id === 'education') return downloadDocx(educationMarkdown(), 'Director education record');
-  if (id === 'evidence') return downloadDocx(evidenceMarkdown(), meta.name, { wide: true });
+  if (id === 'evidence') return downloadDocx(evidenceMarkdown(), evTitle(), { wide: true });
   if (id === 'confidentiality') { saveBlob(new Blob([JSON.stringify(O.confidentiality(), null, 2)], { type: 'application/json' }), `Confidentiality position${safe}.json`); toast('Confidentiality position file downloaded'); return; }
   downloadDocx(O[id](), meta.name, { wide: id === 'statement' || id === 'directions' || id === 'actionList' || id === 'plan' || id === 'crosswalk' });
 }
