@@ -37,6 +37,8 @@
   // To hold messages instead of sending, set NOTIFY_SENDING to "off".
   "send_email": [{ "name": "EMAIL" }],
 
+  // FIRST_ADMINS: comma-separated emails that become this deployment's first administrator on sign-in, once, while it has
+  // never had one; written per deployment by the installer. There is no compiled-in list (security review 15 Nov 2026).
   // DEFAULT_JURISDICTION (AU or SG) and DEFAULT_SECTOR (a regulated sector id such as AU-INSURANCE, or empty) set
   // where a new engagement starts. The installer sets them; set-up changes both at any time.
   "vars": { "SUITE_DEMO": "on", "SUITE_COOKIE_DOMAIN": "triodian.com", "SUITE_SESSION_COOKIE": "tri_suite", "NOTIFY_SENDING": "on", "NOTIFY_FROM": "notifications@triodian.com", "DEFAULT_JURISDICTION": "AU", "DEFAULT_SECTOR": "" },
@@ -74,7 +76,7 @@
         { "binding": "DB", "database_name": "board-direction-client-db", "database_id": "REPLACE-WITH-THE-CLIENT-DATABASE-ID" }
       ],
       "services": [{ "binding": "APPETITE", "service": "risk-appetite-client", "entrypoint": "AppetiteService" }],
-      "vars": { "SUITE_DEMO": "off", "SUITE_COOKIE_DOMAIN": "CLIENT-DOMAIN.example", "SUITE_SESSION_COOKIE": "tri_suite", "DEMO_LOGIN": "", "SITE_URL": "https://board-direction.CLIENT-DOMAIN.example", "NOTIFY_SENDING": "off", "NOTIFY_FROM": "", "DEFAULT_JURISDICTION": "AU", "DEFAULT_SECTOR": "" },
+      "vars": { "SUITE_DEMO": "off", "SUITE_COOKIE_DOMAIN": "CLIENT-DOMAIN.example", "SUITE_SESSION_COOKIE": "tri_suite", "DEMO_LOGIN": "", "FIRST_ADMINS": "ADMIN@CLIENT-DOMAIN.example", "SITE_URL": "https://board-direction.CLIENT-DOMAIN.example", "NOTIFY_SENDING": "off", "NOTIFY_FROM": "", "DEFAULT_JURISDICTION": "AU", "DEFAULT_SECTOR": "" },
       "send_email": [{ "name": "EMAIL" }],
       "triggers": { "crons": ["0 21 * * *"] },
       "observability": { "enabled": true }
