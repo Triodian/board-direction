@@ -108,4 +108,14 @@ t('the management briefing date is a date', 'av', n => { n.managementBriefing = 
   chk('the chair sees it was held and who has not yet confirmed', st.held && st.done && st.unconfirmed.map(p => p.id).join() === 'ag,ag2');
   chk('not needed, with a reason, also passes the step', managementBriefingState({ people: [], managementBriefing: { notNeeded: 'No separate technology lead' } }).done && !managementBriefingState({ people: [] }).done); }
 console.log('deny position, no role:', deny('position', { id: 'z', roles: [] }, base()));
+// ---- the first save of a deployment, or a file loaded into an empty one, goes through the same rules (security review 15 Nov 2026, S.5) ----
+const fresh = () => ({ schema: 'triodian.bd.v1', engagement: { id: 'e1', company: 'Acme', mode: 'standalone', privilegeMarking: '' }, areas: [{ id: 'A1', name: 'Sales' }], scopeAgreed: { gcBy: '', gcOn: '', chairBy: '', chairOn: '' }, inventory: [], positions: {}, questions: [], resolution: {}, people: [], versions: [], previous: null, history: [{ at: 'x', by: '', action: 'create', target: 'engagement', from: null, to: 'started' }] });
+const firstSave = (label, who, f, want) => { const n = fresh(); f(n); const r = checkSave(null, n, U(who), users); const okd = !r.error; if (okd !== want) fails++; console.log((okd === want ? 'PASS' : 'FAIL') + ' · first save: ' + label + (r.error ? ' → ' + r.error : '')); };
+firstSave('the method owner starts an engagement from the blank template', 'mo', () => {}, true);
+firstSave('a director cannot (set-up permission)', 'dr', () => {}, false);
+firstSave('a file carrying the chair’s resolution is refused', 'mo', n => { n.resolution = { by: 'ch', on: '2026-11-01', text: 'Resolved' }; }, false);
+firstSave('a file carrying the GC’s and chair’s scope agreement is refused', 'mo', n => { n.scopeAgreed = { gcBy: 'gc', gcOn: '2026-11-01', chairBy: 'ch', chairOn: '2026-11-01' }; }, false);
+firstSave('a file carrying directors’ briefing records is refused', 'mo', n => { n.education = { dr: { readOn: '2026-11-01', completedOn: '2026-11-01' } }; }, false);
+firstSave('a file carrying a board position proposed by someone who may not propose is refused', 'mo', n => { n.positions = { B2: { posture: 'Cautious', proposedBy: 'no' } }; }, false);
+firstSave('a position a director proposed, recorded by the method owner, is allowed as in any later save', 'mo', n => { n.positions = { B2: { posture: 'Cautious', proposedBy: 'dr' } }; }, true);
 console.log(fails ? fails + ' FAILED' : 'all passed'); process.exit(fails ? 1 : 0);
