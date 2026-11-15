@@ -70,15 +70,15 @@ window.BD_CONTENT = {
     ],
     [
       "bank",
-      "Bank (Singapore)"
+      "Bank"
     ],
     [
       "insurer",
-      "Insurer (Singapore)"
+      "Insurer"
     ],
     [
       "capitalMarketsIntermediary",
-      "Capital markets intermediary (Singapore)"
+      "Capital markets intermediary (broker-dealer, adviser, fund manager)"
     ],
     [
       "paymentServiceProvider",
@@ -86,7 +86,7 @@ window.BD_CONTENT = {
     ],
     [
       "financialInstitution",
-      "Financial institution (Singapore, MAS)"
+      "Financial institution"
     ],
     [
       "other",
@@ -101,6 +101,10 @@ window.BD_CONTENT = {
     [
       "SG",
       "Singapore"
+    ],
+    [
+      "US",
+      "United States"
     ]
   ],
   "startingAreas": [
@@ -933,7 +937,8 @@ window.BD_CONTENT = {
       "sectors": [
         "AU-BANKING",
         "AU-CREDIT",
-        "SG-BANKING"
+        "SG-BANKING",
+        "US-BANKING"
       ],
       "note": "A best-practice baseline that holds in any jurisdiction, for deposit-takers and lenders, drawn from BCBS, FSB, ISO/IEC, NIST. The jurisdiction's own obligations come from the matter brief.",
       "areas": [
@@ -968,7 +973,8 @@ window.BD_CONTENT = {
       "entityTypes": [],
       "sectors": [
         "AU-INSURANCE",
-        "SG-INSURANCE"
+        "SG-INSURANCE",
+        "US-INSURANCE"
       ],
       "note": "A best-practice baseline that holds in any jurisdiction, for life, general and health insurers, drawn from IAIS, FSB, ISO/IEC, NIST. The jurisdiction's own obligations come from the matter brief.",
       "areas": [
@@ -1003,7 +1009,8 @@ window.BD_CONTENT = {
       "entityTypes": [],
       "sectors": [
         "AU-FINANCIAL-SERVICES",
-        "SG-CAPITAL-MARKETS"
+        "SG-CAPITAL-MARKETS",
+        "US-SECURITIES"
       ],
       "note": "A best-practice baseline that holds in any jurisdiction, for broker-dealers, advisers and fund managers, drawn from IOSCO, ISO/IEC, NIST. The jurisdiction's own obligations come from the matter brief.",
       "areas": [
@@ -1037,7 +1044,8 @@ window.BD_CONTENT = {
       "entityTypes": [],
       "sectors": [
         "AU-HEALTH",
-        "SG-HEALTH"
+        "SG-HEALTH",
+        "US-HEALTH"
       ],
       "note": "A best-practice baseline that holds in any jurisdiction, for health care providers and health plans, drawn from WHO, ISO, IEC, ISO/IEC, NIST. The jurisdiction's own obligations come from the matter brief.",
       "areas": [
@@ -1071,7 +1079,8 @@ window.BD_CONTENT = {
       "entityTypes": [],
       "sectors": [
         "AU-PAYMENTS",
-        "SG-PAYMENTS"
+        "SG-PAYMENTS",
+        "US-PAYMENTS"
       ],
       "note": "A best-practice baseline that holds in any jurisdiction, for payment providers, remitters and e-money issuers, drawn from FATF, CPMI-IOSCO, FSB, ISO/IEC, NIST. The jurisdiction's own obligations come from the matter brief.",
       "areas": [
@@ -1105,7 +1114,8 @@ window.BD_CONTENT = {
       "entityTypes": [],
       "sectors": [
         "AU-CRITICAL-INFRASTRUCTURE",
-        "SG-CRITICAL-INFRASTRUCTURE"
+        "SG-CRITICAL-INFRASTRUCTURE",
+        "US-CRITICAL-INFRASTRUCTURE"
       ],
       "note": "A best-practice baseline that holds in any jurisdiction, for utilities, transport, water and networks run by a public body, drawn from CISA with the ACSC and six other national cyber agencies, IEC, NIST, OECD, ISO/IEC. The jurisdiction's own obligations come from the matter brief. The app names the accountable authority where it would name the board.",
       "areas": [
@@ -1139,7 +1149,8 @@ window.BD_CONTENT = {
       "entityTypes": [],
       "sectors": [
         "AU-CRITICAL-INFRASTRUCTURE",
-        "SG-CRITICAL-INFRASTRUCTURE"
+        "SG-CRITICAL-INFRASTRUCTURE",
+        "US-CRITICAL-INFRASTRUCTURE"
       ],
       "note": "A best-practice baseline that holds in any jurisdiction, for utilities, transport, water and networks run by a company or under concession, drawn from CISA with the ACSC and six other national cyber agencies, IEC, NIST, ISO/IEC. The jurisdiction's own obligations come from the matter brief.",
       "areas": [
@@ -1197,10 +1208,209 @@ window.BD_CONTENT = {
         "AI use not listed on a public register",
         "Personal information used to train an external model"
       ]
+    },
+    {
+      "id": "usBanking",
+      "name": "Bank (United States)",
+      "mode": "both",
+      "overlay": "US",
+      "builtOn": "BP-BANKING",
+      "governingBody": "board",
+      "entityTypes": [],
+      "sectors": [
+        "US-BANKING"
+      ],
+      "note": "Drafted for the banking sector in the United States: the banking baseline plus failure cases drawn from SR 26-2 on model risk, the 2023 interagency third-party guidance (with the September 2026 proposal to replace it) and, in New York, 23 NYCRR 500. Whether any of them applies is counsel's question; the matter brief lists the records.",
+      "areas": [
+        "Retail lending",
+        "Business lending",
+        "Deposits and payments",
+        "Fraud and financial crime",
+        "Markets and treasury",
+        "Customer service",
+        "Operations",
+        "Technology and security"
+      ],
+      "briefingHeading": "Common failures: banking",
+      "failures": [
+        "A credit model declines a group of applicants on a proxy for a protected attribute.",
+        "A fraud model freezes legitimate accounts at scale.",
+        "A provider's model change shifts decisions without notice.",
+        "An agent with payment authority is compromised.",
+        "A vendor credit or fraud model is put into use without validation, and the people relying on it do not know its limits.",
+        "A generative or agentic AI tool is treated as outside model risk management, so nobody owns its testing or monitoring.",
+        "An AI provider's subcontractor holds customer data, and the bank's contract gives it no audit right that reaches the subcontractor.",
+        "An automated decision about a consumer is made without the notice a state automated-decision law may call for."
+      ],
+      "redLineCandidates": [
+        "A final credit or account-closure decision no person can review",
+        "Agents initiating payments above a set value unattended",
+        "Customer data used to train an external model",
+        "Generative or agentic AI acting on customer accounts with no owner under the model risk or third-party framework"
+      ]
+    },
+    {
+      "id": "usInsurance",
+      "name": "Insurer (United States)",
+      "mode": "both",
+      "overlay": "US",
+      "builtOn": "BP-INSURANCE",
+      "governingBody": "board",
+      "entityTypes": [],
+      "sectors": [
+        "US-INSURANCE"
+      ],
+      "note": "Drafted for the insurance sector in the United States: the insurance baseline plus failure cases drawn from the NAIC model bulletin on AI systems as each state has issued it and, in New York, Insurance Circular Letter No. 7. Whether any of them applies is counsel's question; the matter brief lists the records.",
+      "areas": [
+        "Distribution and sales",
+        "Underwriting",
+        "Pricing",
+        "Claims",
+        "Customer service",
+        "Reinsurance and capital",
+        "Investments",
+        "Technology"
+      ],
+      "briefingHeading": "Common failures: insurance",
+      "failures": [
+        "Granular pricing excludes a group from cover.",
+        "Automated claims decline valid claims.",
+        "A third-party model's output cannot be explained to a claimant.",
+        "The insurer cannot obtain evidence from the vendor of a model it relies on.",
+        "An underwriting or pricing model uses external consumer data that acts as a proxy for a protected class, and testing did not find it.",
+        "A model vendor will not provide audit reports or cooperate with a regulator's inquiry, and the contract gives the insurer no right to either.",
+        "The written AI programme exists on paper, but the board or its committee never receives reports on it.",
+        "An automated decision about a consumer is made without the notice a state automated-decision law may call for."
+      ],
+      "redLineCandidates": [
+        "Claim denial with no person reviewing it",
+        "Pricing on data the customer did not provide and cannot see",
+        "Health or genetic data in models outside the insurer's control",
+        "An adverse underwriting, pricing or claims decision made by AI that no person can review"
+      ]
+    },
+    {
+      "id": "usSecurities",
+      "name": "Broker-dealer or investment adviser (United States)",
+      "mode": "both",
+      "overlay": "US",
+      "builtOn": "BP-SECURITIES",
+      "governingBody": "board",
+      "entityTypes": [],
+      "sectors": [
+        "US-SECURITIES"
+      ],
+      "note": "Drafted for the securities and investment advice sector in the United States: the securities and investment advice baseline plus failure cases drawn from Regulation S-P, FINRA Rule 3110 and FINRA's 2026 report on generative AI and AI agents. Whether any of them applies is counsel's question; the matter brief lists the records.",
+      "areas": [
+        "Advice and recommendations",
+        "Client communications",
+        "Trading and execution",
+        "Research",
+        "Portfolio management",
+        "Compliance and surveillance",
+        "Operations"
+      ],
+      "briefingHeading": "Common failures: securities and investment advice",
+      "failures": [
+        "Unsuitable or misleading AI-generated advice reaches clients.",
+        "A trading agent acts beyond its mandate.",
+        "Prompts and outputs are not kept as records.",
+        "Several firms using the same model move together in a stress.",
+        "An AI agent takes actions for a customer beyond the scope its supervisors approved.",
+        "A generative AI tool used by registered staff sits outside the firm's written supervisory procedures.",
+        "An AI provider holding customer information has a breach and does not tell the firm within the 72 hours its contract sets.",
+        "Communications drafted by AI go to customers without the review the firm applies to other communications."
+      ],
+      "redLineCandidates": [
+        "Advice sent to retail clients with no adviser review",
+        "Trading agents without a hard limit and a stop",
+        "Client communications generated with no record of the prompt",
+        "An AI agent placing trades or moving customer assets outside a scope a supervisor has approved"
+      ]
+    },
+    {
+      "id": "usHealth",
+      "name": "Health care provider (United States)",
+      "mode": "both",
+      "overlay": "US",
+      "builtOn": "BP-HEALTH",
+      "governingBody": "board",
+      "entityTypes": [],
+      "sectors": [
+        "US-HEALTH"
+      ],
+      "note": "Drafted for the health care sector in the United States: the health care baseline plus failure cases drawn from 45 CFR 92.210 on patient care decision support tools, the HIPAA business associate terms and the HTI-5 changes to certified health IT. Whether any of them applies is counsel's question; the matter brief lists the records.",
+      "areas": [
+        "Clinical care",
+        "Diagnostics",
+        "Patient communication",
+        "Scheduling and administration",
+        "Clinical documentation",
+        "Coverage and prior authorisation",
+        "Research"
+      ],
+      "briefingHeading": "Common failures: health care",
+      "failures": [
+        "A clinician relies on a wrong AI suggestion (automation bias).",
+        "Coverage is denied by an algorithm with no clinical review.",
+        "Patient data reaches a model outside the organization's control.",
+        "A model performs worse for a population it was not trained on.",
+        "A clinical decision support tool uses race, sex, age or disability as an input, and nobody identified or reduced the risk of discrimination.",
+        "An AI scribe or assistant processes patient records with no business associate agreement in place.",
+        "A predictive tool inside the electronic health record changes, and the vendor no longer supplies its source or known limits.",
+        "Patients are not told that AI is used in their care where a state law calls for that disclosure."
+      ],
+      "redLineCandidates": [
+        "A denial of care or coverage with no clinician's review",
+        "Patient-facing advice with no clinical oversight",
+        "Health information in tools not under the organization's contract",
+        "AI deciding to deny or delay a patient's care with no clinician reviewing it"
+      ]
+    },
+    {
+      "id": "usCriticalInfrastructure",
+      "name": "Critical infrastructure owner or operator (United States)",
+      "mode": "both",
+      "overlay": "US",
+      "builtOn": "BP-CI-CORPORATE",
+      "governingBody": "board",
+      "entityTypes": [],
+      "sectors": [
+        "US-CRITICAL-INFRASTRUCTURE"
+      ],
+      "note": "Drafted for the critical infrastructure sector in the United States: the critical infrastructure, corporate-managed baseline plus failure cases drawn from NERC CIP-013 supply chain risk management (bulk electric system) and CIRCIA incident and ransom-payment reporting once its final rule is in force. Whether any of them applies is counsel's question; the matter brief lists the records.",
+      "areas": [
+        "Network operations",
+        "Asset maintenance",
+        "Customer and community service",
+        "Emergency response",
+        "Supplier management",
+        "Information technology",
+        "Operational technology",
+        "Commercial operations"
+      ],
+      "briefingHeading": "Common failures: critical infrastructure, corporate-managed",
+      "failures": [
+        "An AI-enabled change reaches a safety system.",
+        "A supplier's remote access is used by an attacker's agent.",
+        "Decisions about the community (service restriction, prioritisation) cannot be explained or reviewed.",
+        "The operator cannot show what an AI did after an incident.",
+        "A concession or licence condition is breached by an AI-driven change.",
+        "A vendor's model update changes plant behaviour.",
+        "An AI tool with remote access to operational systems is bought without the supply chain controls set for other vendors.",
+        "A cyber incident that involves an AI system or provider is not recognised as reportable, and the reporting window is missed.",
+        "An AI agent changes an operational technology setting with no authorised person approving the change."
+      ],
+      "redLineCandidates": [
+        "AI that changes setpoints or switches in operational technology without a person's approval",
+        "AI with a path from the internet to control systems",
+        "Decisions about individuals' service with no review",
+        "AI changing a safety-critical operational setting with no authorised person approving it"
+      ]
     }
   ],
   "sectorPacksNote": "A sector pack gives the starting areas of the business, the failure cases in the director briefing and the uses boards commonly consider at B3. Drafted by Triodian; counsel reviews each pack’s wording.",
-  "regulatedSectorsSource": "Triodian Metamodel 2.8.0, reference-data/regulated-sectors.json",
+  "regulatedSectorsSource": "Triodian Metamodel 2.9.0, reference-data/regulated-sectors.json",
   "regulatedSectors": [
     {
       "id": "AU-BANKING",
@@ -1448,6 +1658,115 @@ window.BD_CONTENT = {
         "notForProfit"
       ],
       "financiallyRegulated": false
+    },
+    {
+      "id": "US-BANKING",
+      "jurisdiction": "US",
+      "name": "Banking",
+      "entityTypes": [
+        "bank"
+      ],
+      "alsoReaches": [
+        "financialInstitution"
+      ],
+      "financiallyRegulated": true,
+      "mainSector": true,
+      "baselineProfiles": [
+        "BP-BANKING"
+      ]
+    },
+    {
+      "id": "US-INSURANCE",
+      "jurisdiction": "US",
+      "name": "Insurance",
+      "entityTypes": [
+        "insurer"
+      ],
+      "alsoReaches": [
+        "financialInstitution"
+      ],
+      "financiallyRegulated": true,
+      "mainSector": true,
+      "baselineProfiles": [
+        "BP-INSURANCE"
+      ]
+    },
+    {
+      "id": "US-SECURITIES",
+      "jurisdiction": "US",
+      "name": "Securities and investment advice",
+      "entityTypes": [
+        "capitalMarketsIntermediary"
+      ],
+      "alsoReaches": [
+        "financialInstitution"
+      ],
+      "financiallyRegulated": true,
+      "mainSector": true,
+      "baselineProfiles": [
+        "BP-SECURITIES"
+      ]
+    },
+    {
+      "id": "US-HEALTH",
+      "jurisdiction": "US",
+      "name": "Health care",
+      "entityTypes": [
+        "healthServiceProvider"
+      ],
+      "financiallyRegulated": false,
+      "mainSector": true,
+      "baselineProfiles": [
+        "BP-HEALTH"
+      ]
+    },
+    {
+      "id": "US-CRITICAL-INFRASTRUCTURE",
+      "jurisdiction": "US",
+      "name": "Critical infrastructure",
+      "entityTypes": [
+        "criticalInfrastructureAssetOwner"
+      ],
+      "financiallyRegulated": false,
+      "mainSector": true,
+      "baselineProfiles": [
+        "BP-CI-CORPORATE",
+        "BP-CI-GOVERNMENT"
+      ]
+    },
+    {
+      "id": "US-PAYMENTS",
+      "jurisdiction": "US",
+      "name": "Payments and money transmission",
+      "entityTypes": [
+        "paymentServiceProvider"
+      ],
+      "alsoReaches": [
+        "financialInstitution"
+      ],
+      "financiallyRegulated": true,
+      "baselineProfiles": [
+        "BP-PAYMENTS"
+      ]
+    },
+    {
+      "id": "US-LISTED",
+      "jurisdiction": "US",
+      "name": "Listed companies",
+      "entityTypes": [
+        "listedEntity"
+      ],
+      "financiallyRegulated": false
+    },
+    {
+      "id": "US-GENERAL",
+      "jurisdiction": "US",
+      "name": "Not financially regulated",
+      "entityTypes": [
+        "privateCompany",
+        "notForProfit"
+      ],
+      "financiallyRegulated": false
     }
   ],
   "crosswalks": {
@@ -1550,6 +1869,6 @@ window.BD_CONTENT = {
       "note": "The cross-walk gives the nearest term in each standard so that the two vocabularies can be read side by side. It is Triodian’s reading, for a person with the relevant ISO competence to check, and it is not an equivalence. Read each term in a licensed copy of the standard."
     }
   },
-  "baselinesSource": "Triodian Metamodel 2.8.0, reference-data/baseline-profiles.json",
+  "baselinesSource": "Triodian Metamodel 2.9.0, reference-data/baseline-profiles.json",
   "fastPathNote": "Baseline control BC2. Management approves a new AI use that assists or recommends (A1 or A2) and reaches no threshold the board set at B6 within the number of days set here, and reports it under BM1. Anything above that goes to the reserved events. A quick approved route moves AI use onto sanctioned tools; BM7 and BM8 show whether it does."
 };

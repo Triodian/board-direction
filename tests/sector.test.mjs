@@ -23,7 +23,7 @@ const ra = ['Underwriting and pricing', 'Claims', 'Fraud and investigations', 'P
 ok('the general insurer areas match the AI Risk Appetite functions', JSON.stringify(ins.areas) === JSON.stringify(ra));
 
 // fit
-ok('standalone offers the general pack and the baselines only', X.packsFor(C, 'standalone').every(p => p.id === 'general' || p.baseline) && X.packsFor(C, 'standalone')[0].id === 'general');
+ok('standalone offers the general pack, the baselines and the jurisdiction overlays only', X.packsFor(C, 'standalone').every(p => p.id === 'general' || p.baseline || p.overlay) && X.packsFor(C, 'standalone')[0].id === 'general');
 ok('connected offers every pack', X.packsFor(C, 'connected').length === C.sectorPacks.length);
 ok('a general insurer is offered the general insurer pack', X.suggestPack(C, 'generalInsurer', 'connected').id === 'generalInsurer');
 ok('an ADI is offered the ADI pack', X.suggestPack(C, 'authorisedDepositTakingInstitution', 'connected').id === 'adi');

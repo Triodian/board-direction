@@ -41,7 +41,7 @@ function blank() {
   const X = SECTOR(), df = SRV.defaults || {}, jur = (C.jurisdictions.some(j => j[0] === df.jurisdiction) ? df.jurisdiction : 'AU');
   const sec = X.sectorById(C, df.sector), sector = sec && sec.jurisdiction === jur ? sec.id : '';
   const types = sector ? X.sectorById(C, sector).entityTypes : [], entityType = types.length === 1 ? types[0] : '', mode = X.modeFor(C, sector) || 'standalone';
-  const pack = X.suggestPack(C, entityType, mode, sector);
+  const pack = X.suggestPack(C, entityType, mode, sector, jur);
   const S0 = {
     schema: 'triodian.bd.v1',
     engagement: { id: 'e' + uid(), company: '', entityType, jurisdiction: jur, sector, mode, sectorPack: pack ? pack.id : '', reference: '', privilegeMarking: '', practitioner: { firm: '', line: '' }, boardDates: { workshop: '', resolution: '' }, gcActsAsCounsel: false, secondApproverId: '', sectorPack: 'general' },
@@ -87,7 +87,7 @@ function sectorAfter(path, from) {
     }
     render(); return;
   }
-  const sug = X.suggestPack(C, e.entityType, e.mode, e.sector), set = packById(e.sectorPack), valid = set && (set.mode === 'both' || set.mode === e.mode);
+  const sug = X.suggestPack(C, e.entityType, e.mode, e.sector, e.jurisdiction), set = packById(e.sectorPack), valid = set && (set.mode === 'both' || set.mode === e.mode);
   if (sug && sug.id !== e.sectorPack && (!valid || (X.areasMatch(C, S, set) && !X.areasInUse(S)))) {
     const old = e.sectorPack; e.sectorPack = sug.id; log('edit', 'engagement.sectorPack', old || null, sug.id); sectorAfter('engagement.sectorPack', old);
   } else render();
@@ -104,8 +104,8 @@ function modeHint(e) {
   return `<p class="small" style="margin:6px 0 0">${esc(d.name)} is ${d.financiallyRegulated ? 'financially regulated, so Connected mode usually fits' : 'outside financial regulation, so Standalone mode usually fits'}.</p>`;
 }
 function sectorPanel(why) {
-  const X = SECTOR(), e = S.engagement, cur = X.packOf(C, e), sug = X.suggestPack(C, e.entityType, e.mode, e.sector);
-  let h = `<div class="fgrid">${fld('Sector pack', 'engagement.sectorPack', cur ? cur.id : '', { select: X.packsFor(C, e.mode).map(p => [p.id, p.name]) })}</div>
+  const X = SECTOR(), e = S.engagement, cur = X.packOf(C, e), sug = X.suggestPack(C, e.entityType, e.mode, e.sector, e.jurisdiction);
+  let h = `<div class="fgrid">${fld('Sector pack', 'engagement.sectorPack', cur ? cur.id : '', { select: X.packsFor(C, e.mode, e.jurisdiction).map(p => [p.id, p.name]) })}</div>
     <p class="small soft" style="margin:6px 0 0">${esc(C.sectorPacksNote)} ${esc(cur ? cur.note : '')}</p>`;
   if (sug && cur && sug.id !== cur.id) h += `<p class="small" style="margin:6px 0 0">Suggested for ${esc(lbl(C.entityTypes, e.entityType) || (X.sectorById(C, e.sector) || {}).name || 'this engagement')}: <strong>${esc(sug.name)}</strong>.</p>`;
   if (cur && !why && !X.areasMatch(C, S, cur)) h += X.areasInUse(S) ? '<p class="small soft" style="margin:6px 0 0">The areas below differ from the pack’s list. They already carry postures or inventory lines, so they are kept.</p>'

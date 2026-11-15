@@ -4,20 +4,25 @@
 // and the uses boards in that sector commonly consider at B3. Shared by the browser and the tests; no platform code.
 // C is the content (bd-content.json); e is the engagement's details; S is the whole engagement.
 
-/** Every pack that suits the mode. The general pack suits both. */
-export function packsFor(C, mode) { return (C.sectorPacks || []).filter(p => p.mode === 'both' || p.mode === mode); }
+/** Every pack that suits the mode. The general pack suits both. Given a jurisdiction, a jurisdiction overlay pack is
+    offered only in its own jurisdiction. */
+export function packsFor(C, mode, jurisdiction) {
+  return (C.sectorPacks || []).filter(p => (p.mode === 'both' || p.mode === mode) && !(jurisdiction && p.overlay && p.overlay !== jurisdiction));
+}
 /** The pack's areas; the general pack uses the framework's starting list. */
 export function packAreas(C, p) { return p && Array.isArray(p.areas) ? p.areas : C.startingAreas; }
 /** The engagement's pack, or the general pack when none is set or the one set does not suit the mode. */
 export function packOf(C, e) {
-  const list = packsFor(C, (e && e.mode) || 'standalone'), id = e && e.sectorPack;
+  const list = packsFor(C, (e && e.mode) || 'standalone', e && e.jurisdiction), id = e && e.sectorPack;
   return list.find(p => p.id === id) || list.find(p => p.id === 'general') || list[0] || null;
 }
 /** The pack that fits the entity type, regulated sector and mode: a pack for the entity type, then one for the sector,
-    then the sector's best-practice baseline, otherwise the general pack. */
-export function suggestPack(C, entityType, mode, sector) {
-  const list = packsFor(C, mode || 'standalone');
-  return list.find(p => entityType && (p.entityTypes || []).includes(entityType))
+    then the sector's best-practice baseline, otherwise the general pack. Given a jurisdiction, a pack tied to another
+    jurisdiction's sectors is not suggested by entity type alone (a US financial institution is not offered the MAS pack). */
+export function suggestPack(C, entityType, mode, sector, jurisdiction) {
+  const list = packsFor(C, mode || 'standalone', jurisdiction);
+  const here = p => !jurisdiction || !(p.sectors || []).length || p.sectors.some(s => s.startsWith(jurisdiction + '-'));
+  return list.find(p => entityType && (p.entityTypes || []).includes(entityType) && here(p))
     || list.find(p => !p.baseline && sector && (p.sectors || []).includes(sector))
     || baselinePackFor(C, list, sector)
     || list.find(p => p.id === 'general') || list[0] || null;
