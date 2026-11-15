@@ -12,6 +12,7 @@ const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 // A state's records carry its ISO 3166-2 code (US-NY), as the Atlas files them. A state belongs to its country: a brief
 // for New York is a brief for a United States company.
 const US_STATES = { AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California', CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', DC: 'District of Columbia', FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana', ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi', MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey', NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma', OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia', WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming' };
+const AU_STATES = { ACT: 'Australian Capital Territory', NSW: 'New South Wales', NT: 'Northern Territory', QLD: 'Queensland', SA: 'South Australia', TAS: 'Tasmania', VIC: 'Victoria', WA: 'Western Australia' };
 export const countryOf = c => String(c || '').split('-')[0];
 /** "New York (United States)" for US-NY; the name in names for a country; the code where neither is known. */
 export function jurisdictionLabel(names, c) {
@@ -19,7 +20,7 @@ export function jurisdictionLabel(names, c) {
   if (map[code]) return map[code];
   const [k, s] = code.split('-');
   if (!s) return code;
-  const sub = k === 'US' ? US_STATES[s] : '';
+  const sub = k === 'US' ? US_STATES[s] : k === 'AU' ? AU_STATES[s] : '';
   return `${sub || code} (${map[k] || k})`;
 }
 const str = (v, n = 400) => typeof v === 'string' ? v.slice(0, n) : '';
