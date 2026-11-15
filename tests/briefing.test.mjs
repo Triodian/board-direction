@@ -1,6 +1,6 @@
 // B0: the Atlas matter brief, the scope agreement and the director briefing. Run: node tests/briefing.test.mjs
 import { readFileSync } from 'node:fs';
-import { readBrief, briefMismatch, storedBriefError } from '../public/shared/matter-brief.js';
+import { readBrief, briefMismatch, storedBriefError, jurisdictionLabel } from '../public/shared/matter-brief.js';
 import { deny, seesAnswers, educationEntry, BRIEFING_CHECKS } from '../lib/core/rules.js';
 import { checkSave } from '../lib/core/rbac.js';
 
@@ -26,7 +26,15 @@ bad('a brief missing a tier is refused', JSON.stringify(noTier), 'obligations by
 const noId = JSON.parse(raw); noId.obligationsByTier.expected[0] = { title: 'x' };
 bad('a reference without an ID is refused, naming it', JSON.stringify(noId), 'Reference 1 under Expected');
 ok('no mismatch for an Australian private company', briefMismatch(r.brief, { jurisdiction: 'AU', entityType: 'privateCompany' }, names).length === 0);
-ok('a Singapore company is told the brief covers Australia', briefMismatch(r.brief, { jurisdiction: 'SG', entityType: 'privateCompany' }, names).join().includes('covers AU'));
+ok('a Singapore company is told the brief covers Australia', /covers (AU|Australia); the company is in (SG|Singapore)/.test(briefMismatch(r.brief, { jurisdiction: 'SG', entityType: 'privateCompany' }, names).join()), briefMismatch(r.brief, { jurisdiction: 'SG', entityType: 'privateCompany' }, names).join());
+// US state codes (15 November 2026): a state belongs to its country, and is named by the state.
+{ const ny = { scopeCodes: { jurisdictions: ['US', 'US-NY'], entityTypes: [] } }, only = { scopeCodes: { jurisdictions: ['US-TX'], entityTypes: [] } };
+  ok('a brief for the US and New York fits a United States company', briefMismatch(ny, { jurisdiction: 'US' }, names).length === 0);
+  ok('a brief for Texas alone fits a United States company', briefMismatch(only, { jurisdiction: 'US' }, names).length === 0);
+  ok('a brief for New York does not fit an Australian company, and names the state', /New York \((US|United States)\)/.test(briefMismatch(ny, { jurisdiction: 'AU' }, names).join()), briefMismatch(ny, { jurisdiction: 'AU' }, names).join());
+  ok('state names: New York, an unknown subdivision, a country', jurisdictionLabel({ US: 'United States' }, 'US-NY') === 'New York (United States)' && jurisdictionLabel({ AU: 'Australia' }, 'AU-NSW') === 'AU-NSW (Australia)' && jurisdictionLabel({ US: 'United States' }, 'US') === 'United States');
+  const raw0 = JSON.parse(raw), rb = readBrief(JSON.stringify({ ...raw0, scope: { ...raw0.scope, jurisdictions: ['US', 'US-NY'] } }), { ...names, jurisdictions: { US: 'United States' } });
+  ok('the scope line names the state', !rb.error && rb.brief.scope.includes('United States, New York (United States)'), rb.error || rb.brief.scope); }
 
 // --- the scope agreement: chair, or the named second approver where the GC also acts as counsel ---
 const chair = { id: 'ch', roles: ['chair'] }, ceo = { id: 'ce', roles: ['ceo'] }, gc = { id: 'gc', roles: ['gc'] };

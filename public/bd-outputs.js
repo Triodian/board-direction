@@ -43,7 +43,7 @@
       // the practitioner's name and line are in the page header of every page, so they are not repeated here
       if (e.gcActsAsCounsel) out.push('The general counsel also acted as counsel in this engagement.', '');
       if (lead) out.push(lead, '');
-      const tags = id && root.BDEvidence ? root.BDEvidence.tagLine('BD', id) : ''; // task R.2
+      const tags = id && root.BDEvidence ? root.BDEvidence.tagLine('BD', id, e.jurisdiction) : ''; // task R.2; outside Australia, ISO/IEC 42001 only
       if (tags) out.push(`Evidence for: ${tags}.`, '');
       return out;
     }
