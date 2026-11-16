@@ -295,6 +295,9 @@ const areaName = id => (S.areas.find(a => a.id === id) || {}).name || id;
 const table = (head, rows) => rows.length ? `<div class="tw" style="margin:8px 0"><table class="lg"><thead><tr>${head.map(h => `<th>${typeof h === 'object' ? h.html : esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : '';
 /* Hover tips: any element with data-tip shows a plain-language explanation on hover, keyboard focus or tap. */
 const tip = (html, text, cls) => text ? `<span class="${cls ? cls + ' ' : ''}tip" tabindex="0" data-tip="${esc(text)}">${html}</span>` : html;
+/* Wording that names a law follows the engagement's jurisdiction (US.7): Australia's and the neutral default are in
+   bd-content.json, another jurisdiction's comes from its overlay (content/overlays/<code>.json, wording). */
+const JW = () => { const w = C.jurisdictionWording || {}; return w[S && S.engagement && S.engagement.jurisdiction || 'AU'] || w.default || w.AU || { adm: { tip: C.tips.adm, law: '', question: '' } }; };
 const refTip = id => { const k = (/^[A-Z]+/.exec(id || '') || [''])[0]; return tip(`<span class="mono">${esc(id)}</span>`, (C.tips.ref || {})[k] ? id + ' · ' + C.tips.ref[k] : ''); };
 const classTip = g => tip(`${esc(g)} ${esc(lbl(SC.infoClass, g))}`, (C.tips.infoClass || {})[g]);
 const kindTip = k => tip(esc(lbl(SC.toolKind, k)), (C.tips.toolKind || {})[k]);
@@ -372,13 +375,13 @@ function invForm(l) {
 function worklist() {
   const ls = admLines();
   if (!ls.length) return '';
-  return `<div style="margin-top:16px"><div class="row between"><p class="mini" style="margin:0">${tip('Automated-decision worklist', 'BO5 · Every line marked yes in field 8, for the GC. A list of facts for counsel’s review of the privacy policy against APPs 1.7 to 1.9. It states no conclusion on what the policy must say.')} · for counsel</p><button class="btn sm" data-act="worklistDocx">Download as Word</button></div>`
+  return `<div style="margin-top:16px"><div class="row between"><p class="mini" style="margin:0">${tip('Automated-decision worklist', 'BO5 · Every line marked yes in field 8, for the GC. A list of facts for counsel’s review of ' + JW().adm.law + '. It states no conclusion on what the law requires.')} · for counsel</p><button class="btn sm" data-act="worklistDocx">Download as Word</button></div>`
     + table(['Line', 'Use', 'Area', 'Kinds of decision', 'Personal information used', 'Owner', 'Question to counsel'], ls.map(l => [refTip(l.id), esc(l.use), esc(areaName(l.area)), l.decisions ? esc(l.decisions) : '<span class="soft">Not recorded</span>', l.personalInfo ? esc(l.personalInfo) : '<span class="soft">Not recorded</span>', esc(pname(l.owner)), qBadge(lineQuestion(l))]))
     + '<p class="small soft">Field 8 records the fact only. Whether the requirement is engaged is counsel’s determination.</p></div>';
 }
 function inventoryBody() {
   const inv = S.inventory || [], why = invWhy(), can = !why, prov = showProv(inv, 'suppliedBy');
-  const head = ['Line', 'Use', 'Area', 'Authority', 'Sees', 'Tool kind', { html: tip('About individuals', C.tips.adm) }, 'Owner'].concat(prov ? [{ html: tip('Supplied and confirmed', 'Who entered the line, and whether the technology owner has confirmed it. A change to a confirmed line by someone else withdraws the confirmation.') }] : []);
+  const head = ['Line', 'Use', 'Area', 'Authority', 'Sees', 'Tool kind', { html: tip('About individuals', JW().adm.tip) }, 'Owner'].concat(prov ? [{ html: tip('Supplied and confirmed', 'Who entered the line, and whether the technology owner has confirmed it. A change to a confirmed line by someone else withdraws the confirmation.') }] : []);
   const rows = inv.map(l => { const m = missing(l); return [refTip(l.id) + (m.length ? `<br>${tip('Incomplete', 'Still to record: ' + m.join(', ') + '.', 'badge b-grey')}` : ''), esc(l.use || '') + `<br><span class="small soft">${[l.tool, l.who, l.source].filter(Boolean).map(esc).join(' · ')}</span>`, esc(l.area ? areaName(l.area) : ''), l.authority ? authTip(l.authority) : '', l.info ? classTip(l.info) : '', l.kind ? kindTip(l.kind) : '', l.adm ? '<span class="badge b-ochre">Yes · to counsel</span>' : 'No', esc(pname(l.owner))].concat(prov ? [provCell(l, 'suppliedBy', 'confirmLine')] : []).concat(can ? [`<button class="btn sm ghost" data-act="editLine" data-id="${l.id}" aria-label="Edit line ${l.id}">${UI.editLine === l.id ? 'Editing' : 'Edit'}</button>`] : []); });
   const editing = can && inv.find(l => l.id === UI.editLine);
   const intro = !inv.length ? `<p class="small" style="margin:4px 0 8px">One line per AI use, 10 to 20 lines, supplied by management: the AI governance team or the CEO enters the lines, and the technology owner confirms each. Start with:</p><ul class="small" style="margin:0 0 8px 18px"><li>Which AI tools have we licensed, and which do staff use without a licence?</li><li>Which of our providers use AI in the work they do for us?</li></ul>${!UI.practice && !RULES.modeLocked(S) ? `<p class="small soft">The mode (${esc(lbl(C.modes.map(m => [m.id, m.name]), S.engagement.mode))}) is fixed once the first line is added.</p>` : ''}` : '';
@@ -392,7 +395,7 @@ function raiseADM(l) {
   if (lineQuestion(l)) return '';
   S.questions = S.questions || [];
   const ref = nextQRef();
-  S.questions.push({ ref, step: 'B1', lines: [l.id], question: `Line ${l.id}${l.use ? ' (' + l.use + ')' : ''} is recorded as making, or substantially contributing to, decisions about individuals. Does the privacy policy need to describe it under APPs 1.7 to 1.9, which apply from 10 December 2026?`, status: 'open', response: '', sentOn: todayISO(), raisedBy: myId() });
+  S.questions.push({ ref, step: 'B1', lines: [l.id], question: `Line ${l.id}${l.use ? ' (' + l.use + ')' : ''} is recorded as making, or substantially contributing to, decisions about individuals. ${JW().adm.question}`, status: 'open', response: '', sentOn: todayISO(), raisedBy: myId() });
   log('add', 'questions.' + ref, null, 'open');
   return ref;
 }
@@ -417,7 +420,7 @@ function worklistMarkdown() {
   out.push('# Automated-decision worklist', '',
     `**${cell(e.company || '[company]')}**${e.reference ? ' · ' + cell(e.reference) : ''} · ${resolved ? 'As resolved' : 'Draft'}, ${dl(todayISO())}`, '');
   if (evTags('worklist')) out.push(`Evidence for: ${evTags('worklist')}.`, '');
-  out.push('Every line of the AI inventory (B1) recorded as making, or substantially contributing to, a decision about an individual using their personal information. It is a list of facts for counsel’s review of the privacy policy against APPs 1.7 to 1.9, which apply from 10 December 2026. It states no conclusion on what the policy must say.', '',
+  out.push('Every line of the AI inventory (B1) recorded as making, or substantially contributing to, a decision about an individual using their personal information. It is a list of facts for counsel’s review of ' + JW().adm.law + '. It states no conclusion on what the law requires.', '',
     '| Line | Use | Area | Kinds of decision | Personal information used | Owner | Question to counsel |', '| --- | --- | --- | --- | --- | --- | --- |');
   admLines().forEach(l => { const q = lineQuestion(l); out.push(`| ${cell(l.id)} | ${cell(l.use)} | ${cell(l.area ? areaName(l.area) : '')} | ${cell(l.decisions || 'Not recorded')} | ${cell(l.personalInfo || 'Not recorded')} | ${cell(pname(l.owner))} | ${q ? cell(q.ref + ', ' + (q.status === 'answered' ? 'answered' : 'open')) : 'None yet'} |`); });
   const qs = admLines().map(lineQuestion).filter(Boolean).filter((q, i, a) => a.indexOf(q) === i);

@@ -11,7 +11,7 @@
     {
       "id": "connected",
       "name": "Connected",
-      "for": "APRA, ASIC or MAS regulated entities. The steps produce board directions that the AI Risk Appetite engagement must stay within."
+      "for": "Prudentially regulated entities (in Australia APRA or ASIC, in Singapore MAS, in the United States the banking, insurance and securities supervisors). The steps produce board directions that the AI Risk Appetite engagement must stay within."
     }
   ],
   "entityTypes": [
@@ -1800,7 +1800,7 @@
         [
           "H4 Operations",
           "The company, and through it its customers",
-          "6.1.2; for an APRA-regulated entity, the tolerance for the critical operation",
+          "6.1.2; for a prudentially regulated entity, the tolerance for the critical operation (CPS 230 in Australia)",
           "A risk criterion"
         ],
         [
@@ -1869,5 +1869,28 @@
     }
   },
   "baselinesSource": "Triodian Metamodel 2.9.0, reference-data/baseline-profiles.json",
-  "fastPathNote": "Baseline control BC2. Management approves a new AI use that assists or recommends (A1 or A2) and reaches no threshold the board set at B6 within the number of days set here, and reports it under BM1. Anything above that goes to the reserved events. A quick approved route moves AI use onto sanctioned tools; BM7 and BM8 show whether it does."
+  "fastPathNote": "Baseline control BC2. Management approves a new AI use that assists or recommends (A1 or A2) and reaches no threshold the board set at B6 within the number of days set here, and reports it under BM1. Anything above that goes to the reserved events. A quick approved route moves AI use onto sanctioned tools; BM7 and BM8 show whether it does.",
+  "jurisdictionWording": {
+    "AU": {
+      "adm": {
+        "tip": "Whether this AI makes, or substantially contributes to, a decision about a person using their personal information. Australia’s Privacy Act requires these to be described in the privacy policy from 10 December 2026; counsel decides what that means for each line.",
+        "law": "the privacy policy against APPs 1.7 to 1.9, which apply from 10 December 2026",
+        "question": "Does the privacy policy need to describe it under APPs 1.7 to 1.9, which apply from 10 December 2026?"
+      }
+    },
+    "default": {
+      "adm": {
+        "tip": "Whether this AI makes, or substantially contributes to, a decision about a person using their personal information. Privacy and automated-decision laws in the engagement’s jurisdiction may require notice, explanation or a privacy-policy description; counsel decides what that means for each line.",
+        "law": "the notice, explanation and privacy-policy duties for automated decisions in the engagement’s jurisdiction",
+        "question": "Do the automated-decision duties in our jurisdiction require notice, an explanation, a privacy-policy description or human review for it?"
+      }
+    },
+    "US": {
+      "adm": {
+        "tip": "Whether this AI makes, or substantially contributes to, a decision about a person using their personal information. US state law sets notice, explanation and opt-out duties for automated decisionmaking: California’s CPPA regulations on automated decisionmaking technology (duties from 1 January 2027), Colorado SB 189 (from 1 January 2027) and Texas TRAIGA (from 1 January 2026) among them; counsel decides what applies to each line.",
+        "law": "the automated-decisionmaking duties of the states the company and the people affected are in (California’s CPPA ADMT regulations from 1 January 2027, Colorado SB 189 from 1 January 2027, Texas TRAIGA from 1 January 2026)",
+        "question": "Which state automated-decisionmaking duties reach it (California’s CPPA ADMT regulations from 1 January 2027, Colorado SB 189 from 1 January 2027, Texas TRAIGA), and does it need a notice, an explanation, an opt-out or human review?"
+      }
+    }
+  }
 }

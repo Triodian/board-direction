@@ -82,5 +82,12 @@
         "AI changing a safety-critical operational setting with no authorised person approving it"
       ]
     }
-  ]
+  ],
+  "wording": {
+    "adm": {
+      "tip": "Whether this AI makes, or substantially contributes to, a decision about a person using their personal information. US state law sets notice, explanation and opt-out duties for automated decisionmaking: California’s CPPA regulations on automated decisionmaking technology (duties from 1 January 2027), Colorado SB 189 (from 1 January 2027) and Texas TRAIGA (from 1 January 2026) among them; counsel decides what applies to each line.",
+      "law": "the automated-decisionmaking duties of the states the company and the people affected are in (California’s CPPA ADMT regulations from 1 January 2027, Colorado SB 189 from 1 January 2027, Texas TRAIGA from 1 January 2026)",
+      "question": "Which state automated-decisionmaking duties reach it (California’s CPPA ADMT regulations from 1 January 2027, Colorado SB 189 from 1 January 2027, Texas TRAIGA), and does it need a notice, an explanation, an opt-out or human review?"
+    }
+  }
 }

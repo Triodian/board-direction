@@ -29,6 +29,7 @@ test('the CEO adds a line, marks it as deciding about individuals, and a questio
   await expect(ceo.locator('#savechip')).toHaveText(/Saved/, { timeout: 10_000 });
   // the worklist shows the line, and the Word download works
   await expect(ceo.locator('#step-B1')).toContainText('Automated-decision worklist');
+  expect(await ceo.locator('#step-B1').innerHTML()).toContain('APPs 1.7 to 1.9');   // an Australian engagement keeps the Privacy Act wording (US.7)
   await expect(ceo.locator('#step-B1 table').nth(1)).toContainText('Income, credit history');
   const dl = ceo.waitForEvent('download');
   await ceo.click('[data-act="worklistDocx"]');

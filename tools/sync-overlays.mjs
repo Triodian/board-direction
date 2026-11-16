@@ -8,8 +8,12 @@ const file = new URL('../public/bd-content.json', import.meta.url);
 const C = JSON.parse(readFileSync(file, 'utf8'));
 const add = (a, b) => a.concat(b.filter(x => !a.includes(x)));
 const built = [];
+C.jurisdictionWording = C.jurisdictionWording || {};
 for (const f of readdirSync(dir).filter(f => f.endsWith('.json')).sort()) {
   const O = JSON.parse(readFileSync(new URL(f, dir), 'utf8'));
+  // The jurisdiction's own wording for text that names a law (US.7): the automated-decisions field, the worklist and
+  // the question to counsel. Australia's and the neutral default stay in bd-content.json.
+  if (O.wording) C.jurisdictionWording[O.jurisdiction] = O.wording;
   for (const o of O.packs) {
     const base = C.sectorPacks.find(p => p.baseline === o.baseline);
     if (!base) throw new Error(`${o.id}: no baseline pack for ${o.baseline}; run sync-baselines first`);
