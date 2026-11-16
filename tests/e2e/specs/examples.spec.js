@@ -184,13 +184,15 @@ test('?example=us-banking opens Harlow Ridge Bank with the US pack, and the menu
   await expect(p.locator('#step-B0')).toContainText('OBL-US-');                          // the matter brief carries US records
   await expect(p.locator('#step-B0')).toContainText('United States, New York (United States)');   // a New York bank's brief names its state (US-NY)
   // the outputs and the evidence index name ISO/IEC 42001 only: the APRA letter and CPS 230 are Australian
-  await expect(p.locator('#outputs')).toContainText('ISO/IEC 42001 evidence index (BO7)');
+  await expect(p.locator('#outputs')).toContainText('US banking evidence index (BO7)');   // the sector's regime (US.6), not the APRA letter and not ISO alone
+  await expect(p.locator('#outputs')).toContainText('US banking expectations have evidence');
+  await expect(p.locator('#outputs')).toContainText('SR 26-2');
   await expect(p.locator('#outputs')).not.toContainText('APRA');
   await expect(p.locator('#outputs')).not.toContainText('CPS 230');
   await expect(p.locator('#outputs')).not.toContainText('letter bullets');
   { const { name, buf } = await grab(p, 'evidence'); const doc = text(unzip(buf, 'word/document.xml'));
     expect(name).toContain('evidence index'); expect(name).not.toContain('APRA');
-    expect(doc).toContain('by ISO/IEC 42001:2023 clause and Annex A control'); expect(doc).not.toContain('APRA'); expect(doc).not.toContain('CPS 230'); }
+    expect(doc).toContain('by expectation of SR 26-2'); expect(doc).toContain('Interagency Guidance 2023'); expect(doc).not.toContain('APRA'); expect(doc).not.toContain('CPS 230'); }
   await p.locator('[data-act="drawer"]').first().click();
   await expect(p.locator('[data-act="example"][data-ex^="us-"]')).toHaveCount(4);       // the other four US examples
   await expect(p.locator('[data-act="example"][data-ex="banking"]')).toHaveCount(0);    // and not the Australian ones
