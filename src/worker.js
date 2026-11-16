@@ -4,7 +4,11 @@
 //   identity → lib/identity/session.js (the /login page and sessions; Cloudflare Access guards /auth/email only)
 //   storage  → lib/store/d1.js (Cloudflare D1)
 //   email    → Cloudflare Email Service binding EMAIL, only when NOTIFY_SENDING is "on"
+// The same handler runs on Node with SQLite (src/node.js, lib/platform/node.js): env is the platform (development plan ID.3);
+// the APPETITE service binding becomes HTTPS with LINK_SECRET there (lib/platform/links.js).
 import { whoIs, handleAuth, gate, markDemo } from '../lib/identity/session.js';
+import { serviceLink, handleLink } from '../lib/platform/links.js';
+import { statusForService } from './status.js';
 import { d1Store } from '../lib/store/d1.js';
 import { identityUsers, withIdentity } from '../lib/identity/people.js';
 import { handle, boardDirections } from '../lib/core/api.js';
@@ -37,10 +41,11 @@ export async function directionsForService(env) {
 /** Reads the board view from the AI Risk Appetite app (task 3.6), through the APPETITE service binding to its
  *  AppetiteService entrypoint. Null when this site has no binding: B9 then says the link is not set up. */
 function boardViewReader(env) {
-  if (!env.APPETITE || typeof env.APPETITE.boardView !== 'function') return null;
+  const link = serviceLink(env, 'APPETITE', ['boardView', 'evidence']);
+  if (!link || typeof link.boardView !== 'function') return null;
   return async () => {
     let r;
-    try { r = await env.APPETITE.boardView(); }
+    try { r = await link.boardView(); }
     catch (e) { console.error(e); return { status: 503, error: 'The Risk Appetite app could not be reached through the APPETITE service binding. Check that the binding names the Risk Appetite Worker deployed in this account.' }; }
     return r && r.status === 200 ? r.body : { status: (r && r.status) || 502, error: (r && r.body && r.body.error) || 'The Risk Appetite app gave no answer.' };
   };
@@ -49,10 +54,11 @@ function boardViewReader(env) {
 /** Reads the artefacts for the APRA letter evidence index (task R.2) through the APPETITE binding: the AI Risk Appetite
  *  app answers with its own and, over its ASSESSMENT binding, the AI Use Assessment's. Null when there is no binding. */
 function evidenceReader(env) {
-  if (!env.APPETITE) return null;
+  const link = serviceLink(env, 'APPETITE', ['boardView', 'evidence']);
+  if (!link) return null;
   return async () => {
     let r;
-    try { r = await env.APPETITE.evidence(); }
+    try { r = await link.evidence(); }
     catch (e) { console.error(e); return { status: 503, error: 'The Risk Appetite app could not be reached through the APPETITE service binding, or its version does not list artefacts yet.' }; }
     return r && r.status === 200 ? r.body : { status: (r && r.status) || 502, error: (r && r.body && r.body.error) || 'The Risk Appetite app gave no answer.' };
   };
@@ -65,6 +71,10 @@ function evidenceReader(env) {
 export const release = env => String((env && env.APP_COMMIT) || '').trim() || 'unknown';
 const withRelease = (res, env) => { try { const r = new Response(res.body, res); r.headers.set('X-Triodian-Release', release(env)); return r; } catch (e) { return res; } };
 
+/** What the other apps may read from this one over a link (the service entrypoints in src/service.js and
+ *  src/status-service.js on Cloudflare; /api/link/<method> with LINK_SECRET elsewhere, lib/platform/links.js). */
+export const LINK_METHODS = { directions: directionsForService, status: async env => ({ status: 200, body: await statusForService(env) }) };
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -76,6 +86,10 @@ export default {
     // Sign-in: /login (a static page), /auth/* (lib/identity/session.js). Pages need a session; assets do not.
     if (url.pathname.startsWith('/auth/')) return (await handleAuth(request, env)) || new Response('Not found', { status: 404 });
     if (!url.pathname.startsWith('/api/')) return (await gate(request, env)) || markDemo(await env.ASSETS.fetch(request), env);
+
+    // Another app of the suite, over HTTPS with the deployment's LINK_SECRET (only where there are no service bindings).
+    const link = await handleLink(request, env, LINK_METHODS);
+    if (link) return link;
 
     const who = await whoIs(request, env);
     if (!who.email) return json({ error: who.error }, who.status || 401);
