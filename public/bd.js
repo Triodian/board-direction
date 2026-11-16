@@ -1061,10 +1061,12 @@ function outputsSection() {
    AI Board Direction's own artefacts, with those gathered from AI Risk Appetite and, through it, AI Use Assessment over
    the service bindings. The gathered list is kept for this visit only: the index is made again from the apps each time. */
 const EV = () => window.BDEvidence || null;
-const evTags = id => (EV() ? EV().tagLine('BD', id, S && S.engagement.jurisdiction) : '');   // outside Australia, ISO/IEC 42001 only
-/* The APRA letter is an Australian instrument: elsewhere the index is by ISO/IEC 42001 control only. */
+const evTags = id => (EV() ? EV().tagLine('BD', id, S && S.engagement.jurisdiction, S && (S.engagement.sector || S.engagement.sectorPack)) : '');   // the jurisdiction's regime, else ISO/IEC 42001 only
+/* The APRA letter is an Australian instrument. Another jurisdiction's index is by its own regime for the sector where
+   one is mapped (US.6: the United States' five main sectors, NIST AI RMF for the rest), else by ISO/IEC 42001 only. */
 const evAU = () => !S.engagement.jurisdiction || S.engagement.jurisdiction === 'AU';
-const evTitle = () => evAU() ? 'APRA letter evidence index' : 'ISO/IEC 42001 evidence index';
+const evRegime = () => EV() ? EV().regimeFor(S.engagement.jurisdiction, S.engagement.sector || S.engagement.sectorPack) : null;
+const evTitle = () => evAU() ? 'APRA letter evidence index' : evRegime() ? evRegime().short + ' evidence index' : 'ISO/IEC 42001 evidence index';
 const evArtefacts = () => EV() ? EV().boardArtefacts(S).concat((UI.evidence && UI.evidence.artefacts) || []) : [];
 function evidenceMarkdown() {
   const e = S.engagement, g = UI.evidence, out = [];
@@ -1072,19 +1074,20 @@ function evidenceMarkdown() {
   out.push('# ' + evTitle(), '', `**${e.company || '[company]'}**${e.reference ? ' · ' + e.reference : ''} · ${outputsFor().status}`, '');
   if (evTags('evidence')) out.push(`Evidence for: ${evTags('evidence')}.`, '');
   const notes = g ? (g.notes || []) : ['AI Risk Appetite and AI Use Assessment have not been gathered yet. Use “Gather the evidence” under the outputs.'];
-  return out.join('\n') + '\n' + EV().indexMarkdown({ artefacts: evArtefacts(), by: UI.evBy, jurisdiction: S.engagement.jurisdiction, review: e.managementReview, company: e.company, gatheredOn: dl(g ? g.gatheredOn : todayISO()), notes, soa: g ? g.soa : null });
+  return out.join('\n') + '\n' + EV().indexMarkdown({ artefacts: evArtefacts(), by: UI.evBy, jurisdiction: S.engagement.jurisdiction, sector: S.engagement.sector || S.engagement.sectorPack, review: e.managementReview, company: e.company, gatheredOn: dl(g ? g.gatheredOn : todayISO()), notes, soa: g ? g.soa : null });
 }
 function evidenceCard() {
   if (!EV()) return '';
-  const A = evArtefacts().filter(a => a.status !== 'none'), cv = EV().coverage(A), g = UI.evidence, by = UI.evBy === 'iso' || !evAU() ? 'iso' : 'letter';
+  const R = evRegime(), A = evArtefacts().filter(a => a.status !== 'none'), cv = EV().coverage(A, S.engagement.jurisdiction, S.engagement.sector || S.engagement.sectorPack), g = UI.evidence, by = UI.evBy === 'iso' || !R ? 'iso' : 'letter';
   const soaIx = g && Array.isArray(g.soa) && g.soa.length ? Object.fromEntries(g.soa.map(r => [r.control, r])) : null, sm = EV().isoSummary(A, g ? g.soa : null);
-  const groups = by === 'iso' ? EV().ISO.map(([id, name]) => [id, name, A.filter(a => (a.iso || []).includes(id))]) : EV().LETTER.map(b => [b.id, b.text, A.filter(a => (a.letter || []).includes(b.id))]);
+  const groups = by === 'iso' ? EV().ISO.map(([id, name]) => [id, name, A.filter(a => (a.iso || []).includes(id))]) : R.items.map(i => [i.id, i.text, A.filter(a => EV().regimeItemsFor(R, a).some(x => x.id === i.id))]);
   const cellOf = ([id, name, hits]) => `<div class="panel2" data-ev="${esc(id)}" style="padding:8px 12px"><div class="row between"><span><span class="mono">${esc(id)}</span> <span class="small">${esc(name)}</span></span>${hits.length ? `<span class="badge b-green">${hits.length}</span>` : `<span class="badge b-grey">${by === 'iso' ? 'not evidenced by this suite' : 'none yet'}</span>`}</div>${by === 'iso' && soaIx && /^A\./.test(id) ? `<div class="mini" style="margin-top:4px">Statement of Applicability: ${esc(EV().soaLine(soaIx[id]))}</div>` : ''}${hits.length ? `<div class="mini" style="margin-top:4px">${hits.map(a => esc(a.name) + (a.status === 'draft' ? ' (draft)' : '')).join(' · ')}</div>` : ''}</div>`;
   return `<div id="evidence" style="margin-top:18px"><div class="row between"><h3 class="sh" style="margin:0">${evTitle()} (BO7)</h3><div class="row">
-      <label class="f" style="min-width:200px;${evAU() ? '' : 'display:none'}" for="ev-by"><span>View</span><select class="in" id="ev-by" data-evby="1"><option value="letter" ${by === 'letter' ? 'selected' : ''}>By letter bullet</option><option value="iso" ${by === 'iso' ? 'selected' : ''}>By ISO/IEC 42001 control</option></select></label>
+      <label class="f" style="min-width:200px;${R ? '' : 'display:none'}" for="ev-by"><span>View</span><select class="in" id="ev-by" data-evby="1"><option value="letter" ${by === 'letter' ? 'selected' : ''}>${evAU() ? 'By letter bullet' : 'By ' + esc(R ? R.short : '') + ' expectation'}</option><option value="iso" ${by === 'iso' ? 'selected' : ''}>By ISO/IEC 42001 control</option></select></label>
       <button class="btn sm" data-act="gatherEvidence">Gather the evidence</button></div></div>
-    <p class="small soft">${g ? `Gathered from AI Risk Appetite and AI Use Assessment ${esc(dl(g.gatheredOn))}.` : 'Shows this engagement’s own artefacts until the evidence is gathered from AI Risk Appetite and AI Use Assessment.'} ${evAU() ? `${cv.bullets} of the ${cv.of} letter bullets have evidence: ` : 'The outputs hold '}${cv.recorded} artefact${cv.recorded === 1 ? '' : 's'} recorded and ${cv.draft} in draft.${S.engagement.managementReview ? ` Review dates follow the AI management review on ${esc(dl(S.engagement.managementReview))}.` : ' Set the next AI management review on set-up to give every artefact a review date.'}</p>
+    <p class="small soft">${g ? `Gathered from AI Risk Appetite and AI Use Assessment ${esc(dl(g.gatheredOn))}.` : 'Shows this engagement’s own artefacts until the evidence is gathered from AI Risk Appetite and AI Use Assessment.'} ${evAU() ? `${cv.bullets} of the ${cv.of} letter bullets have evidence: ` : R ? `${cv.bullets} of the ${cv.of} ${esc(R.short)} expectations have evidence: ` : 'The outputs hold '}${cv.recorded} artefact${cv.recorded === 1 ? '' : 's'} recorded and ${cv.draft} in draft.${S.engagement.managementReview ? ` Review dates follow the AI management review on ${esc(dl(S.engagement.managementReview))}.` : ' Set the next AI management review on set-up to give every artefact a review date.'}</p>
     ${g && (g.notes || []).length ? `<p class="small" style="color:var(--red)">${g.notes.map(esc).join(' ')}</p>` : ''}
+    ${by === 'letter' && !evAU() && R ? `<p class="small soft" id="ev-regime-note">${esc(R.name)}. ${esc(R.note)}</p>` : ''}
     ${by === 'iso' ? `<p class="small soft" id="ev-iso-note">Every clause the outputs are tagged to, then all ${sm.controls} controls of ISO/IEC 42001:2023 Annex A. The outputs evidence ${sm.evidencedAll} of them; the rest are for the client’s own AI management system. ${soaIx ? `The Statement of Applicability loaded in AI Risk Appetite lists ${sm.listed} controls, ${sm.applicable} of which apply; the outputs evidence ${sm.evidenced} of those.` : 'Load the client’s Statement of Applicability in AI Risk Appetite’s set-up to see each control against it.'} No output is an AI system impact assessment (A.5). The tags are Triodian’s reading, for the independent reviewer or another person with ISO/IEC 42001 competence to check.</p>` : ''}
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px">${groups.map(cellOf).join('')}</div></div>`;
 }
