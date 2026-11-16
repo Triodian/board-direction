@@ -183,6 +183,11 @@ test('?example=us-banking opens Harlow Ridge Bank with the US pack, and the menu
   await expect(p.locator('#step-B0')).toContainText('Harlow Ridge Bank · Bank · United States');
   await expect(p.locator('#step-B0')).toContainText('OBL-US-');                          // the matter brief carries US records
   await expect(p.locator('#step-B0')).toContainText('United States, New York (United States)');   // a New York bank's brief names its state (US-NY)
+  // the automated-decisions wording follows the jurisdiction (US.7): US state law, not the Privacy Act
+  await p.locator('#step-B1 > summary').click();
+  await expect(p.locator('#step-B1')).toContainText('Automated-decision worklist');
+  const b1 = await p.locator('#step-B1').innerHTML();
+  expect(b1).toContain('CPPA'); expect(b1).toContain('TRAIGA'); expect(b1).not.toContain('Privacy Act'); expect(b1).not.toContain('APPs 1.7'); expect(b1).not.toContain('10 December 2026');
   // the outputs and the evidence index name ISO/IEC 42001 only: the APRA letter and CPS 230 are Australian
   await expect(p.locator('#outputs')).toContainText('US banking evidence index (BO7)');   // the sector's regime (US.6), not the APRA letter and not ISO alone
   await expect(p.locator('#outputs')).toContainText('US banking expectations have evidence');
