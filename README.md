@@ -57,7 +57,7 @@ Triodian recording. It runs as a Cloudflare Worker: the files in `public/` are s
 - `src/worker.js` – Cloudflare entry point
 - `lib/core/` – cloud-neutral API (`api.js`), the server-side save check (`rbac.js`), versions, the next review
   (`review.js`), notifications, three-way merge
-- `lib/identity/session.js` – the `/login` page's sign-in, sessions and the page gate; `lib/identity/cloudflare-access.js` verifies the Access token on `/auth/email`
+- `lib/identity/` – sign-in: `provider.js` picks the adapter for the deployment (`IDENTITY_PROVIDER`: `access`, the default, or `oidc`), `cloudflare-access.js` verifies the Cloudflare Access sign-in, `oidc.js` is the OpenID Connect relying party for a deployment not behind Access (Entra ID, Google Workspace, Okta), `session.js` the sessions and `people.js` the shared identity database. The provider supplies the email only; roles stay in the app
 - `public/login/` – the sign-in page
 - `lib/store/d1.js` – database access (Cloudflare D1)
 - `lib/config.js` – Access team domain and AUD tag, first administrator
