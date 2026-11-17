@@ -1,6 +1,6 @@
 # AI Board Direction
 
-[![Tests](https://github.com/Triodian/board-direction/actions/workflows/tests.yml/badge.svg)](https://github.com/Triodian/board-direction/actions/workflows/tests.yml) [![Licence: Apache 2.0](https://img.shields.io/badge/licence-Apache%202.0-blue.svg)](LICENSE)
+[![Tests](https://github.com/Triodian/board-direction/actions/workflows/tests.yml/badge.svg)](https://github.com/Triodian/board-direction/actions/workflows/tests.yml) [![Licence: Apache 2.0](https://img.shields.io/badge/licence-Apache%202.0-blue.svg)](LICENSE) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Triodian/board-direction/badge)](https://scorecard.dev/viewer/?uri=github.com/Triodian/board-direction)
 
 AI Board Direction takes a company's board from "what AI do we use?" to a resolved position on AI: where the board
 wants AI used, what it will not accept, what must come back to it, what information may go where, and who is
